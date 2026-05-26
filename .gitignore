@@ -1,4 +1,9 @@
-*/version/*
+dot/
+home/
+nextzxos/
+tools/vForth/version/
+tools/vForth/prompts/
+tools/vForth/.claude/
 syncpoint.dat
 CSpect 4.lnk
 syncignore.txt
