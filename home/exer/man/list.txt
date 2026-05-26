@@ -1,0 +1,1 @@
+   1 DEF FN x(x$)= 256* PEEK (5+ PEEK 23563+256* PEEK 23564)+ PEEK (4+ PEEK 23563+256* PEEK 23564): ; Address of   5 DIM u$(4)  30 LET %a= FN x(u$)  40 POKE %a,%1,%99,%0,%201 300 PRINT USR FN x(u$) 400 OPEN # 3,"o>list.txt" 410 LLIST  420 CLOSE # 3 500 STOP 9999 SAVE "Ch26-mcode-3.bas"

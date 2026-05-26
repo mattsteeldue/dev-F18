@@ -1,0 +1,97 @@
+
+This presentation shows some experiments on AFX file format I stored 
+beforehand in some BLOCKS and a few definitions that play them through 
+built-in AY-3-8912 chip.
+
+
+------
+  01
+------   
+
+Sinclair ZX Spectrum Next has three AY-3-8912 chips and being mostly backward 
+compatible this allows us to reuse many of the pre-existing applications and 
+routines to play sound effects and music.
+
+Each AY chip has 3 sound channels, called A, B and C. This makes 9 total.
+One AY chip can be controlled using 14 registers using normal Z80 I/O port  
+$FFFD to select register and $BFFD to write the value.
+Registers allow us to decide the tone-pitch, the white-noise-period, the volume
+and envelope.
+
+At  <https://shiru.untergrund.net/software.shtml#old> I found an "AY Sound 
+FX Editor" that introduced me to the .afx file format.
+
+This depicts a single channel sound format that describe frame by frame 
+a single sound effect. One frame is 1/50th of second.
+
+The site provides a Z80 machine code routine capable to play such a format
+I ported within the vForth environment and extended to use all 9 channels.
+
+
+------
+  02
+------   
+
+I found some hundred of Spectrum game effects and I wrote some definition
+
+    LOAD2BLOCK 
+    
+that loads a small .afx file to a single BLOCK to to have it easily available.
+
+Single effect, file extension .afx 
+
+Every frame encoded with a flag byte and a number of bytes, 
+which is vary depending from value change flags. 
+ 
+ bit0..3  Volume
+ bit4     Disable T
+ bit5     Change Tone
+ bit6     Change Noise
+ bit7     Disable N
+
+When the bit5 set, two bytes with tone period will follow; 
+when the bit6 set, a single byte with noise period will follow; 
+when both bits are set, first two bytes of tone period, then single byte with noise period will follow. 
+When none of the bits are set, next flags byte will follow. 
+End of the effect is marked with byte sequence #D0, #20. 
+Player should detect it before outputting it to the AY registers, 
+by checking noise period value to be equal #20. 
+The editor considers last non-zero volume value as the last frame of an effect, 
+other parameters aren't matter. 
+
+Effects bank, file extension .afb 
+
+Header: 
++0 (1 byte) Total number of effects in the bank, up to 256 (0 means 256);
++1 (2 bytes per effect) Table of offsets to data of every effect. 
+Offset value is given relative to the second byte of the offset itself, 
+this allows to calculate absolute address very fast: 
+   hl=offset in the effects table
+   ld c,(hl)
+   inc hl
+   ld b,(hl)
+   add hl,bc
+   hl=absolute address of effect data
+Data: 
+
++n (m bytes) The effects data, format is the same as in the single effect file. 
+After every effect there could be a null terminated text string with name of the effect. 
+It may absent, if the bank was saved into a file using corresponding item of the File menu, 
+in this case null terminator bytes are absent as well. 
+
+
+------
+  03
+------   
+
+
+I then defined a loop though all these BLOCKS to read them to RAM that is
+keep them in six BUFFERs, and play them using six voices unison.
+
+For example 2203 LIST that is blocks 4406 and 7
+
+2350 LOAD    loads the  AY-DEMO  definitions.
+
+2351 LOAD    to show some echo effect
+
+

@@ -1,0 +1,22 @@
+\
+\ test/allot.f
+\
+
+
+NEEDS TESTING
+
+( Test Suite - Memory  )
+
+\ F.6.1.1650  -  HERE
+
+TESTING F.6.1.0710 - ALLOT
+
+HERE 1 ALLOT
+HERE
+CONSTANT 2NDA
+CONSTANT 1STA
+T{ 1STA 2NDA U< -> <TRUE> }T    \ HERE MUST GROW WITH ALLOT
+T{      1STA 1+ ->   2NDA }T    \ ... BY ONE ADDRESS UNIT
+( MISSING TEST: NEGATIVE ALLOT )
+
+

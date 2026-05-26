@@ -1,0 +1,1 @@
+   1 DEF FN x(x$)= 256* PEEK (5+ PEEK 23563+256* PEEK 23564)+ PEEK (4+ PEEK 23563+256* PEEK 23564): REM Returns  address of x$   2 DIM u$(4)  10 LET a= FN x(u$)  20 READ n: POKE a,n  30 LET a=a+1: GO TO 20  40 DATA 1,99,0,201 300 PRINT USR FN x(u$) 301 STOP 9999 SAVE "Ch26-mcode.bas"

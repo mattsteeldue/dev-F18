@@ -1,0 +1,17 @@
+Scr# 4 
+  0 is undefined.
+  1 Stack is empty.
+  2 Dictionary full.
+  3 No such a line.
+  4 has already been defined.
+  5 Invalid stream.
+  6 No such a block.
+  7 Stack full.
+  8 Old dictionary is full.
+  9 Tape error.
+ 10 Wrong array index.
+ 11 Invalid floating point.
+ 12 Heap full.
+ 13 Division by zero.
+ 14 Patching the wrong definition.
+ 15 [ BREAK ] was pressed.

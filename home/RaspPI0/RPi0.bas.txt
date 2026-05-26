@@ -1,0 +1,109 @@
+   1 REM ** RPi0 **
+ 100 INPUT "Setup (y/n) ";r$ 
+ 110 r$= CHR$ ($20| CODE r$) 
+ 130 IF r$="y" THEN PROC PiSetup(115200): PAUSE 50
+ 150 PROC Exec("pwd")
+ 199 ; send script
+ 200 PROC Exec("echo           'print 1234567890*1234567890' > tmp.py")
+ 240 PROC Exec("python tmp.py")
+ 998 STOP 
+ 999 ;
+1000 DEFPROC PiSetup(baud)
+1010 REG 7,3:; RUN AT 3
+1020 OUT $153B,$40:; Select RPi0
+1095 ; system clock speeds
+1096 ; as per NextREG 17 (11h)
+1100 DATA 28.0000:; VGA base
+1110 DATA 28.5714:; VGA set 1
+1120 DATA 29.4643:; VGA set 2
+1130 DATA 30.0000:; VGA set 3
+1140 DATA 31.0000:; VGA set 4
+1150 DATA 32.0000:; VGA set 5
+1160 DATA 33.0000:; VGA set 6
+1170 DATA 27.0000:; Digital
+1180 RESTORE 1100
+1200 videomode= REG 17
+1210 FOR k=0 TO videomode
+1220   READ spd
+1230 NEXT k
+1240 p= INT (10^6*spd/baud)
+1245 OUT $153B,$40
+1250 lo=$7F & p
+1260 hi=$80 | INT (p>>7)
+1270 OUT $143B,lo
+1280 OUT $143B,hi
+1290 REG $A0,$30
+1300 ENDPROC 
+1900 ;
+1910 DEF FN UartRx()= IN $143B
+1920 ;
+1930 DEF FN BusyTx()=2& IN $133B
+1940 ;
+1950 DEFPROC PiWait()
+1960 REPEAT 
+1970 REPEAT UNTIL FN BusyTx()=0
+1980 ENDPROC 
+1995 ;
+2000 DEFPROC PiTx(c$)
+2010 LOCAL b
+2020 PROC PiWait()
+2030 FOR k=1 TO LEN c$
+2040   OUT $133B, CODE c$(k)
+2050 ; b= FN UartRx():;ignored
+2060 NEXT k
+2070 ENDPROC 
+2095 ; read string from pi0
+2100 DEFPROC PiRx()
+2110 LOCAL c,r$,t
+2115 t=3200
+2120 REPEAT 
+2130   c= FN UartRx()
+2150 WHILE NOT c AND t 
+2160   t-=1 
+2180 REPEAT UNTIL c
+2200 r$= CHR$ c:t=99
+2220 REPEAT 
+2230   c= FN UartRx()
+2240   IF c THEN r$=r$+ CHR$ c:t=32: ELSE t-=1
+2280 REPEAT UNTIL NOT t
+2290 ENDPROC =r$ 
+2295 ;
+2300 DEFPROC WaitFor(p$)
+2310 LOCAL k,b$
+2320 FOR k=1 TO LEN p$ 
+2330 b$= CHR$ FN UartRx()
+2340 IF b$<>p$(k) THEN k-=1
+2360 NEXT k
+2370 REM PRINT '">>";p$;"<<"
+2390 ENDPROC 
+2395 ; 
+2400 DEFPROC Prompt()
+2410 PROC PiTx( CHR$ 13)
+2420 PROC WaitFor("SUP>")
+2460 ENDPROC 
+2495 ;
+2600 DEFPROC Echo(s$)
+2610 LOCAL b$
+2620 FOR k=1 TO LEN (s$)
+2630   b$=s$(k)
+2640   IF b$>=" " THEN PRINT b$;
+2650   IF CHR$ 10=b$ THEN PRINT 
+2670 NEXT k
+2680 ENDPROC 
+2690 ;
+2700 DEFPROC Exec(e$)
+2710 LOCAL r$
+2720 r$=e$+ CHR$ 13
+2740 PROC PiTx(r$)
+2745 ;PAUSE 1
+2750 PROC WaitFor(r$)
+2760 PROC PiRx() TO r$
+2770 PROC Echo(r$) 
+2780 ENDPROC =r$ 
+9990 STOP 
+9991 OPEN # 3,"o>RPi0.bas.txt"
+9992 LLIST 
+9993 CLOSE # 3
+9995 STOP 
+9998 STOP 
+9999 SAVE "RPi0.bas"

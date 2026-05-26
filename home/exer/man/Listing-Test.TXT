@@ -1,0 +1,1 @@
+  10 REM list 100 OPEN # 4,"o>list.txt" 110 LIST #4 120 CLOSE # 4 200 OPEN # 4,"i>list.txt" 210 ; WHILE 220 INPUT #4, a$ 230 IF a$<>"" THEN GO TO 210 240 ; WEND 250 CLOSE # 4
