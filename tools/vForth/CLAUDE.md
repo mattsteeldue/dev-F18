@@ -50,7 +50,7 @@ Outputs: `output/forth18e.bin`, `output/ram8.bin`
 ```
 main.asm → system.asm, L0.asm, L1.asm, L2.asm, next-opt1.asm, L3.asm
 ```
-Output: a dot-command binary deployed to `SD/dot/`
+Output: a dot-command binary deployed to `dot/`
 
 ### Building self-hosted (deprecated — not used anymore)
 
@@ -74,7 +74,7 @@ Two equally valid workflows exist for Forth code:
 
 **From a PC with a preferred editor.** Write `.f` files on the laptop, then transfer them to the corresponding directory on the ZX Spectrum Next SD card using the **sync** utility (author: Jari Komppa, aka SoL_HSA). Once synced, load the file on the machine with `INCLUDE filename.f` or `NEEDS WORDNAME`.
 
-Both workflows converge at the same point: the canonical source lives in the root `inc/` and `lib/` directories of this repository, and after any change the SD copy must be kept in sync (see *SD synchronization* below).
+Both workflows converge at the same point: the canonical source lives in the root `inc/` and `lib/` directories of this repository. Since the repo root is the nextsync root, files are ready to deploy immediately after editing (see *Deployment to ZX Spectrum Next* below).
 
 ## Architecture
 
@@ -503,7 +503,7 @@ bloating the core. Until then, use `H"` for any persistent heap string
 allocation at interpret time.
 
 ### Sources
-- `inc/far.f` — `FAR` definition
+- `inc/doc/far.f` — `FAR` definition (core word — reference only)
 - `inc/h~.f` — `H"` definition (FAT mapping: `"` → `~`)
 - `inc/hallot.f` — `HALLOT`
 - `inc/aligned.f` — `ALIGNED`
