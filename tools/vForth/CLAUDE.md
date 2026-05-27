@@ -23,7 +23,7 @@ The project has three codebases in order of priority:
 | Role | Master — changes originate here | Near-identical; differs only in startup/closedown and MMU7 page allocation | Human-readable Forth form of the core — reference only, not maintained in sync |
 | VS Code project | `project/DIRECT_MMU7/` | `project/MMU7_DOT/` | — |
 | Launcher | `Forth18_loader.bas` + `forth18e.bin` + `ram8.bin` | ZX Spectrum Next dot-command (`.vforth`) | — |
-| SD card path | `SD/tools/vForth/` | `SD/dot/` | — |
+| Sync path (nextsync) | `tools/vForth/` | `dot/` | — |
 | Alignment cadence | — | Immediate (on each core change) | Not maintained — historical snapshot |
 | Bootstrap-verifiable | Yes | No | Possible but not required |
 
@@ -176,7 +176,10 @@ Forward pointers in F18e.f (e.g. HERE TO next^, HERE TO loop^) mark addresses th
 
 > **General development principle — root directories are canonical.**
 > All source work happens in the root-level directories (`inc/`, `lib/`, `src/`, `test/`, `demo/`, …).
-> The copies under `SD/tools/vForth/` are **exact duplicates** maintained solely as a convenience layer for deployment to the physical ZX Spectrum Next. After modifying any root `inc/` or `lib/` file, the corresponding file under `SD/tools/vForth/` must be updated to match. Never edit the SD/ copies directly.
+> The repo root (`C:\Zx\Forth\F18`) is the **nextsync root**: it mirrors directly to the ZX Spectrum Next
+> SD card filesystem via the nextsync WiFi utility. There is no separate SD/ staging directory —
+> `tools/vForth/inc/` and `tools/vForth/lib/` are simultaneously the canonical source and the
+> deployment copy.
 
 ```
 src/          — Forth source (F18e.f current; F15–F17 historical)
@@ -191,21 +194,10 @@ project/
   DIRECT/       — Historical v1.5
   DIRECT_RP/    — Variant
   INDIRECT/     — Indirect-threaded (legacy)
-SD/           — Staging area for SD card content; source of the distributable zip.
-                Redundant with project outputs but kept as convenience layer for release.
-  tools/vForth/ — Classic variant runtime: forth18e.bin, ram8.bin, Forth18_loader.bas,
-                  and exact copies of root inc/ and lib/
-  dot/          — Dot-command variant runtime files (.vforth, term0) — no inc/lib copies
-                  NOTE: the dot variant depends on the classic installation being present.
-                  When .vforth runs and the user issues NEEDS, the system searches
-                  SD/tools/vForth/inc/ and SD/tools/vForth/lib/ — the same directories
-                  as the classic variant. A standalone dot-command installation without
-                  the classic SD tree is not supported.
-download/     — Released zip archives ready for end-user download and SD card installation
-                (e.g. vForth_18_NextZXOS_20260419.zip). Built from SD/ contents.
 dot/          — Dot-command binaries at repo root (vforth, term0)
 lib/          — Library modules loaded via NEEDS (GRAPHICS.f, MOUSE.f, AY.f, …)
 inc/          — Single-word definitions loaded via NEEDS (256+ files)
+  doc/        — Reference-only copies of core words (never loaded by NEEDS; for human reading)
 test/         — Test suite (CORE-TESTS.f, FLOATING-TESTS.f, …)
 demo/         — Example programs and games
 tutorial/     — Guided tutorials (see conventions below)
@@ -343,43 +335,23 @@ Example of the refactoring pattern:
 NEEDS FLIP
 ```
 
-### SD synchronization
+### Deployment to ZX Spectrum Next (nextsync)
 
-After modifying any root `inc/` or `lib/` file, copy it to the matching path under `SD/tools/vForth/`:
+There is no separate SD/ staging directory. The repo root (`C:\Zx\Forth\F18`) is the nextsync
+root and maps directly to the Next's SD card filesystem. Files edited in `inc/` or `lib/` are
+ready to sync immediately — no intermediate copy step is needed.
 
-| Edit here (canonical) | Then sync to (deployment copy) |
-|---|---|
-| `inc/word.f` | `SD/tools/vForth/inc/word.f` |
-| `lib/MODULE.f` | `SD/tools/vForth/lib/MODULE.f` |
+To transfer files to the Next, run the nextsync server from the repo root:
 
-The dot-command variant (`SD/dot/`) does not carry `inc/` or `lib/` copies — only the compiled binaries `vforth` and `term0`. The dot variant still depends on the classic installation being present on the SD card (see Directory Structure above).
-
-**Sync verification script.** Because the root→SD copy is manual and silent failures are hard to detect, a PowerShell helper script (`util/check-sd-sync.ps1`) is proposed for verifying or correcting drift:
-
-```powershell
-# check-sd-sync.ps1
-# Reports root inc/ and lib/ files that are newer than their SD/tools/vForth/ counterparts.
-# Run with -Sync to also copy the outdated files.
-param([switch]$Sync)
-$pairs = @(
-    @{ Root = "inc"; SD = "SD/tools/vForth/inc" },
-    @{ Root = "lib"; SD = "SD/tools/vForth/lib" }
-)
-foreach ($pair in $pairs) {
-    Get-ChildItem $pair.Root -File | ForEach-Object {
-        $dest = Join-Path $pair.SD $_.Name
-        if (-not (Test-Path $dest)) {
-            Write-Host "MISSING  $dest"
-            if ($Sync) { Copy-Item $_.FullName $dest }
-        } elseif ($_.LastWriteTime -gt (Get-Item $dest).LastWriteTime) {
-            Write-Host "OUTDATED $dest"
-            if ($Sync) { Copy-Item $_.FullName $dest }
-        }
-    }
-}
+```
+cd C:\Zx\Forth\F18
+python nextsync.py
 ```
 
-Run `.\util\check-sd-sync.ps1` to audit, `.\util\check-sd-sync.ps1 -Sync` to repair. Note: timestamp comparison is reliable on NTFS (PC side); FAT32 timestamps on the physical SD card have 2-second granularity, so the Komppa sync utility handles the final PC→SD card transfer step.
+Then on the Next, execute `.sync`. Only new or modified files are transferred.
+
+The dot-command variant (`dot/`) contains only the compiled binaries `vforth` and `term0`.
+The dot variant depends on the classic installation being present (see Directory Structure above).
 
 ## Testing
 
