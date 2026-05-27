@@ -1,0 +1,12 @@
+        ,
+        {
+            "label": "concatena",
+            "type": "shell",
+            "command": "copy ${workspaceFolder}/output/vforth.1 /b + ${workspaceFolder}/output/vforth.2 /b ${workspaceFolder}/output/vforth /b",
+            "group": {
+                "kind" : "build",
+                "isDefault": true
+            }
+        }
+
+

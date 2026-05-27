@@ -1,0 +1,88 @@
+Differences between MMU7 and DOT version
+----------------------------------------
+
+L0.asm
+------
+In general, rst $10 is called widh interrupt disabled 
+(?EMIT)     calling $03B6, DOT version must use RST $18 but don't use TSTACK.
+CURS        calling $1601, DOT version must use RST $18 and dare to use TSTACK.
+SELECT      idem c.s.
+
+
+L2.asm
+------
+Startup from Basic in DOT version has to initialize more things:
+    0. save H'L' for later
+    1. accepts one parameter from Basic and make it available to AUTOEXEC
+    2. save hw-register status Speed, MMU2-MMU7, and current Layer 
+    3. reserve twelve 8k pages from $1D to $28, (8 HEAP, 3 MAIN, 1 BACKUP)
+    4. backup MMU2 content, to be restored when exiting to Basic
+    5. change current directory to C:/tools/vForth/ 
+    6. setup MMU pages for Forth
+    7. get current handle and load to $E000 the rest of vocabulary
+    8. set layer 1,2
+    9. pre-set four main Z80 register, enable interrupt and start Forth.     
+        SP Calculator Stack Pointer 
+        IX Inner Interpreter Pointer
+        DE Return Stack Pointer     
+        BC Instruction Pointer      
+       
+Closedown restores original status and frees RAM pages.
+
+WARM        DOT does not execute SPLASH
+        
+
+
+L3.asm
+------
+CLS         call $0DAF is performed via rst $18 
+AUTOEXEC    normal version executes 11 LOAD while 
+            but DOT version includes filename passed as parameter from Basic 
+            or default filename "c:/tools/vforth/lib/autoexec.f"
+
+
+next-opt1.asm
+-------------
+BLK-INIT    in case of error, DOT version exit to Basic with error.
+            while MMU version raise ERROR and stays in Forth
+BLK-FH      DOT versione, moved at end of source L3.asm
+
+
+next-opt0.asm
+-------------
+F_CLOSE
+F_SYNC
+F_GETPOS    DOT version has to DIsable interrupt  
+
+F_SEEK
+F_READ
+F_WRITE
+F_OPEN
+F_OPENDIR
+F_READDIR   DOT version has to DIsable interrupt and pass HL to IX.
+
+
+
+
+Differences between 20250101 and previous 20240922
+--------------------------------------------------
+
+L2.asm
+-------------
+End_Loop_Ptr is used to exit  (?do) 
+Enclose_common_ending used to optimize 
+C_Compare_common_ending used to optimize (compare)
+Cmove_NoMove is used to exit cmove> 
+Mul_Bailout is used instead of Um_DivMod_Bailout to exit  um/mod
+
+L2.asm
+-------------
+reordered pre-set the four main 16-bit registers    
+
+next-opt0.asm
+-------------
+added sequence disable-enable interrupts
+
+
+
+
