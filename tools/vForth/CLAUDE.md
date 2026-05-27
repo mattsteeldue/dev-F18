@@ -14,14 +14,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The project has three codebases in order of priority:
 
-1. **DIRECT_MMU7** — the master. All changes originate here.
-2. **MMU7_DOT** — near-identical twin. The vast majority of source is shared with DIRECT_MMU7; only startup/closedown routines and MMU7 8K page allocation differ. Kept in sync with the master; alignment is straightforward.
+1. **vForth18_DOES** — the master. All changes originate here.
+2. **vForth18_DOT** — near-identical twin. The vast majority of source is shared with vForth18_DOES; only startup/closedown routines and MMU7 8K page allocation differ. Kept in sync with the master; alignment is straightforward.
 3. **F18e.f** — a historical artifact. Its primary value is **readability**: a Forth programmer can study it to understand how the core is implemented, in idiomatic Forth. The `.asm` files are the authoritative source; bootstrap recompilation from F18e.f is possible but not essential and is no longer part of the regular workflow.
 
-| | DIRECT_MMU7 (master) | MMU7_DOT (twin) | F18e.f (historical) |
+| | vForth18_DOES (master) | vForth18_DOT (twin) | F18e.f (historical) |
 |---|---|---|---|
 | Role | Master — changes originate here | Near-identical; differs only in startup/closedown and MMU7 page allocation | Human-readable Forth form of the core — reference only, not maintained in sync |
-| VS Code project | `project/DIRECT_MMU7/` | `project/MMU7_DOT/` | — |
+| VS Code project | `project/vForth18_DOES/` | `project/vForth18_DOT/` | — |
 | Launcher | `Forth18_loader.bas` + `forth18e.bin` + `ram8.bin` | ZX Spectrum Next dot-command (`.vforth`) | — |
 | Sync path (nextsync) | `tools/vForth/` | `dot/` | — |
 | Alignment cadence | — | Immediate (on each core change) | Not maintained — historical snapshot |
@@ -34,19 +34,19 @@ The project master has **moved to Visual Studio Code** with a Z80N assembler (Sj
 **The representations that must stay byte-identical (for the classic variant):**
 
 1. `src/F18e.f` — the Forth source that compiles itself on the ZX Spectrum Next (slow, authoritative Forth representation)
-2. `project/DIRECT_MMU7/source/*.asm` — the same compiler in Z80N assembly for SjASMPlus (fast, primary development target)
+2. `project/vForth18_DOES/source/*.asm` — the same compiler in Z80N assembly for SjASMPlus (fast, primary development target)
 
-Both produce the same `forth18e.bin`. When the `.asm` files are modified, `F18e.f` must be updated to match — and vice versa. The MMU7_DOT variant has no equivalent F18e.f alignment path.
+Both produce the same `forth18e.bin`. When the `.asm` files are modified, `F18e.f` must be updated to match — and vice versa. The vForth18_DOT variant has no equivalent F18e.f alignment path.
 
 ### Building with VS Code (primary)
 
-**Classic variant** — `project/DIRECT_MMU7/`:
+**Classic variant** — `project/vForth18_DOES/`:
 ```
 main.asm → system.asm, L0.asm, L1.asm, L2.asm, next-opt1.asm, L3.asm
 ```
 Outputs: `output/forth18e.bin`, `output/ram8.bin`
 
-**Dot variant** — `project/MMU7_DOT/`:
+**Dot variant** — `project/vForth18_DOT/`:
 ```
 main.asm → system.asm, L0.asm, L1.asm, L2.asm, next-opt1.asm, L3.asm
 ```
@@ -58,11 +58,11 @@ Screen #10 is now free for end-user use. To use the old self-hosted method, Scre
 
     include src/f18e.f
 
-Then, within CSpect or on real hardware, execute 10 LOAD to trigger compilation. The system compiles itself twice (first to upper memory, then back to origin). The resulting binary can be transferred to a PC and verified byte-by-byte against the SjASMPlus output using a binary diff tool (e.g. AraxisMerge). This applies only to the classic (DIRECT_MMU7) variant.
+Then, within CSpect or on real hardware, execute 10 LOAD to trigger compilation. The system compiles itself twice (first to upper memory, then back to origin). The resulting binary can be transferred to a PC and verified byte-by-byte against the SjASMPlus output using a binary diff tool (e.g. AraxisMerge). This applies only to the classic (vForth18_DOES) variant.
 
 ### Verifying alignment between .asm and F18e.f
 
-Set `DEBUGGING equ -1` in `main.asm` for binary comparison mode (origin is adjusted to match the Forth-compiled output for byte-by-byte diff). Applies to DIRECT_MMU7 only.
+Set `DEBUGGING equ -1` in `main.asm` for binary comparison mode (origin is adjusted to match the Forth-compiled output for byte-by-byte diff). Applies to vForth18_DOES only.
 
 ### Forth-based development (inc/, lib/, demo/, tutorial/)
 
@@ -184,12 +184,12 @@ Forward pointers in F18e.f (e.g. HERE TO next^, HERE TO loop^) mark addresses th
 ```
 src/          — Forth source (F18e.f current; F15–F17 historical)
 project/
-  DIRECT_MMU7/  — Classic variant (v1.8): launcher-based, bootstrap-verifiable
+  vForth18_DOES/  — Classic variant (v1.8): launcher-based, bootstrap-verifiable
     source/     — L0.asm, L1.asm, L2.asm, L3.asm, system.asm, main.asm
     output/     — forth18e.bin, ram8.bin
     list/       — Debug listings (.lst, .sld.txt)
-  MMU7_DOT/     — Dot-command variant (v1.8): parallel to DIRECT_MMU7, not bootstrap-verifiable
-    source/     — same structure as DIRECT_MMU7
+  vForth18_DOT/     — Dot-command variant (v1.8): parallel to vForth18_DOES, not bootstrap-verifiable
+    source/     — same structure as vForth18_DOES
     output/     — dot-command binary
   DIRECT/       — Historical v1.5
   DIRECT_RP/    — Variant
@@ -203,8 +203,6 @@ demo/         — Example programs and games
 tutorial/     — Guided tutorials (see conventions below)
 doc/          — PDF reference manual
 util/         — Perl scripts (blocks2txt.pl, putscr.pl)
-snippet/      — Code snippets and experiments
-previous/     — Archive of previous version files
 ```
 
 ## Character Encoding
@@ -253,7 +251,7 @@ Neither directory has a `.asm` counterpart — these are pure Forth source files
 
 ### NEEDS mechanism
 
-`NEEDS` is part of the **core dictionary** — it is compiled into `forth18e.bin` (defined in `project/DIRECT_MMU7/source/L3.asm`). It is available immediately at startup without loading any file.
+`NEEDS` is part of the **core dictionary** — it is compiled into `forth18e.bin` (defined in `project/vForth18_DOES/source/L3.asm`). It is available immediately at startup without loading any file.
 
 `lib/needs.f` exists in the repository but is a **documentary duplicate**: it contains the equivalent Forth-level implementation for reference and historical continuity. It is not loaded at runtime and must not be used as a substitute for the core word.
 
@@ -516,10 +514,10 @@ allocation at interpret time.
 | File | Role |
 |---|---|
 | `src/F18e.f` | Historical Forth form of the core — readable reference, not maintained in sync with .asm |
-| `project/DIRECT_MMU7/source/system.asm` | Macros, constants, `New_Def`, `next`, `psh1`, `psh2` |
-| `project/DIRECT_MMU7/source/L0.asm` | Origin area + primitives (LIT, EXECUTE, loops, …) |
-| `project/DIRECT_MMU7/source/L1.asm` | Core vocabulary |
-| `project/DIRECT_MMU7/source/L2.asm` | Mid-level vocabulary |
-| `project/DIRECT_MMU7/source/L3.asm` | High-level vocabulary |
-| `project/DIRECT_MMU7/source/main.asm` | Entry point, DEBUGGING flag, SAVEBIN directives |
+| `project/vForth18_DOES/source/system.asm` | Macros, constants, `New_Def`, `next`, `psh1`, `psh2` |
+| `project/vForth18_DOES/source/L0.asm` | Origin area + primitives (LIT, EXECUTE, loops, …) |
+| `project/vForth18_DOES/source/L1.asm` | Core vocabulary |
+| `project/vForth18_DOES/source/L2.asm` | Mid-level vocabulary |
+| `project/vForth18_DOES/source/L3.asm` | High-level vocabulary |
+| `project/vForth18_DOES/source/main.asm` | Entry point, DEBUGGING flag, SAVEBIN directives |
 | `HISTORY.txt` | Detailed build history since 2020 |
