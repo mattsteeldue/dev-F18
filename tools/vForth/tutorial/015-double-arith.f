@@ -49,8 +49,7 @@ NEEDS M+
 \ 1. Double literals and S>D
 \ ===========================================================================
 \
-\ A number containing any punctuation (comma, period, slash ...) is
-\ read as a double -- two cells pushed:
+\ A number containing . , / - or : is read as a double -- two cells pushed:
 \
 \   120,000 .S       => 120000  0       (lo=120000 hi=0)
 \   3.14    .S       => 314     0       (NOT float! just double)
