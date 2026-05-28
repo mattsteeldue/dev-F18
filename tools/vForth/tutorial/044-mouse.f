@@ -12,17 +12,17 @@
 \ Reference: sec.7.3
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/044-mouse.f
+\   NEEDS TUTORIAL
+\   044 TUTORIAL
 \ To unload and reload interactively:
-\   NO-MOUSE
-\   INCLUDE tutorial/044-mouse.f
+\   NEWTASK 044 TUTORIAL
 \
 
-MARKER NO-MOUSE
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 044: Mouse input loaded. ) CR
-.(     Type NO-MOUSE to unload.          ) CR
+.(     Type NEWTASK to unload.          ) CR
 
 NEEDS MOUSE
 

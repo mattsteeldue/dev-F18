@@ -12,17 +12,17 @@
 \ Reference: sec.8
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/049-interrupts.f
+\   NEEDS TUTORIAL
+\   049 TUTORIAL
 \ To unload and reload interactively:
-\   NO-INTERRUPTS
-\   INCLUDE tutorial/049-interrupts.f
+\   NEWTASK 049 TUTORIAL
 \
 
-MARKER NO-INTERRUPTS
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 049: Interrupt service routines loaded. ) CR
-.(     Type NO-INTERRUPTS to unload.                    ) CR
+.(     Type NEWTASK to unload.                    ) CR
 
 NEEDS INTERRUPTS
 

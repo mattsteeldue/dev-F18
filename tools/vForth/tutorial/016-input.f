@@ -23,17 +23,17 @@
 \ Reference: sec.2.12.10
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/016-input.f
+\   NEEDS TUTORIAL
+\   016 TUTORIAL
 \ To unload and reload interactively:
-\   NO-INPUT
-\   INCLUDE tutorial/016-input.f
+\   NEWTASK 016 TUTORIAL
 \
 
-MARKER NO-INPUT
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 016: keyboard input loaded. ) CR
-.(     Type NO-INPUT to unload.            ) CR
+.(     Type NEWTASK to unload.            ) CR
 
 NEEDS WAIT-KEY
 

@@ -18,17 +18,17 @@
 \ Reference: sec.2.12.7
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/006-control-flow.f
+\   NEEDS TUTORIAL
+\   006 TUTORIAL
 \ To unload and reload interactively:
-\   NO-CONTROL-FLOW
-\   INCLUDE tutorial/006-control-flow.f
+\   NEWTASK 006 TUTORIAL
 \
 
-MARKER NO-CONTROL-FLOW
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 006: control flow loaded. ) CR
-.(     Type NO-CONTROL-FLOW to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS ABORT"                        \ for conditional abort
 
@@ -100,10 +100,10 @@ NEEDS ABORT"                        \ for conditional abort
 \
 \   : BLINK  ( -- )
 \       BEGIN
-\           ... toggle LED ...
+\           ?TERMINAL IF QUIT THEN
 \       AGAIN ;
 \
-\ Not demonstrated here because it would hang the interpreter.
+\ The only way to stop this infinite loop is pressing [BREAK] key
 
 
 \ ===========================================================================

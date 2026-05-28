@@ -11,17 +11,17 @@
 \ Reference: sec.7.4
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/034-ay-sound.f
+\   NEEDS TUTORIAL
+\   034 TUTORIAL
 \ To unload and reload interactively:
-\   NO-AY-SOUND
-\   INCLUDE tutorial/034-ay-sound.f
+\   NEWTASK 034 TUTORIAL
 \
 
-MARKER NO-AY-SOUND
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 034: AY-3-8910 sound chip loaded. ) CR
-.(     Type NO-AY-SOUND to unload.                ) CR
+.(     Type NEWTASK to unload.                ) CR
 
 NEEDS AY
 

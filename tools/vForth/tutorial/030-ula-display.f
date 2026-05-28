@@ -11,17 +11,17 @@
 \ Reference: sec.7.1
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/030-ula-display.f
+\   NEEDS TUTORIAL
+\   030 TUTORIAL
 \ To unload and reload interactively:
-\   NO-ULA-DISPLAY
-\   INCLUDE tutorial/030-ula-display.f
+\   NEWTASK 030 TUTORIAL
 \
 
-MARKER NO-ULA-DISPLAY
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 030: ULA display attributes loaded. ) CR
-.(     Type NO-ULA-DISPLAY to unload.               ) CR
+.(     Type NEWTASK to unload.               ) CR
 
 NEEDS .INK
 NEEDS .PAPER

@@ -25,17 +25,17 @@
 \ Reference: sec.2.12.2
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/012-return-stack.f
+\   NEEDS TUTORIAL
+\   012 TUTORIAL
 \ To unload and reload interactively:
-\   NO-RETURN-STACK
-\   INCLUDE tutorial/012-return-stack.f
+\   NEWTASK 012 TUTORIAL
 \
 
-MARKER NO-RETURN-STACK
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 012: return stack loaded. ) CR
-.(     Type NO-RETURN-STACK to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 
 \ ===========================================================================

@@ -12,17 +12,17 @@
 \ Reference: sec.7.5
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/032-timing.f
+\   NEEDS TUTORIAL
+\   032 TUTORIAL
 \ To unload and reload interactively:
-\   NO-TIMING
-\   INCLUDE tutorial/032-timing.f
+\   NEWTASK 032 TUTORIAL
 \
 
-MARKER NO-TIMING
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 032: Timing and delays loaded. ) CR
-.(     Type NO-TIMING to unload.               ) CR
+.(     Type NEWTASK to unload.               ) CR
 
 NEEDS ms
 NEEDS .BORDER

@@ -12,17 +12,17 @@
 \ Reference: sec.7.4
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/033-beeper.f
+\   NEEDS TUTORIAL
+\   033 TUTORIAL
 \ To unload and reload interactively:
-\   NO-BEEPER
-\   INCLUDE tutorial/033-beeper.f
+\   NEWTASK 033 TUTORIAL
 \
 
-MARKER NO-BEEPER
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 033: Beeper sound loaded. ) CR
-.(     Type NO-BEEPER to unload.          ) CR
+.(     Type NEWTASK to unload.          ) CR
 
 NEEDS BLEEP
 

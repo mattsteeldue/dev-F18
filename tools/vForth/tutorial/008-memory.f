@@ -18,17 +18,17 @@
 \ Reference: sec.2.12.6, 4.2, 4.3
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/008-memory.f
+\   NEEDS TUTORIAL
+\   008 TUTORIAL
 \ To unload and reload interactively:
-\   NO-MEMORY
-\   INCLUDE tutorial/008-memory.f
+\   NEWTASK 008 TUTORIAL
 \
 
-MARKER NO-MEMORY
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 008: memory loaded. ) CR
-.(     Type NO-MEMORY to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS DUMP
 NEEDS 2VARIABLE
@@ -110,11 +110,12 @@ VARIABLE BUF
 \ 2@  ( a -- d )    fetch 32-bit double from address a (d: lo-cell hi-cell)
 \ 2!  ( d a -- )    store 32-bit double at address a
 \
-\ Layout in memory (little-endian, Z80 convention):
-\   addr+0  LSCell low byte
-\   addr+1  LSCell high byte
-\   addr+2  MSCell low byte
-\   addr+3  MSCell high byte
+\ Layout in memory (little-endian Z80 convention for a cell, but
+\ opposite order for most and least significant cell):
+\   addr+0  MSCell low byte
+\   addr+1  MSCell high byte
+\   addr+2  LSCell low byte
+\   addr+3  LSCell high byte
 \
 \ 2VARIABLE name    creates a double-precision variable (4 bytes, zero-init).
 \
@@ -134,9 +135,9 @@ VARIABLE BUF
 \
 \ ALLOT does NOT initialise the reserved memory  --  use ERASE or FILL after.
 \
-\   HERE .          => (some address)
+\   HERE U.         => (some address)
 \   4 ALLOT         (reserve 4 bytes)
-\   HERE .          => (previous + 4)
+\   HERE U.         => (previous + 4)
 \
 \ Typical pattern: named byte array via CREATE + ALLOT
 \

@@ -362,6 +362,11 @@ Tests use `{...}T` notation (defined in `lib/testing.f`).
 
 ## tutorial/ conventions
 
+> **Full conventions reference:** `tutorial/tutorial-conventions.md` — the authoritative rules
+> document for tutorial development (language, file structure, comment style, stack notation,
+> numeric literals, vForth-specific rules, CREATE…DOES> conventions, philosophy). The summary
+> below covers the most important points; consult that file for details.
+
 The `tutorial/` directory contains guided, self-contained tutorials introducing vForth features progressively. Conventions:
 
 **File naming.** Use a three-digit prefix for ordering: `001-stack-basics.f`, `002-defining-words.f`, etc. The prefix determines load order and reading sequence; renumbering is acceptable when inserting new topics.
@@ -370,7 +375,7 @@ The `tutorial/` directory contains guided, self-contained tutorials introducing 
 
 **Comment-heavy.** Unlike `inc/` files (which have minimal comments), tutorials are primarily documentation. Explain the *why*, show the stack effects, describe expected output. The target reader is a programmer new to vForth but not necessarily new to programming.
 
-**MARKER for interactive reset.** Place a `MARKER NO-TUTORIAL-NAME` near the top (after initial comments). This lets the reader unload the tutorial and reload it cleanly during interactive exploration.
+**MARKER for interactive reset.** Place `MARKER NEWTASK` near the top (after initial comments). This lets the reader unload the tutorial and reload it cleanly during interactive exploration. A fixed name is used across all tutorials to keep it short and easy to type on the Spectrum keyboard.
 
 **Show expected output.** Document what each example prints or leaves on the stack, either inline as comments or in a trailing test block using `{...}T` notation (load `lib/testing.f` first).
 
@@ -381,7 +386,7 @@ The `tutorial/` directory contains guided, self-contained tutorials introducing 
 \ Introduction to the vForth stack and basic arithmetic.
 \
 
-MARKER NO-STACK-BASICS
+MARKER NEWTASK
 
 \ --- example 1: pushing values ---
 \ 3 4 +  leaves 7 on the stack
@@ -508,6 +513,38 @@ allocation at interpret time.
 - `inc/hallot.f` — `HALLOT`
 - `inc/aligned.f` — `ALIGNED`
 - PDF documentation: "Heap memory facility" section
+
+## Known Bugs
+
+### `INCLUDE` / `NEEDS`
+
+The source file being loaded must end with a blank line. If the last line has no
+trailing newline, the system crashes — typically displaying a vertical grid pattern
+on screen. `NEEDS` is affected by the same bug because it uses `INCLUDE` internally.
+
+**Workaround:** always ensure every `.f` file ends with a blank line.
+
+### `LOAD` (block/screen interpreter)
+
+- **Structure spanning BLOCK boundaries.** Long structured definitions (e.g.
+  `ENUMERATED`) cannot straddle the boundary between the first and second 1 KB block
+  of the same screen. The definition must fit entirely within one block.
+- **NUL character (`0x00`) in a screen.** A NUL byte inside a screen is invisible
+  in normal display but silently stops interpretation mid-load with no error message.
+  Use `EDIT` (§ 2.15) to locate it: EDIT shows the ASCII code of the character under
+  the cursor.
+- **Screen #0.** Loading from Screen #0 (`0 LOAD`) crashes the system.
+
+### `OPEN<`
+
+Can only be used in interpretation mode. Calling it inside a colon-definition is
+not supported and will produce incorrect behaviour.
+
+### `LED`
+
+Pressing `[BREAK]` stops any active I/O operation immediately. If `LED` is driving
+an I/O sequence at the time, this may produce data loss. Always ensure the operation
+has completed before pressing `[BREAK]`.
 
 ## Key Files
 

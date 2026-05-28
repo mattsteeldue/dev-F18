@@ -11,17 +11,17 @@
 \ Reference: sec.7.1
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/031-screen-control.f
+\   NEEDS TUTORIAL
+\   031 TUTORIAL
 \ To unload and reload interactively:
-\   NO-SCREEN-CONTROL
-\   INCLUDE tutorial/031-screen-control.f
+\   NEWTASK 031 TUTORIAL
 \
 
-MARKER NO-SCREEN-CONTROL
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 031: Screen control loaded. ) CR
-.(     Type NO-SCREEN-CONTROL to unload.    ) CR
+.(     Type NEWTASK to unload.    ) CR
 
 NEEDS .INVERSE
 NEEDS .OVER

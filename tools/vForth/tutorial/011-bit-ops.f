@@ -19,17 +19,17 @@
 \ Reference: sec.2.12.3
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/011-bit-ops.f
+\   NEEDS TUTORIAL
+\   011 TUTORIAL
 \ To unload and reload interactively:
-\   NO-BIT-OPS
-\   INCLUDE tutorial/011-bit-ops.f
+\   NEWTASK 011 TUTORIAL
 \
 
-MARKER NO-BIT-OPS
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 011: bit operations loaded. ) CR
-.(     Type NO-BIT-OPS to unload.          ) CR
+.(     Type NEWTASK to unload.          ) CR
 
 
 \ ===========================================================================

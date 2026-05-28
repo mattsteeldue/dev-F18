@@ -15,17 +15,17 @@
 \ Reference: sec.7.2
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/036-graphics-ula.f
+\   NEEDS TUTORIAL
+\   036 TUTORIAL
 \ To unload and reload interactively:
-\   NO-GRAPHICS-ULA
-\   INCLUDE tutorial/036-graphics-ula.f
+\   NEWTASK 036 TUTORIAL
 \
 
-MARKER NO-GRAPHICS-ULA
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 036: ULA pixel graphics loaded. ) CR
-.(     Type NO-GRAPHICS-ULA to unload.          ) CR
+.(     Type NEWTASK to unload.          ) CR
 
 NEEDS GRAPHICS
 NEEDS J

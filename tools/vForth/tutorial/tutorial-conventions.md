@@ -39,12 +39,15 @@ a) Header block (backslash comments):
    - Load and unload instructions
 
 b) MARKER immediately after header:
-     MARKER NO-SLUG-NAME
+     MARKER NEWTASK
+   The name NEWTASK is fixed across all tutorials (not per-tutorial).
+   Rationale: the Spectrum keyboard is cumbersome; a short, fixed name
+   minimises mis-typing.
 
 c) CR before banner (for clean output when INCLUDEd):
      CR
      .( --- Tutorial NNN: title loaded. ) CR
-     .(     Type NO-SLUG-NAME to unload.   ) CR
+     .(     Type NEWTASK to unload.   ) CR
 
 d) NEEDS lines (if required) immediately after MARKER banner.
    NEEDS is always at interpreter level -- never inside a definition.
@@ -71,15 +74,16 @@ h) Commented-out test block at end:
 - Inline stack comments on non-obvious lines, using the style:
     word    ( before -- after )
 - Step-by-step stack comments on complex definitions, one per line:
-    : SAME-STRING?  ( a1 n1 a2 n2 -- f )
-        ROT         ( a1 a2 n2 n1 )
-        OVER        ( a1 a2 n2 n1 n2 )
-        - IF        ( a1 a2 n2 )
-            2DROP   ( a1 )
-            DROP    ( )
-            0       ( ff )
-        ELSE
-            (COMPARE) 0=
+    : SAME-STRING?    ( a1 n1 a2 n2 -- f )
+        ROT           ( a1 a2 n2 n1 )
+        OVER          ( a1 a2 n2 n1 n2 )
+        - IF          ( a1 a2 n2 )
+            2DROP     ( a1 )
+            DROP      ( )
+            0         ( ff )
+        ELSE          ( a1 a2 n2 )
+            (COMPARE) ( f )
+            0=        ( f )
         THEN ;
 - Line comments only on obscure lines, not on self-evident ones.
 - Reference to PDF section in file header, not on individual words.

@@ -11,17 +11,17 @@
 \ Reference: sec.2.12.2
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/002-stack-ops.f
+\   NEEDS TUTORIAL
+\   002 TUTORIAL
 \ To unload and reload interactively:
-\   NO-STACK-OPS
-\   INCLUDE tutorial/002-stack-ops.f
+\   NEWTASK 002 TUTORIAL
 \
 
-MARKER NO-STACK-OPS
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 002: stack ops loaded. ) CR
-.(     Type NO-STACK-OPS to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 
 \ ===========================================================================

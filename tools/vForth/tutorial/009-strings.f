@@ -23,17 +23,17 @@
 \ Reference: sec.2.12.6, 3.4
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/009-strings.f
+\   NEEDS TUTORIAL
+\   009 TUTORIAL
 \ To unload and reload interactively:
-\   NO-STRINGS
-\   INCLUDE tutorial/009-strings.f
+\   NEWTASK 009 TUTORIAL
 \
 
-MARKER NO-STRINGS
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 009: strings loaded. ) CR
-.(     Type NO-STRINGS to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 
 \ ===========================================================================

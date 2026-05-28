@@ -17,17 +17,17 @@
 \ Reference: sec.2.12.9, 6.1 (CONSTANT, VARIABLE, VALUE)
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/005-defining-words.f
+\   NEEDS TUTORIAL
+\   005 TUTORIAL
 \ To unload and reload interactively:
-\   NO-DEFINING-WORDS
-\   INCLUDE tutorial/005-defining-words.f
+\   NEWTASK 005 TUTORIAL
 \
 
-MARKER NO-DEFINING-WORDS
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 005: defining words loaded. ) CR
-.(     Type NO-DEFINING-WORDS to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS VALUE                         \ for VALUE
 NEEDS TO                            \ for TO

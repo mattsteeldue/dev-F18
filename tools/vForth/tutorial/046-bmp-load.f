@@ -11,17 +11,17 @@
 \ Reference: sec.7.2
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/046-bmp-load.f
+\   NEEDS TUTORIAL
+\   046 TUTORIAL
 \ To unload and reload interactively:
-\   NO-BMP-LOAD
-\   INCLUDE tutorial/046-bmp-load.f
+\   NEWTASK 046 TUTORIAL
 \
 
-MARKER NO-BMP-LOAD
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 046: BMP image loading loaded. ) CR
-.(     Type NO-BMP-LOAD to unload.             ) CR
+.(     Type NEWTASK to unload.             ) CR
 
 NEEDS GRAPHICS
 

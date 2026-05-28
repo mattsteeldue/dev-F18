@@ -22,17 +22,17 @@
 \ Reference: sec.2.12.4
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/020-compilation.f
+\   NEEDS TUTORIAL
+\   020 TUTORIAL
 \ To unload and reload interactively:
-\   NO-COMPILATION
-\   INCLUDE tutorial/020-compilation.f
+\   NEWTASK 020 TUTORIAL
 \
 
-MARKER NO-COMPILATION
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 020: compilation loaded. ) CR
-.(     Type NO-COMPILATION to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS POSTPONE
 NEEDS [']

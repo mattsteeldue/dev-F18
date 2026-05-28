@@ -16,17 +16,17 @@
 \ Reference: sec.2.12.6
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/021-evaluate.f
+\   NEEDS TUTORIAL
+\   021 TUTORIAL
 \ To unload and reload interactively:
-\   NO-EVALUATE
-\   INCLUDE tutorial/021-evaluate.f
+\   NEWTASK 021 TUTORIAL
 \
 
-MARKER NO-EVALUATE
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 021: evaluate loaded. ) CR
-.(     Type NO-EVALUATE to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS EVALUATE
 

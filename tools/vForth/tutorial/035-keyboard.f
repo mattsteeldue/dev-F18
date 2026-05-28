@@ -15,17 +15,17 @@
 \ Reference: sec.7.3
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/035-keyboard.f
+\   NEEDS TUTORIAL
+\   035 TUTORIAL
 \ To unload and reload interactively:
-\   NO-KEYBOARD
-\   INCLUDE tutorial/035-keyboard.f
+\   NEWTASK 035 TUTORIAL
 \
 
-MARKER NO-KEYBOARD
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 035: Keyboard input loaded. ) CR
-.(     Type NO-KEYBOARD to unload.          ) CR
+.(     Type NEWTASK to unload.          ) CR
 
 NEEDS WAIT-KEY
 NEEDS ^escape

@@ -28,17 +28,17 @@
 \ Reference: sec.5
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/018-catch-throw.f
+\   NEEDS TUTORIAL
+\   018 TUTORIAL
 \ To unload and reload interactively:
-\   NO-CATCH-THROW
-\   INCLUDE tutorial/018-catch-throw.f
+\   NEWTASK 018 TUTORIAL
 \
 
-MARKER NO-CATCH-THROW
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 018: exceptions loaded. ) CR
-.(     Type NO-CATCH-THROW to unload.  ) CR
+.(     Type NEWTASK to unload.  ) CR
 
 NEEDS CATCH
 NEEDS THROW

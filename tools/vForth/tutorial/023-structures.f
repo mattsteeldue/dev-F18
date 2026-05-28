@@ -17,17 +17,17 @@
 \ Reference: sec.2.12.12
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/023-structures.f
+\   NEEDS TUTORIAL
+\   023 TUTORIAL
 \ To unload and reload interactively:
-\   NO-STRUCTURES
-\   INCLUDE tutorial/023-structures.f
+\   NEWTASK 023 TUTORIAL
 \
 
-MARKER NO-STRUCTURES
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 023: structures loaded. ) CR
-.(     Type NO-STRUCTURES to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS +FIELD
 NEEDS ENUM

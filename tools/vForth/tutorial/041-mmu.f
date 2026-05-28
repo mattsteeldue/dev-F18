@@ -12,17 +12,17 @@
 \ Reference: sec.4
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/041-mmu.f
+\   NEEDS TUTORIAL
+\   041 TUTORIAL
 \ To unload and reload interactively:
-\   NO-MMU
-\   INCLUDE tutorial/041-mmu.f
+\   NEWTASK 041 TUTORIAL
 \
 
-MARKER NO-MMU
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 041: MMU and memory banking loaded. ) CR
-.(     Type NO-MMU to unload.                       ) CR
+.(     Type NEWTASK to unload.                       ) CR
 
 NEEDS MMU7!
 NEEDS MMU7@

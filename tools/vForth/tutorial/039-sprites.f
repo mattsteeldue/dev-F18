@@ -12,17 +12,17 @@
 \ Reference: sec.7.2
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/039-sprites.f
+\   NEEDS TUTORIAL
+\   039 TUTORIAL
 \ To unload and reload interactively:
-\   NO-SPRITES
-\   INCLUDE tutorial/039-sprites.f
+\   NEWTASK 039 TUTORIAL
 \
 
-MARKER NO-SPRITES
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 039: Hardware sprites loaded. ) CR
-.(     Type NO-SPRITES to unload.             ) CR
+.(     Type NEWTASK to unload.             ) CR
 
 NEEDS REG!
 NEEDS REG@

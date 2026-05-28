@@ -16,17 +16,17 @@
 \ Reference: sec.7.2
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/037-layer2.f
+\   NEEDS TUTORIAL
+\   037 TUTORIAL
 \ To unload and reload interactively:
-\   NO-LAYER2
-\   INCLUDE tutorial/037-layer2.f
+\   NEWTASK 037 TUTORIAL
 \
 
-MARKER NO-LAYER2
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 037: Layer 2 graphics loaded. ) CR
-.(     Type NO-LAYER2 to unload.              ) CR
+.(     Type NEWTASK to unload.              ) CR
 
 NEEDS GRAPHICS
 NEEDS J

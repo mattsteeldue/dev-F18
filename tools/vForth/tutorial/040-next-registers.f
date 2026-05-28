@@ -11,17 +11,17 @@
 \ Reference: sec.8
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/040-next-registers.f
+\   NEEDS TUTORIAL
+\   040 TUTORIAL
 \ To unload and reload interactively:
-\   NO-NEXT-REGISTERS
-\   INCLUDE tutorial/040-next-registers.f
+\   NEWTASK 040 TUTORIAL
 \
 
-MARKER NO-NEXT-REGISTERS
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 040: ZX Next hardware registers loaded. ) CR
-.(     Type NO-NEXT-REGISTERS to unload.                ) CR
+.(     Type NEWTASK to unload.                ) CR
 
 NEEDS REG!
 NEEDS REG@

@@ -24,17 +24,17 @@
 \ Reference: sec.2.12.11, sec.4.3
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/015-double-arith.f
+\   NEEDS TUTORIAL
+\   015 TUTORIAL
 \ To unload and reload interactively:
-\   NO-DOUBLE-ARITH
-\   INCLUDE tutorial/015-double-arith.f
+\   NEWTASK 015 TUTORIAL
 \
 
-MARKER NO-DOUBLE-ARITH
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 015: double arithmetic loaded. ) CR
-.(     Type NO-DOUBLE-ARITH to unload.        ) CR
+.(     Type NEWTASK to unload.        ) CR
 
 NEEDS S>D
 NEEDS D-

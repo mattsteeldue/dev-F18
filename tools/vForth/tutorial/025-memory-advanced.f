@@ -27,17 +27,17 @@
 \ Reference: sec.2.12.7
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/025-memory-advanced.f
+\   NEEDS TUTORIAL
+\   025 TUTORIAL
 \ To unload and reload interactively:
-\   NO-MEMORY-ADVANCED
-\   INCLUDE tutorial/025-memory-advanced.f
+\   NEWTASK 025 TUTORIAL
 \
 
-MARKER NO-MEMORY-ADVANCED
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 025: advanced memory loaded. ) CR
-.(     Type NO-MEMORY-ADVANCED to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS HALLOT
 NEEDS ALIGNED

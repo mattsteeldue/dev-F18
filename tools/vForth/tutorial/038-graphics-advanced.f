@@ -12,17 +12,17 @@
 \ Reference: sec.7.2
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/038-graphics-advanced.f
+\   NEEDS TUTORIAL
+\   038 TUTORIAL
 \ To unload and reload interactively:
-\   NO-GRAPHICS-ADVANCED
-\   INCLUDE tutorial/038-graphics-advanced.f
+\   NEWTASK 038 TUTORIAL
 \
 
-MARKER NO-GRAPHICS-ADVANCED
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 038: Advanced graphics loaded. ) CR
-.(     Type NO-GRAPHICS-ADVANCED to unload.    ) CR
+.(     Type NEWTASK to unload.    ) CR
 
 NEEDS GRAPHICS
 NEEDS J

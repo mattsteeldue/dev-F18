@@ -12,17 +12,17 @@
 \ Reference: sec.9
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/042-file-io.f
+\   NEEDS TUTORIAL
+\   042 TUTORIAL
 \ To unload and reload interactively:
-\   NO-FILE-IO
-\   INCLUDE tutorial/042-file-io.f
+\   NEWTASK 042 TUTORIAL
 \
 
-MARKER NO-FILE-IO
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 042: File I/O loaded. ) CR
-.(     Type NO-FILE-IO to unload.     ) CR
+.(     Type NEWTASK to unload.     ) CR
 
 NEEDS LOAD-BYTES
 NEEDS SAVE-BYTES

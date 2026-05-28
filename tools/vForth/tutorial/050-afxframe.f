@@ -14,17 +14,17 @@
 \ Reference: sec.7.4
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/050-afxframe.f
+\   NEEDS TUTORIAL
+\   050 TUTORIAL
 \ To unload and reload interactively:
-\   NO-AFXFRAME
-\   INCLUDE tutorial/050-afxframe.f
+\   NEWTASK 050 TUTORIAL
 \
 
-MARKER NO-AFXFRAME
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 050: AFX frame player loaded. ) CR
-.(     Type NO-AFXFRAME to unload.            ) CR
+.(     Type NEWTASK to unload.            ) CR
 
 NEEDS INTERRUPTS
 

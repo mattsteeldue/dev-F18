@@ -27,17 +27,17 @@
 \ Reference: sec.2.12.9
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/017-defer-is.f
+\   NEEDS TUTORIAL
+\   017 TUTORIAL
 \ To unload and reload interactively:
-\   NO-DEFER-IS
-\   INCLUDE tutorial/017-defer-is.f
+\   NEWTASK 017 TUTORIAL
 \
 
-MARKER NO-DEFER-IS
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 017: DEFER and IS loaded. ) CR
-.(     Type NO-DEFER-IS to unload.        ) CR
+.(     Type NEWTASK to unload.        ) CR
 
 NEEDS DEFER
 NEEDS IS

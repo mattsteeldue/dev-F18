@@ -23,17 +23,17 @@
 \ Reference: sec.2.12.5
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/014-pictured-output.f
+\   NEEDS TUTORIAL
+\   014 TUTORIAL
 \ To unload and reload interactively:
-\   NO-PICTURED-OUTPUT
-\   INCLUDE tutorial/014-pictured-output.f
+\   NEWTASK 014 TUTORIAL
 \
 
-MARKER NO-PICTURED-OUTPUT
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 014: pictured output loaded. ) CR
-.(     Type NO-PICTURED-OUTPUT to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS S>D
 

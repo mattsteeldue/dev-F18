@@ -21,17 +21,17 @@
 \ Reference: sec.2.12.9, 6.1
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/010-create-does.f
+\   NEEDS TUTORIAL
+\   010 TUTORIAL
 \ To unload and reload interactively:
-\   NO-CREATE-DOES
-\   INCLUDE tutorial/010-create-does.f
+\   NEWTASK 010 TUTORIAL
 \
 
-MARKER NO-CREATE-DOES
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 010: CREATE...DOES> loaded. ) CR
-.(     Type NO-CREATE-DOES to unload.       ) CR
+.(     Type NEWTASK to unload.       ) CR
 
 
 \ ===========================================================================

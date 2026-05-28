@@ -12,17 +12,17 @@
 \ Reference: sec.9
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/043-filesystem.f
+\   NEEDS TUTORIAL
+\   043 TUTORIAL
 \ To unload and reload interactively:
-\   NO-FILESYSTEM
-\   INCLUDE tutorial/043-filesystem.f
+\   NEWTASK 043 TUTORIAL
 \
 
-MARKER NO-FILESYSTEM
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 043: Filesystem navigation loaded. ) CR
-.(     Type NO-FILESYSTEM to unload.               ) CR
+.(     Type NEWTASK to unload.               ) CR
 
 NEEDS CD
 NEEDS PWD

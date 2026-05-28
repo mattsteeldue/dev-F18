@@ -19,17 +19,17 @@
 \ Reference: sec.2.12.4
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/022-dictionary.f
+\   NEEDS TUTORIAL
+\   022 TUTORIAL
 \ To unload and reload interactively:
-\   NO-DICTIONARY
-\   INCLUDE tutorial/022-dictionary.f
+\   NEWTASK 022 TUTORIAL
 \
 
-MARKER NO-DICTIONARY
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 022: dictionary loaded. ) CR
-.(     Type NO-DICTIONARY to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 NEEDS WORDS
 NEEDS SEE

@@ -23,17 +23,17 @@
 \ Reference: sec.2.12.9, sec.2.12.12
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/011-vocabularies.f
+\   NEEDS TUTORIAL
+\   011 TUTORIAL
 \ To unload and reload interactively:
-\   NO-VOCABULARIES
-\   INCLUDE tutorial/011-vocabularies.f
+\   NEWTASK 011 TUTORIAL
 \
 
-MARKER NO-VOCABULARIES
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 011: vocabularies loaded. ) CR
-.(     Type NO-VOCABULARIES to unload.   ) CR
+.(     Type NEWTASK to unload.   ) CR
 
 
 \ ===========================================================================

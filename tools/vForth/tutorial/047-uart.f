@@ -12,17 +12,17 @@
 \ Reference: sec.9 (communications)
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/047-uart.f
+\   NEEDS TUTORIAL
+\   047 TUTORIAL
 \ To unload and reload interactively:
-\   NO-UART
-\   INCLUDE tutorial/047-uart.f
+\   NEWTASK 047 TUTORIAL
 \
 
-MARKER NO-UART
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 047: UART communication loaded. ) CR
-.(     Type NO-UART to unload.                  ) CR
+.(     Type NEWTASK to unload.                  ) CR
 
 NEEDS UART-SYS
 

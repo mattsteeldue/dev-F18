@@ -19,17 +19,17 @@
 \ Reference: sec.2.12.7
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/013-case.f
+\   NEEDS TUTORIAL
+\   013 TUTORIAL
 \ To unload and reload interactively:
-\   NO-CASE
-\   INCLUDE tutorial/013-case.f
+\   NEWTASK 013 TUTORIAL
 \
 
-MARKER NO-CASE
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 013: CASE structure loaded. ) CR
-.(     Type NO-CASE to unload.             ) CR
+.(     Type NEWTASK to unload.             ) CR
 
 NEEDS CASE
 

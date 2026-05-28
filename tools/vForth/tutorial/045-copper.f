@@ -12,17 +12,17 @@
 \ Reference: sec.7.6
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/045-copper.f
+\   NEEDS TUTORIAL
+\   045 TUTORIAL
 \ To unload and reload interactively:
-\   NO-COPPER
-\   INCLUDE tutorial/045-copper.f
+\   NEWTASK 045 TUTORIAL
 \
 
-MARKER NO-COPPER
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 045: Copper unit loaded. ) CR
-.(     Type NO-COPPER to unload.         ) CR
+.(     Type NEWTASK to unload.         ) CR
 
 NEEDS COPPER
 

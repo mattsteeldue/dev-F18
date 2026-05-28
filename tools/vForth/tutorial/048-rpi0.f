@@ -12,17 +12,17 @@
 \ Reference: sec.9
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/048-rpi0.f
+\   NEEDS TUTORIAL
+\   048 TUTORIAL
 \ To unload and reload interactively:
-\   NO-RPI0
-\   INCLUDE tutorial/048-rpi0.f
+\   NEWTASK 048 TUTORIAL
 \
 
-MARKER NO-RPI0
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 048: Raspberry Pi Zero bridge loaded. ) CR
-.(     Type NO-RPI0 to unload.                        ) CR
+.(     Type NEWTASK to unload.                        ) CR
 
 NEEDS UART-SYS
 

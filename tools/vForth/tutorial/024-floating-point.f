@@ -27,17 +27,17 @@
 \ Reference: lib/floating.f
 \
 \ Load from a clean session:
-\   INCLUDE tutorial/024-floating-point.f
+\   NEEDS TUTORIAL
+\   024 TUTORIAL
 \ To unload and reload interactively:
-\   NO-FLOAT-TUT
-\   INCLUDE tutorial/024-floating-point.f
+\   NEWTASK 024 TUTORIAL
 \
 
-MARKER NO-FLOAT-TUT
+MARKER NEWTASK
 
 CR
 .( --- Tutorial 024: floating point loaded. ) CR
-.(     Type NO-FLOAT-TUT to unload.        ) CR
+.(     Type NEWTASK to unload.        ) CR
 
 NEEDS FLOATING
 
