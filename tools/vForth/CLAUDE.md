@@ -116,7 +116,7 @@ Each word entry:
 The ASSEMBLER vocabulary in F18e.f is postfix/stack-based: each element (instruction word, register specifier, operand commaer) is a **separate Forth word**. The full reference is `src/Z80N-Assembler-Dictionary.txt`. Register notation:
 
 - r|  — source register: B| C| D| E| H| L| A| (HL)|
-- r'| — destination register: B'| C'| D'| E'| H'| L'| A'| (HL)'|  (NOT the alternate register set — just destination syntax)
+- r'| — destination register: B'| C'| D'| E'| H'| L'| A'| (HL)'|  (NOT the alternate register set — just destination syntax), think the single-quote as a raised comma
 - rr| — register pair: BC| DE| HL| SP|  also IX| IY| AF|
 - f|  — flag for JP/CALL/RET: NZ| Z| NC| CY| PO| PE| P| M|
 - f'| — flag for JR: NZ'| Z'| NC'| CY'|
@@ -128,45 +128,45 @@ The ASSEMBLER vocabulary in F18e.f is postfix/stack-based: each element (instruc
 | CODE name … C; | New_Def LABEL, "name", is_code, is_normal + code | low-level word |
 | Next | next macro → jp (ix) | inner interpreter |
 | JPHL | jp (hl) | execute xt |
-| LDA(X) rr| | ld a, (rr) | e.g. LDA(X) BC| |
-| LD(X)A rr| | ld (rr), a | |
-| LD r'| r| | ld r, r | three separate words; r'| = dest, r| = source |
-| LDN r'| n N, | ld r, n | |
-| INCX rr| | inc rr | e.g. INCX BC| |
-| DECX rr| | dec rr | |
-| INC r'| | inc r | |
-| DEC r'| | dec r | |
-| PUSH rr| | push rr | |
-| POP rr| | pop rr | |
+| LDA(X) rr\| | ld a, (rr) | e.g. LDA(X) BC\| |
+| LD(X)A rr\| | ld (rr), a | |
+| LD r'\| r\| | ld r, r | three separate words; r'\| = dest, r\| = source |
+| LDN r'\| n N, | ld r, n | |
+| INCX rr\| | inc rr | e.g. INCX BC\| |
+| DECX rr\| | dec rr | |
+| INC r'\| | inc r | |
+| DEC r'\| | dec r | |
+| PUSH rr\| | push rr | |
+| POP rr\| | pop rr | |
 | EXX | exx | swap register banks |
 | EXDEHL | ex de, hl | |
-| ADDHL rr| | add hl, rr | |
-| ADCA r| | adc a, r | |
+| ADDHL rr\| | add hl, rr | |
+| ADCA r\| | adc a, r | |
 | ADCN n N, | adc a, n | |
-| ADCHL rr| | adc hl, rr | |
-| ADDA r| | add a, r | |
-| SUBA r| | sub r | r| includes (HL)| |
-| SBCA r| | sbc a, r | r| includes (HL)| |
-| SBCHL rr| | sbc hl, rr | |
-| ANDA r| | and r | e.g. ANDA A| clears carry |
-| ORA r| | or r | |
-| XORA r| | xor r | |
-| CPA r| | cp r | |
-| BIT b| r| | bit b, r | e.g. BIT 7| B| |
-| SET b| r| | set b, r | |
-| RES b| r| | res b, r | |
+| ADCHL rr\| | adc hl, rr | |
+| ADDA r\| | add a, r | |
+| SUBA r\| | sub r | r\| includes (HL)\| |
+| SBCA r\| | sbc a, r | r\| includes (HL)\| |
+| SBCHL rr\| | sbc hl, rr | |
+| ANDA r\| | and r | e.g. ANDA A\| clears carry |
+| ORA r\| | or r | |
+| XORA r\| | xor r | |
+| CPA r\| | cp r | |
+| BIT b\| r\| | bit b, r | e.g. BIT 7\| B\| |
+| SET b\| r\| | set b, r | |
+| RES b\| r\| | res b, r | |
 | CCF | ccf | |
 | SCF | scf | |
 | RET | ret | |
-| RETF f| | ret f | conditional return |
+| RETF f\| | ret f | conditional return |
 | JPIX | jp (ix) | |
 | JP aa AA, | jp aa | |
-| JPF f| aa AA, | jp f, aa | conditional jump |
+| JPF f\| aa AA, | jp f, aa | conditional jump |
 | JR d D, | jr d | relative jump |
-| JRF f'| d D, | jr f, d | |
-| JRF f'| HOLDPLACE … HERE DISP, | jr f, label | forward jump pattern in F18e.f |
+| JRF f'\| d D, | jr f, d | |
+| JRF f'\| HOLDPLACE … HERE DISP, | jr f, label | forward jump pattern in F18e.f |
 | CALL aa AA, | call aa | |
-| CALLF f| aa AA, | call f, aa | |
+| CALLF f\| aa AA, | call f, aa | |
 | PUSHN nn LH, | push nn | via ld hl,nn / push hl |
 | DJNZ d D, | djnz d | |
 
