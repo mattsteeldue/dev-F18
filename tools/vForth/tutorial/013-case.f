@@ -141,7 +141,60 @@ NEEDS CASE
 
 
 \ ===========================================================================
-\ 6. Simple tests (requires NEEDS TESTING)
+\ 6. EXEC: -- fast indexed dispatch
+\ ===========================================================================
+\
+\ When the dispatch value is a contiguous index 0..N, EXEC: is more
+\ efficient than CASE: it computes a direct jump with no comparisons.
+\
+\ Internally, EXEC: pops n, computes IP + n*2, loads the XT at that
+\ address and jumps to it.  Because the number of branches is not known
+\ at compile time, EXEC: pre-loads EXIT as the return address before
+\ jumping -- making the dispatched word return directly from the
+\ enclosing definition (tail call).  EXEC: must therefore be the last
+\ action in any definition that uses it.
+\
+\ Syntax:
+\   : MY-DISPATCH  ( n -- )   \ n must be 0..N-1
+\       EXEC:
+\           word0  word1  ...  wordN-1
+\   ;
+\
+\ Each entry must be a single word (its XT is compiled into the table).
+\ No bounds check is performed at runtime: an out-of-range n causes EXEC:
+\ to fetch a spurious address from memory and jump to it, crashing the
+\ system.  The caller must guarantee 0 <= n < number-of-entries.
+\
+\ The .COLOR-NAME example rewritten with EXEC:.
+\ 7 AND acts as a lightweight guard: any n outside 0-7 is folded back
+\ into range rather than causing an out-of-bounds jump.
+
+NEEDS EXEC:
+
+: _black    ." black"   ;
+: _blue     ." blue"    ;
+: _red      ." red"     ;
+: _magenta  ." magenta" ;
+: _green    ." green"   ;
+: _cyan     ." cyan"    ;
+: _yellow   ." yellow"  ;
+: _white    ." white"   ;
+
+: _color  ( n -- )
+    7 AND  EXEC:
+    _black _blue _red    _magenta
+    _green _cyan _yellow _white ;
+
+.( Try: 2 _color ) CR    \ => red
+.( Try: 5 _color ) CR    \ => cyan
+.( Try: 9 _color ) CR    \ => blue  (9 AND 7 = 1)
+
+\ Use CASE when values are arbitrary or non-contiguous.
+\ Use EXEC: when the index is already 0..N and speed matters.
+
+
+\ ===========================================================================
+\ 7. Simple tests (requires NEEDS TESTING)
 \ ===========================================================================
 \
 \ NEEDS TESTING
