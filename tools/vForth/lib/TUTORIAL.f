@@ -5,6 +5,8 @@
 \ Usage:
 \   NEEDS TUTORIAL
 \   3 TUTORIAL     ( loads ./tutorial/003-output.f )
+\   or
+\   3 FILENAME     ( PAD contains such a filename )
 \
 \ Path strings are allocated in the HEAP via H" (counted z-strings).
 \ H" returns a heap-pointer (ha): 3 MSBs encode the 8K page number,
@@ -27,13 +29,21 @@
 
 .( TUTORIAL )
 
+NEEDS VIEW-FILE-PAD
+
 CR
-.( Use: n TUTORIAL )
-CR
-.(   Import tutorial source 'n'.)
+CR .( Use:  n TUTORIAL ) 
+CR .(   Import tutorial 'n'.)
+CR .(  or:  n VIEW )
+CR .(   List source, [EDIT] pause listing.)
 CR
 
-NEEDS FAR
+\ ---------------------------------------------------------------------------
+\ Create stub definition so that you can give FORGET TUTORIAL
+\ ---------------------------------------------------------------------------
+
+: TUTORIAL
+    NOOP ;
 
 \ ---------------------------------------------------------------------------
 \ Path table -- one H" per tutorial, heap-pointer stored in table.
@@ -59,7 +69,7 @@ CREATE TUT-TABLE
     H" tutorial/015-double-arith.f"    ,
     H" tutorial/016-input.f"           ,
     H" tutorial/017-defer-is.f"        ,
-    H" tutorial/018-catch-throw.f"     ,
+    H" tutorial/018-vocabularies.f"    ,
     H" tutorial/019-vocabularies.f"    ,
     H" tutorial/020-compilation.f"     ,
     H" tutorial/021-evaluate.f"        ,
@@ -67,7 +77,7 @@ CREATE TUT-TABLE
     H" tutorial/023-structures.f"      ,
     H" tutorial/024-floating-point.f"  ,
     H" tutorial/025-memory-advanced.f" ,
-    H" tutorial/026-reserved.f"        ,
+    H" tutorial/026-catch-throw.f"     ,
     H" tutorial/027-reserved.f"        ,
     H" tutorial/028-reserved.f"        ,
     H" tutorial/029-reserved.f"        ,
@@ -97,19 +107,43 @@ CREATE TUT-TABLE
 
 
 \ ---------------------------------------------------------------------------
+\ FILENAME  ( n -- a )
+\ copy nth filename to PAD for better persistency
+\ ---------------------------------------------------------------------------
+
+: FILENAME ( n -- a )
+    CELLS  TUT-TABLE  +  @      \ ha: heap-pointer to counted-z-string
+    FAR                         \ a:  real address ($E000+), MMU7 now mapped
+    DUP C@ 2+                   \ compute total length including 0x00
+    PAD C/L BLANK               \ blanks PAD
+    PAD 1- SWAP                 \ PAD is destination 
+    CMOVE                       \ move from heap to PAD
+    PAD                         \ return z-string address without length
+;
+
+: VIEW ( n -- )
+    FILENAME    
+    VIEW-FILE-PAD ;
+
+    
+\ ---------------------------------------------------------------------------
 \ TUTORIAL  ( n -- )
 \ ---------------------------------------------------------------------------
 
-: TUTORIAL  ( n -- )
+: LOAD-TUTORIAL  ( n -- )
     DUP  1  <  OVER  TUT-MAX  >  OR  IF
-        DROP  ." TUTORIAL: number out of range (1-"
-        TUT-MAX  .  ." )" CR  EXIT
+        DROP  ." TUTORIAL: number out of range [1-"
+        TUT-MAX  .  ." ]" CR  
+        EXIT
     THEN
-    CELLS  TUT-TABLE  +  @    \ ha: heap-pointer to counted-z-string
-    FAR                        \ a:  real address ($E000+), MMU7 now mapped
-    1+                         \ skip count byte: now a z-string
-    PAD  1  F_OPEN
+\
+    FILENAME 
+\
+    HERE  1  F_OPEN
     IF  DROP
         ." TUTORIAL: cannot open file" CR  EXIT
     THEN
     F_INCLUDE ;
+
+' LOAD-TUTORIAL 
+' TUTORIAL >BODY !

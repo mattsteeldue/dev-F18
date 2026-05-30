@@ -31,6 +31,7 @@ CR
 .( --- Tutorial 011: bit operations loaded. ) CR
 .(     Type NEWTASK to unload.          ) CR
 
+NEEDS INVERT
 
 \ ===========================================================================
 \ 1. AND, OR, XOR  --  core bitwise words
@@ -45,9 +46,9 @@ CR
 \   %1010 %1100 XOR .   => 6     (%0110)
 \
 \ Idioms:
-\   AND mask  -- test or clear bits  (0 in mask clears; 1 passes through)
-\   OR  mask  -- set bits            (1 in mask forces bit on)
-\   XOR mask  -- toggle bits         (1 in mask flips; 0 leaves unchanged)
+\   mask AND  -- test or clear bits  (0 in mask clears; 1 passes through)
+\   mask OR   -- set bits            (1 in mask forces bit on)
+\   mask XOR  -- toggle bits         (1 in mask flips; 0 leaves unchanged)
 
 
 \ ===========================================================================
@@ -62,6 +63,7 @@ CR
 \
 \ INVERT turns a bit mask into its complement; used to clear bits:
 \   value  mask INVERT AND   -- clear the bits set in mask
+\ You have to import via  NEEDS INVERT  before using.
 
 
 \ ===========================================================================

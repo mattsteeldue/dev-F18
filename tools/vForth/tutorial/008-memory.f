@@ -54,8 +54,8 @@ NEEDS 2VARIABLE
 \   X ?             => 43
 \
 \ TOGGLE  ( a mask -- )   XOR mask into the byte at address a.
-\   $FF X TOGGLE    (flip all bits of low byte of X)
-\   $FF X TOGGLE    (flip back)
+\   X $FF TOGGLE    (flip all bits of low byte of X)
+\   X $FF TOGGLE    (flip back)
 
 VARIABLE X
 
@@ -73,7 +73,7 @@ VARIABLE X
 \   VARIABLE BUF
 \   $41 BUF C!      (store ASCII 'A' in low byte of BUF)
 \   BUF C@ EMIT     => A
-\   BUF 1+ C@ .     => ?   (high byte of BUF  --  undefined after VARIABLE)
+\   BUF 1+ C@ .     => 0   (high byte of BUF remains zero)
 \
 \ Note: VARIABLE allocates a full cell (2 bytes) initialised to zero.
 \ Accessing BUF and BUF 1+ addresses the two individual bytes of that cell.
@@ -120,8 +120,11 @@ VARIABLE BUF
 \ 2VARIABLE name    creates a double-precision variable (4 bytes, zero-init).
 \
 \   2VARIABLE COUNTER
-\   120,000. 2  COUNTER 2!    \ store double 120000 (note: double literal!)
+\   120,000.  COUNTER 2!    \ store double 120000 (note: double literal!)
 \   COUNTER 2@ D.             => 120000
+\   COUNTER 4 DUMP            => nnnn  01 00 C0 D4 ...
+\   COUNTER 2@ HEX .S         => D4C0 1
+\   DECIMAL 
 
 2VARIABLE COUNTER
 

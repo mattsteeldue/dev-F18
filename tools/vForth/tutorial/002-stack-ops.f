@@ -3,6 +3,9 @@
 \ Stack manipulation: the words that rearrange, copy, and discard cells
 \ without performing arithmetic.
 \
+\ Any error situation empties the stack.
+\ For example, you can use purposedly  XXX  to empty the stack.
+\
 \ Mastering these is essential: Forth has no named local variables by
 \ default, so all intermediate values live on the stack and must be
 \ shuffled explicitly.  The diagrams below use the convention
@@ -12,7 +15,7 @@
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
-\   002 TUTORIAL
+\   2 TUTORIAL
 \ To unload and reload interactively:
 \   NEWTASK 002 TUTORIAL
 \
@@ -80,10 +83,10 @@ CR
 \   10 20 30  1 PICK .S   => 10 20 30 20
 \   10 20 30  2 PICK .S   => 10 20 30 10
 \
-\ ROLL ( ... k -- ... )
-\   Rotates the k top cells, pulling the k-th to TOS.
-\   1 ROLL = SWAP,  2 ROLL = ROT.
-\   Not available at startup  --  must be imported.
+\ ROLL ( n1 n2 n3 ... n -- n2 n3 ... n n1  )
+\   Takes the nth stack item to the top of the stack, moving the others
+\   down. Zero based, (eg., 1 ROLL is SWAP, 2 ROLL is ROT).
+\   Not available at startup  --  must be imported via NEEDS ROLL.
 \
 \ NEEDS ROLL
 \   10 20 30  2 ROLL .S   => 20 30 10    (same as ROT)

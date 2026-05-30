@@ -190,7 +190,7 @@ CREATE S2  ," Hello?"
 
 .( Try: GREETING .COUNTED                         ) CR
 .( Try: S1 COUNT S2 COUNT SAME-STRING? .          ) CR
-.( Try: S1 COUNT S1 COUNT SAME-STRING? .          ) CR
+.( Try: S1 COUNT 1- S1 COUNT 1- SAME-STRING? .    ) CR
 ." Try: S1 1+  S2 1+  S1 C@  (COMPARE) .          " CR
 
 

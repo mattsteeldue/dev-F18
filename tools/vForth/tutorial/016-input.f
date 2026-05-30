@@ -1,14 +1,15 @@
 \
 \ 016-input.f
-\ Keyboard input: KEY, ACCEPT, WAIT-KEY.
+\ Keyboard input: KEY, ACCEPT, CURS
 \
 \ vForth reads from the keyboard through the current input device.
 \ The core provides two words:
 \
 \   KEY    -- wait for any key and return its ASCII code
-\   ACCEPT -- read a complete line into a buffer with editing
+\   CURS   -- display a cursor and wait for a keypress
+\   ACCEPT -- read a complete line into a buffer with basic editing
 \
-\ WAIT-KEY (NEEDS) is like KEY but also displays a cursor.
+\ WAIT-KEY (NEEDS) is like KEY but first ensures for no key is pressed
 \
 \ For interactive programs, KEY is the lowest-level entry point;
 \ ACCEPT is the right choice when reading a word or number from
@@ -17,8 +18,8 @@
 \ only the interactive keyboard words.
 \
 \ Common ASCII codes: 13=CR, 27=ESC, 32=SPACE, 8=backspace.
-\ Printable characters: 32-126 ($20-$7E).
-\ ZX Spectrum specific: DELETE=12, EDIT=..., depends on ROM.
+\ Printable characters: 32-127 ($20-$7F).
+\ ZX Spectrum specific: DELETE=12, EDIT=7, depends on ROM.
 \
 \ Reference: sec.2.12.10
 \
@@ -35,8 +36,6 @@ CR
 .( --- Tutorial 016: keyboard input loaded. ) CR
 .(     Type NEWTASK to unload.            ) CR
 
-NEEDS WAIT-KEY
-
 
 \ ===========================================================================
 \ 1. KEY  --  wait for a keypress
@@ -51,18 +50,18 @@ NEEDS WAIT-KEY
 \   KEY EMIT CR   => (echoes the character, then newline)
 \
 \ Common check patterns:
-\   KEY 27 = IF  ." escape"  THEN  CR   \ test for ESC
+\   KEY  7 = IF  ." edit"    THEN  CR   \ test for [EDIT]
 \   KEY 13 = IF  ." enter"   THEN  CR   \ test for CR/ENTER
 
 
 \ ===========================================================================
-\ 2. WAIT-KEY  --  KEY with cursor
+\ 2. CURS  --  display cursor, used before KEY
 \ ===========================================================================
 \
-\ WAIT-KEY ( -- c )   same as KEY but displays a blinking cursor while
-\ waiting.  More user-friendly for interactive programs.
+\ CURS ( -- )   displays a blinking cursor while waiting for a keypress by
+\ polling the system-variable FLAGS ($5C3B). Usually associated with KEY.
 \
-\   WAIT-KEY .    => (ASCII code with cursor shown during wait)
+\   CURS KEY .    => ASCII value
 
 
 \ ===========================================================================
@@ -86,39 +85,45 @@ NEEDS WAIT-KEY
 \ 4. Getting a number from the user
 \ ===========================================================================
 \
-\ A simple approach: ACCEPT into PAD, then use NUMBER or EVALUATE.
-\ This tutorial shows the EVALUATE approach (NEEDS EVALUATE separately).
-\ For a simpler approach without EVALUATE:
+\ A simple approach: ACCEPT into PAD, then use NUMBER
 
 CREATE INPUT-BUF  32 ALLOT
 
-: ?NUMBER  ( addr len -- n f )
+: ?NUMBER  ( addr len -- d f )
     \ Attempt to parse addr/len as a decimal number.
     \ Returns ( n -1 ) on success or ( 0 0 ) on failure.
     \ Uses the current BASE.
-    1 0  DO          \ loop runs once
-        DUP 0= IF  2DROP  0 0  LEAVE  THEN
-        OVER C@ [CHAR] - = IF   \ check leading minus
-            1- SWAP 1+ SWAP     \ skip minus
-            NUMBER  NEGATE  -1
-        ELSE
-            NUMBER  -1
+    IF                          ( a )
+        DUP C@                  ( a c )
+        \ check leading minus
+        [CHAR] - = IF           ( a )
+            1+                  ( a+1 )
+            -1                  ( a+1 -1 ) 
+        ELSE                    ( a )
+             1                  ( a    1 )
         THEN
-    LOOP ;
-
-: ASK-NUMBER  ( -- n )
-    \ Prompt the user for a number; return it.
-    ." Enter a number: "
-    INPUT-BUF 20 ACCEPT
-    INPUT-BUF SWAP
-    ?NUMBER IF
-        ." Got: " DUP . CR
+        SWAP                    ( +1 a )
+        0 0 ROT (NUMBER)        ( +1 d a+n )
+        DROP                    ( +1 d )
+        ROT D+-                 ( +d )
+        -1                      ( +d tf )
     ELSE
-        DROP 0
+        DROP  0 0 0             (  d ff )
+    THEN
+    ;
+
+: ASK-NUMBER  ( -- d )
+    \ Prompt the user for a number; return it as a double.
+    .( Enter a number: )
+    INPUT-BUF 20 ACCEPT
+    INPUT-BUF 1- SWAP
+    ?NUMBER IF
+        ." Got: " 2DUP D. CR
+    ELSE
         ." (not a number)" CR
     THEN ;
 
-.( Try: ASK-NUMBER . ) CR
+.( Try: ASK-NUMBER D. ) CR
 
 
 \ ===========================================================================
@@ -129,13 +134,17 @@ CREATE INPUT-BUF  32 ALLOT
     \ Ask the user yes (Y) or no (N). Return true for Y.
     BEGIN
         ." (Y/N)? "
-        WAIT-KEY  DUP EMIT  CR
-        DUP [CHAR] Y =  OVER [CHAR] y = OR  OVER [CHAR] N = OR
-        OVER [CHAR] n = OR
+        CURS KEY  DUP EMIT  CR
+        DUP  UPPER [CHAR] Y =
+        OVER UPPER [CHAR] N = OR
     UNTIL
-    [CHAR] Y =  OVER [CHAR] y = OR ;
+    UPPER [CHAR] Y = ;
+    
+: REPLY 
+    IF ." yes" ELSE ." no" THEN 
+    CR ;    
 
-.( Try: YES?  IF ." yes" ELSE ." no" THEN  CR ) CR
+.( Try: YES? REPLY ) CR
 
 
 \ ===========================================================================

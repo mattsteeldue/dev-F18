@@ -103,6 +103,32 @@ AF'/BC'/DE'/HL' — Backup/temporary
 - **S0/TIB/R0/USER**: below `$E000` (computed from `LIMIT_system = $E000`, 6 buffers of 516 bytes each)
 - **Blocks/Screens**: 1 KB each, stored in `!Blocks.txt` on SD card
 
+### Blocks, Screens, and reserved ranges
+
+A **Screen** is the unit a programmer addresses with `n LOAD`; a **Block** is
+the 1 KB unit vForth allocates internally in `!Blocks.txt`.  Two consecutive
+Blocks form one Screen, and the correspondence is simply:
+
+    Screen# N  =  BLOCK 2*N  and  BLOCK 2*N+1
+
+Examples: Screen# 4 = BLOCK 8 + BLOCK 9; Screen# 10 = BLOCK 20 + BLOCK 21.
+
+**Reserved Screens.** The following ranges are reserved by the system:
+
+| Screen# | BLOCKs | Contents |
+|---------|--------|----------|
+| 0 | 0–1 | Unused — loading Screen# 0 crashes the system (see Known Bugs) |
+| 4–7 | 8–15 | Standard error messages — read by `?ERROR` → `ERROR` → `MESSAGE` |
+| 10 | 20–21 | Previously held `include src/f18e.f` for self-hosted bootstrap; now free for end-user use |
+
+The error-message Screens (4–7) are a space-saving heritage from classic
+block-based Forth: error text lives in the block file rather than being
+compiled inline into each definition.  `f n ?ERROR` checks `f`; if true it
+calls `ERROR n`, which calls `MESSAGE n` to display the text from the
+appropriate block.  The result is that library code emits numbered errors
+using a single cell constant, with no inline string compiled into the
+dictionary.
+
 ### Dictionary Structure (New_Def macro)
 
 Each word entry:
@@ -321,6 +347,19 @@ Forth code in uppercase; Z80 opcode comments in lowercase for reading fluency.
 Each module covers a coherent feature or hardware subsystem. Conventions:
 
 - **MARKER pattern**: place `MARKER NO-MODULENAME` near the top (after the initial comments). This lets the entire module be removed from the dictionary in one step during interactive development.
+- **Stub + patch pattern** (alternative to MARKER): when the module's primary word is well-known and you want `FORGET PRIMARYWORD` to be the unload gesture, define a stub early so the word exists as a `FORGET` anchor, then define the real implementation under a different name, and finally patch the stub's body cell with the real xt. The stub only contains `NOOP`, so patching one cell is sufficient. Example from `lib/TUTORIAL.f`:
+
+  ```forth
+  : TUTORIAL  NOOP ;          \ stub — creates FORGET anchor early
+
+  \ ... all subsidiary definitions (TUT-TABLE, FILENAME, LOAD-TUTORIAL) ...
+
+  ' LOAD-TUTORIAL              \ xt of real implementation
+  ' TUTORIAL >BODY !           \ patch stub body: TUTORIAL now calls LOAD-TUTORIAL
+  ```
+
+  After loading, `TUTORIAL` behaves exactly like `LOAD-TUTORIAL`. Executing `FORGET TUTORIAL` removes the stub and every definition that follows it, cleanly unloading the entire module. Use this pattern when the module's entry-point name is the natural handle for the user and a separate `NO-MODULENAME` marker would be redundant.
+
 - **NEEDS for dependencies**: always use `NEEDS` to pull in prerequisites — never assume a word is already present.
 - **Refactoring guideline**: if a definition inside a `lib/` module is general enough to be useful independently of that module, extract it into a new `inc/` file and replace the inline definition with a `NEEDS` call. This keeps modules focused and avoids duplication across libraries.
 
@@ -495,6 +534,49 @@ FAR                   \ real address, MMU7 now mapped
 **`FAR` side-effect:** after `FAR`, MMU7 points to the page containing the
 returned address. Do not call another `FAR` (or any word that calls `HEAP`)
 while you still need the first address to remain valid.
+
+### Defensive patterns for heap addresses
+
+**Copy to stable memory immediately after `FAR`.** The address returned by
+`FAR` is valid only until the next `FAR` or `HEAP` call remaps MMU7. This
+window is narrower than it looks: even outside compilation/interpretation,
+a vocabulary search can trigger `FAR` internally. The safe rule is to copy
+heap data to stable memory right after decoding:
+
+- Use **`PAD`** when the data must outlive a subsequent operation, e.g. a
+  filename string passed to `F_OPEN`.
+- Use **`HERE`** for short-lived scratch buffers, e.g. the 8-byte header
+  block that `F_OPEN` writes internally. `HERE` is always safe as a scratch
+  zone as long as no compilation happens concurrently.
+
+Do not use `PAD` for both purposes simultaneously. A common mistake is
+passing `PAD` to `F_OPEN` as both the filename *and* the header buffer; the
+header write then corrupts the string. Use `PAD` for the string and `HERE`
+for the header:
+
+```forth
+FILENAME  1+        \ z-string in PAD (count byte skipped)
+HERE  1  F_OPEN     \ F_OPEN header at HERE, not PAD
+```
+
+**Factor out address resolution into a helper word.** When a heap string
+must be decoded and stabilised in more than one place, extract a dedicated
+word that performs `FAR` + copy-to-PAD. This keeps the volatile lifetime
+visible at a single site and spares callers from managing MMU7 themselves:
+
+```forth
+: FILENAME  ( n -- a )
+    CELLS  TUT-TABLE  +  @      \ ha: heap-pointer to counted-z-string
+    FAR                          \ real address, MMU7 now mapped
+    DUP C@ 2+                   \ total bytes: count + text + NUL
+    PAD OVER BLANK              \ clear PAD
+    PAD SWAP CMOVE              \ copy from heap to PAD
+    PAD ;                        \ return stable address
+```
+
+`lib/TUTORIAL.f` applies both patterns: `FILENAME` owns the heap-to-PAD
+copy, and `LOAD-TUTORIAL` passes `HERE` (not `PAD`) as the `F_OPEN` header
+buffer so the two scratch areas never collide.
 
 ### Design note and known limitation
 

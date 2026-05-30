@@ -3,9 +3,9 @@
 \ Formatted numeric output: <# # #S HOLD SIGN #>.
 \
 \ The pictured numeric output words build a formatted number string
-\ right-to-left in an internal scratch area.  The process:
+\ right-to-left in an internal scratch area, i.e. PAD.  The process:
 \
-\   1.  <#          begin; the scratch area is reset
+\   1.  <#          begin; the scratch area PAD is reset
 \   2.  # or #S     convert digits (least significant first)
 \   3.  HOLD        insert literal characters (e.g., '$', '.')
 \   4.  SIGN        insert '-' if sign argument is negative

@@ -16,6 +16,8 @@
 \ by an R> (or R> DROP) before the word exits.  The compiler cannot
 \ check this -- an unbalanced return stack will crash the interpreter.
 \
+\ Never use >R or R> outside a colon-definition, the interpreter will crash.
+\
 \ DO...LOOP places the loop limit and index on the return stack.
 \ Never use >R inside a DO loop without a matching R> before LOOP,
 \ as this corrupts the loop parameters.
@@ -42,11 +44,15 @@ CR
 \ 1. Basic >R, R>, R@
 \ ===========================================================================
 \
-\ Interactive examples (enter at the prompt after loading):
+\ Compiled examples:
 \
-\   1 2 >R .S          => 1       (2 is on return stack, invisible to .S)
-\   1 2 >R R> .S       => 1 2    (2 back on data stack)
-\   1 2 >R R@ . R> DROP . => 2 2  (R@ peeks; R> retrieves)
+\   : R-TEST
+\       1 2                     (prepares two values)
+\       >R .S           => 1    (2 is on return stack, invisible to .S)
+\       R> .S   CR      => 1 2  (2 back on data stack)
+\       >R R@ . CR      => 2    (R@ peeks)
+\       R> DROP .       => 1    (R> retrieves)
+\   ;   
 \
 \ In a definition, R@ copies the current top of the return stack
 \ without disturbing it -- useful to read the value multiple times.
@@ -93,20 +99,19 @@ CR
 \ ===========================================================================
 \
 \ Inside a DO loop, the return stack holds [index, limit] (implementation
-\ detail).  I reads the index.  R@ during a DO loop reads something from
-\ the return stack, but in vForth this is the loop limit, not I.  Use I
-\ for the loop index and rely on I' (NEEDS I') for the limit.
+\ detail).  I  reads the index.  R@ during a DO loop is the same as  I. 
+\ Instead  I' (NEEDS I')  reads the loop limit.
 \
-\ More usefully: R@ can be used in a word called FROM INSIDE a DO loop
+\ Wrong usage of R@: It can't be used in a word called FROM INSIDE a DO loop
 \ if the caller pushes a value with >R before entering the loop and
 \ pops it with R> after LOOP:
 \
 \   : .TIMES  ( n -- )
 \       >R          ( )         ( R: n )
 \       10 0 DO
-\           R@ I *  .           \ use R@ to access n inside loop
+\           R@ I *  .           \ use R@ is just as I
 \       LOOP
-\       R> DROP     ( )
+\       R> DROP     ( )         \ retrieve the original  n 
 \   ;
 
 
@@ -115,10 +120,10 @@ CR
 \ ===========================================================================
 \
 \ 1. DO NOT return from a word with items left on the return stack:
-\      : BAD  ( -- )  1 >R ;    \ wrong: R stack unbalanced
+\      : BAD!  ( -- )  1 >R ;    \ wrong: R stack unbalanced 
 \
 \ 2. DO NOT use >R inside DO...LOOP without R> before LOOP:
-\      : BAD2 ( -- )
+\      : BAD2! ( -- )
 \          10 0 DO  I >R  LOOP   \ wrong: pushes 10 values, pops none
 \      ;
 \

@@ -139,7 +139,7 @@ FORTH DEFINITIONS
 \ 6. Cleaning up -- vocabulary words live until FORGET or MARKER
 \ ===========================================================================
 \
-\ The MARKER placed at the top of this file (NO-VOCABULARIES) forgets
+\ The MARKER placed at the top of this file (NEWTASK) forgets
 \ everything defined here, including DEMO-VOC and VOC-WORD.
 \ This is the recommended way to manage vocabulary lifetimes.
 \

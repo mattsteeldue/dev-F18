@@ -57,7 +57,7 @@ DEFER DISPLAY-ITEM          \ initially: NOOP
 : SHOW-AS-NUMBER  ( n -- )  ." Number: " . CR ;
 : SHOW-AS-CHAR    ( n -- )  ." Char:   " EMIT CR ;
 
-.( Initial DISPLAY-ITEM calls NOOP (does nothing): ) CR
+." Initial DISPLAY-ITEM calls NOOP (does nothing): " CR
 42 DISPLAY-ITEM
 
 ' SHOW-AS-NUMBER  IS  DISPLAY-ITEM

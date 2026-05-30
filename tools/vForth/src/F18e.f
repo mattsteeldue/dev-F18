@@ -4255,7 +4255,7 @@ CODE fill ( a n c -- )
 \ Instead, in 2VARIABLE a double number is stored as EDLH.
 : (number)  ( d a -- d1 a1 )
     Begin
-        1+          ( d a ) 
+\       1+          ( d a ) 
         dup >r      ( d a )   
         c@          ( d c )
         base @      ( d c b )
@@ -4273,6 +4273,7 @@ CODE fill ( a n c -- )
             1 dpl +!
         Then
         r>          ( d a )
+        1+          ( d a ) 
     Repeat
     r>              ( d a )
     ;
@@ -4658,7 +4659,9 @@ CHAR . C,  CHAR . C,  CHAR . C,  CHAR . C,
                 noop            \ need this to avoid LIT to crash the system
             Then
         Else
-            here number 
+            here 
+            1+ 
+            number 
             dpl @ 1+ 
             If 
 \               nmode @ 

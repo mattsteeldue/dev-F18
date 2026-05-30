@@ -68,7 +68,7 @@ NEEDS CASE
         5 OF  ." cyan"    ENDOF
         6 OF  ." yellow"  ENDOF
         7 OF  ." white"   ENDOF
-        ." unknown(" DUP . ." )"    \ default: n still on stack
+        ." unknown ( " DUP . ." )"    \ default: n still on stack
     ENDCASE  CR ;
 
 .( Try: 2 .COLOR-NAME   ) CR    \ => red

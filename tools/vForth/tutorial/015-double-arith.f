@@ -2,7 +2,7 @@
 \ 015-double-arith.f
 \ 32-bit (double-precision) integer arithmetic.
 \
-\ The Z80 is a 16-bit processor; a single vForth cell holds values
+\ The Z80 is a 8-bit processor, but a single vForth cell holds values
 \ -32768 to 32767 (signed) or 0 to 65535 (unsigned).  When larger
 \ numbers are needed -- screen addresses beyond 65535, counters, game
 \ scores, file sizes -- double-precision integers are used.
@@ -12,14 +12,15 @@
 \ on top.  Stack notation: d for signed, ud for unsigned; shown as
 \ two entries with (lo hi) order.
 \
-\ Positive doubles: high cell = 0.   Example: 120,000 = (120000 0)
+\ Positive doubles: e.g. 120,000 on stack is two integer ( 54464 1 ).
 \ Negative doubles use two's-complement throughout the 32-bit range.
+\ for example -120,000 on stack is 11072 65534, that is -2.
 \
 \ Core double words (no NEEDS): D+ DNEGATE D+- (cond negate)
 \ Words requiring NEEDS: D- DABS D0= D= 2CONSTANT M+ S>D
 \
-\ The core word for converting signed single to double is S->D (with
-\ arrow); inc/s}d.f provides the standard name S>D as an alias.
+\ The core word for converting signed single to double is S>D (the S->D
+\ is obsolete).
 \
 \ Reference: sec.2.12.11, sec.4.3
 \
@@ -110,7 +111,7 @@ NEEDS M+
 \   $0000  $4000  2CONSTANT SCREEN-BASE-D  \ $40000000 (example)
 
 100000  0  2CONSTANT BUDGET
-    500  0  2CONSTANT MONTHLY
+   500  0  2CONSTANT MONTHLY
 
 .( Try: BUDGET D.    ) CR     \ => 100000
 .( Try: BUDGET MONTHLY D-  D. ) CR   \ => 99500

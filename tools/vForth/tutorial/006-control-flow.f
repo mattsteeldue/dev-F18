@@ -30,8 +30,6 @@ CR
 .( --- Tutorial 006: control flow loaded. ) CR
 .(     Type NEWTASK to unload.   ) CR
 
-NEEDS ABORT"                        \ for conditional abort
-
 
 \ ===========================================================================
 \ 1. IF ... THEN  (one-armed conditional)
@@ -169,21 +167,30 @@ NEEDS ABORT"                        \ for conditional abort
 
 
 \ ===========================================================================
-\ 7. ABORT"  (conditional abort with message)
+\ 7. ?ERROR  (conditional error with standard message)
 \ ===========================================================================
 \
-\ f ABORT" message"
+\ f n ?ERROR
 \
-\ If f is true, prints message and aborts to the command prompt.
-\ Useful for defensive checks inside definitions.
+\ If f is true, displays standard error message n and aborts to the prompt.
+\ Error messages are stored in Screen# 4-7 (BLOCK 8-15): they are part of
+\ the block file and shared by all library code.  No string is compiled into
+\ the definition -- just a one-cell error number.  This saves dictionary space
+\ compared to ABORT" .
+\
+\   : SAFE-DIVIDE  ( n1 n2 -- n3 )
+\       DUP 0=  13 ?ERROR
+\       / ;
+\
+\   10 2 SAFE-DIVIDE .    => 5
+\   10 0 SAFE-DIVIDE .    => error 13, abort to prompt
 
 : SAFE-DIVIDE  ( n1 n2 -- n3 )
-    DUP 0= ABORT" division by zero"
+    DUP 0=  13 ?ERROR
     / ;
 
 .( Try: 10 2 SAFE-DIVIDE .  ) CR
-.( Try: 10 0 SAFE-DIVIDE .  ) CR    \ triggers abort
-
+.( Try: 10 0 SAFE-DIVIDE .  ) CR    \ triggers error message 13
 
 \ ===========================================================================
 \ 8. Simple tests (requires NEEDS TESTING)

@@ -45,8 +45,8 @@ CR
 \ By convention all tutorials use => to show expected output in examples:
 \   42 .    => 42
 \
-\ An error situation empties the stack.
-\ For example, you can use purposedly  XXX  to empty the stack
+\ Any error situation empties the stack.
+\ For example, you can use purposedly  XXX  to empty the stack.
 
 
 \ ===========================================================================
@@ -63,7 +63,7 @@ CR
 \
 \ .S ( -- ) prints the whole stack without consuming it, useful for
 \ inspecting intermediate state during interactive exploration.
-\ You have to give NEEDS .S before using it.
+\ You have to give  NEEDS .S  before using it.
 \
 \   1 2 3 .S      => 1 2 3    (stack contents, bottom to top)
 \
@@ -105,8 +105,8 @@ CR
 \
 \ 2* and 2/ are faster shift-based alternatives for 2 * and 2 /:
 \
-\   5 2* .        => 10
-\   10 2/ .       => 5
+\     5 2* .      => 10
+\   -10 2/ .      => -5
 
 
 \ ===========================================================================
