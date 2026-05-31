@@ -20,6 +20,7 @@ mkdir util
 mkdir demo
 mkdir help
 mkdir dev
+mkdir tutorial
 
 mkdir dot
 

@@ -136,6 +136,12 @@ copy  util\blocks2txt.pl                    %DEST%\util
 
 : _____________________________________________________
 
+echo Copying tutorial
+copy  tutorial\*.f                              %DEST%\tutorial
+: pause
+
+: _____________________________________________________
+
 pause
 goto END_PROG
 

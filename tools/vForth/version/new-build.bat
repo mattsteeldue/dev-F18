@@ -61,41 +61,41 @@ echo   4. Copia anche i project
 pause
 
 echo : DOT VERSION
-copy    c:\Zx\Forth\F18\\vForth18_DOT\source\*                  c:\Zx\GitHub\vforth-next\project\MMU7_DOT\source
-copy    c:\Zx\Forth\F18\\vForth18_DOT\list\*                    c:\Zx\GitHub\vforth-next\project\MMU7_DOT\list
-copy    c:\Zx\Forth\F18\\vForth18_DOT\output\forth              c:\Zx\GitHub\vforth-next\project\MMU7_DOT\output
+copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOT\source\*                  c:\Zx\GitHub\vforth-next\project\MMU7_DOT\source
+copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOT\list\*                    c:\Zx\GitHub\vforth-next\project\MMU7_DOT\list
+copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOT\output\forth              c:\Zx\GitHub\vforth-next\project\MMU7_DOT\output
 
 echo : MMU7 VERSION
-copy    c:\Zx\Forth\F18\\vForth18_DOES\source\*                 c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\source
-copy    c:\Zx\Forth\F18\\vForth18_DOES\list\*                   c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\list
-copy    c:\Zx\Forth\F18\\vForth18_DOES\output\forth18e.bin      c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\output
-copy    c:\Zx\Forth\F18\\vForth18_DOES\output\ram8.bin          c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\output
+copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES\source\*                 c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\source
+copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES\list\*                   c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\list
+copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES\output\forth18e.bin      c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\output
+copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES\output\ram8.bin          c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\output
 
 : echo : DOT VERSION
-: copy    c:\Zx\Forth\F18\\vForth17_DOT\source\*                  c:\Zx\GitHub\vforth-next\project\MMU7_DOT\source
-: copy    c:\Zx\Forth\F18\\vForth17_DOT\list\*                    c:\Zx\GitHub\vforth-next\project\MMU7_DOT\list
-: copy    c:\Zx\Forth\F18\\vForth17_DOT\output\forth17            c:\Zx\GitHub\vforth-next\project\MMU7_DOT\output
+: copy    c:\Zx\Forth\F18\vForth17_DOT\source\*                  c:\Zx\GitHub\vforth-next\project\MMU7_DOT\source
+: copy    c:\Zx\Forth\F18\vForth17_DOT\list\*                    c:\Zx\GitHub\vforth-next\project\MMU7_DOT\list
+: copy    c:\Zx\Forth\F18\vForth17_DOT\output\forth17            c:\Zx\GitHub\vforth-next\project\MMU7_DOT\output
  
 : echo : MMU7 VERSION
-: copy    c:\Zx\Forth\F18\\vForth17_MMU7\source\*                 c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\source
-: copy    c:\Zx\Forth\F18\\vForth17_MMU7\list\*                   c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\list
-: copy    c:\Zx\Forth\F18\\vForth17_MMU7\output\forth17d.bin      c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\output
-: copy    c:\Zx\Forth\F18\\vForth17_MMU7\output\ram7.bin          c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\output
+: copy    c:\Zx\Forth\F18\vForth17_MMU7\source\*                 c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\source
+: copy    c:\Zx\Forth\F18\vForth17_MMU7\list\*                   c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\list
+: copy    c:\Zx\Forth\F18\vForth17_MMU7\output\forth17d.bin      c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\output
+: copy    c:\Zx\Forth\F18\vForth17_MMU7\output\ram7.bin          c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\output
 
 : echo : Previous Direct RP
-: copy    c:\Zx\Forth\F18\\vForth16_DIRECT_RP\source\*            c:\Zx\GitHub\vforth-next\project\DIRECT_RP\source
-: copy    c:\Zx\Forth\F18\\vForth16_DIRECT_RP\list\*              c:\Zx\GitHub\vforth-next\project\DIRECT_RP\list
-: copy    c:\Zx\Forth\F18\\vForth16_DIRECT_RP\output\forth16c.bin c:\Zx\GitHub\vforth-next\project\DIRECT_RP\output
+: copy    c:\Zx\Forth\F18\vForth16_DIRECT_RP\source\*            c:\Zx\GitHub\vforth-next\project\DIRECT_RP\source
+: copy    c:\Zx\Forth\F18\vForth16_DIRECT_RP\list\*              c:\Zx\GitHub\vforth-next\project\DIRECT_RP\list
+: copy    c:\Zx\Forth\F18\vForth16_DIRECT_RP\output\forth16c.bin c:\Zx\GitHub\vforth-next\project\DIRECT_RP\output
 : 
 : echo : Previous Direct without RP
-: copy    c:\Zx\Forth\F18\\vForth15_DIRECT\source\*               c:\Zx\GitHub\vforth-next\project\DIRECT\source
-: copy    c:\Zx\Forth\F18\\vForth15_DIRECT\list\*                 c:\Zx\GitHub\vforth-next\project\DIRECT\list
-: copy    c:\Zx\Forth\F18\\vForth15_DIRECT\output\forth15f.bin    c:\Zx\GitHub\vforth-next\project\DIRECT\output
+: copy    c:\Zx\Forth\F18\vForth15_DIRECT\source\*               c:\Zx\GitHub\vforth-next\project\DIRECT\source
+: copy    c:\Zx\Forth\F18\vForth15_DIRECT\list\*                 c:\Zx\GitHub\vforth-next\project\DIRECT\list
+: copy    c:\Zx\Forth\F18\vForth15_DIRECT\output\forth15f.bin    c:\Zx\GitHub\vforth-next\project\DIRECT\output
 : 
 : echo : Previous Indirect
-: copy    c:\Zx\Forth\F18\\vForth15_INDIRECT\source\*             c:\Zx\GitHub\vforth-next\project\INDIRECT\source
-: copy    c:\Zx\Forth\F18\\vForth15_INDIRECT\list\*               c:\Zx\GitHub\vforth-next\project\INDIRECT\list
-: copy    c:\Zx\Forth\F18\\vForth15_INDIRECT\output\forth15e.bin  c:\Zx\GitHub\vforth-next\project\INDIRECT\output
+: copy    c:\Zx\Forth\F18\vForth15_INDIRECT\source\*             c:\Zx\GitHub\vforth-next\project\INDIRECT\source
+: copy    c:\Zx\Forth\F18\vForth15_INDIRECT\list\*               c:\Zx\GitHub\vforth-next\project\INDIRECT\list
+: copy    c:\Zx\Forth\F18\vForth15_INDIRECT\output\forth15e.bin  c:\Zx\GitHub\vforth-next\project\INDIRECT\output
 
 
 : _____________________________________________________

@@ -1,12 +1,4 @@
 *.lnk
-dot/
-home/
-nextzxos/
-tools/xxx_vForth/
-tools/vForth/version/
-tools/vForth/prompts/
-tools/vForth/.claude/
-*/version/*
 syncpoint.dat
 CSpect 4.lnk
 syncignore.txt
@@ -18,3 +10,13 @@ sync
 syncfast
 syncslow
 nextsync.py
+dot/
+home/
+nextzxos/
+/tools/vForth/version/
+/tools/vForth/version/2???????/
+/tools/xxx_vForth/
+/tools/vForth/prompts/
+/tools/vForth/.claude/
+tools/vForth/doc/vForth1.8-core-en-20251111.odt
+tools/vForth/version/20260101/inc/ASK.f
