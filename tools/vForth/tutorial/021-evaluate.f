@@ -50,7 +50,7 @@ NEEDS EVALUATE
 : NEXT-TOKEN  ( -- addr len )
     BL WORD  COUNT ;
 
-.( Try: NEXT-TOKEN TYPE  then type a word at the prompt ) CR
+.( Try: NEXT-TOKEN Hello! .S ) CR \ => nnnn 6
 
 
 \ ===========================================================================
@@ -69,8 +69,8 @@ NEEDS EVALUATE
 
 : LOOK-UP  ( -- )
     ." Word to look up: "
-    BL WORD  -FIND
-    IF  NIP  ." found, CFA=" U.  ELSE  ." not found"  THEN  CR ;
+    -FIND   \ does BL WORD
+    IF  DROP  ." found, xt=" U.  ELSE  ." not found"  THEN  CR ;
 
 .( Try: LOOK-UP DUP ) CR
 
@@ -79,17 +79,17 @@ NEEDS EVALUATE
 \ 3. NUMBER  --  numeric conversion
 \ ===========================================================================
 \
-\ NUMBER ( -- n )
+\ NUMBER ( -- d )
 \   Converts the counted string at HERE (left by WORD) to a number
 \   using the current BASE.  Leaves the result on the stack.
 \   If conversion fails, vForth signals an error.
 \
 \   BL WORD  NUMBER   \ parse the next token as a number
 
-: PARSE-NUMBER  ( -- n )
+: PARSE-NUMBER  ( -- d )
     BL WORD  NUMBER ;
 
-.( Try: PARSE-NUMBER 42  .  ) CR   \ type 42 at the prompt => 42
+.( Try: PARSE-NUMBER 42  D.  ) CR   \ type 42 at the prompt => 42
 
 
 \ ===========================================================================
@@ -110,7 +110,10 @@ NEEDS EVALUATE
 .( Try: EVAL-DEMO   ) CR          \ => 30
 
 : EVAL-DEFINE  ( -- )
-    S" : FROM-STRING  ." 1" ." 99" ." ." ." " ;" EVALUATE ;
+    S"  : FROM-STRING  .( 1) .( 99) SPACE ; " 
+    EVALUATE ;
+
+.( Try: EVAL-DEFINE  FROM-STRING ) CR  \ => 199
 
 \ Simpler direct demo:
 : CALC-STRING  ( -- n )
@@ -126,17 +129,16 @@ NEEDS EVALUATE
 \ The vForth interpreter is essentially:
 \
 \   BEGIN
-\       BL WORD
-\       -FIND
-\       IF
-\           \ word found
-\           STATE @ AND  ( immediate-flag )
-\           IF  EXECUTE                   \ compile mode, not immediate
-\           ELSE  EXECUTE  THEN           \ interpret or immediate: run
+\       -FIND                             \ accepts next word and search
+\       IF                                \ the dictionary
+\           \ if word found
+\           STATE @ <                     \ check for immediate-flag
+\           IF    COMPILE,                \ compile mode, not immediate
+\           ELSE  EXECUTE  THEN           \ interpret or immediate: run xt
 \       ELSE
-\           NUMBER                        \ try as number
-\           STATE @ IF  COMPILE LITERAL  THEN
-\       THEN
+\           NUMBER                        \ try as number and if well-formed
+\           [COMPILE] LITERAL             \ delegate to LITERAL whether
+\       THEN                              \ compile it or push it to stack
 \   AGAIN
 \
 \ Knowing this loop lets you extend the interpreter by wrapping WORD,

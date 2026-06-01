@@ -78,8 +78,8 @@ DEFER DISPLAY-ITEM          \ initially: NOOP
 
 : WITH-NUMBER-DISPLAY  ( -- )
     \ Temporarily switch DISPLAY-ITEM to number mode, then restore.
-    ACTION-OF DISPLAY-ITEM  >R        \ save current xt
-    ' SHOW-AS-NUMBER  IS  DISPLAY-ITEM
+    ACTION-OF DISPLAY-ITEM >R  
+    ['] SHOW-AS-NUMBER  IS  DISPLAY-ITEM
     42 DISPLAY-ITEM                   \ use temporarily
     R>  IS  DISPLAY-ITEM ;            \ restore
 

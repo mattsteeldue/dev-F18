@@ -1,83 +1,59 @@
 \
-\ 011-vocabularies.f
-\ Vocabularies: namespaces in the Forth dictionary.
+\ 018-vocabularies.f
+\ Vocabularies: VOCABULARY, DEFINITIONS, FORTH, CONTEXT, CURRENT.
 \
-\ In vForth the dictionary is organised as a chain of vocabularies.
-\ Two user variables control word search and definition placement:
+\ vForth organises its dictionary into named vocabularies.  At any
+\ moment two vocabulary pointers are active:
 \
-\   CONTEXT  ( -- addr )  vocabulary searched first during lookup.
-\   CURRENT  ( -- addr )  vocabulary where new definitions are inserted.
+\   CONTEXT  -- the vocabulary searched when executing words
+\   CURRENT  -- the vocabulary that receives new definitions
 \
-\ At startup both point to FORTH, the root vocabulary.  Creating a new
-\ vocabulary with VOCABULARY cccc does not change either pointer; you
-\ have to execute cccc and/or cccc DEFINITIONS explicitly.
+\ At startup both point to the FORTH vocabulary, which holds the entire
+\ standard dictionary.  Creating a new vocabulary with VOCABULARY gives
+\ a fresh namespace whose words overlay FORTH when selected.
 \
-\ The search order is: CONTEXT first, then CURRENT (if different).
-\ Only two vocabularies are searched at a time -- vForth is not ANS
-\ search-order Forth.  This is intentional and matches the classic
-\ Forth-79 / Forth-83 model.
+\ Switching vocabularies:
+\   name         -- make name the CONTEXT vocabulary (search order)
+\   name DEFINITIONS -- make name the CURRENT vocabulary (new defs go here)
+\   FORTH        -- switch CONTEXT back to FORTH
+\   FORTH DEFINITIONS -- switch CURRENT back to FORTH
 \
-\ A key use case on vForth/Next: isolating the ASSEMBLER vocabulary so
-\ that Z80 mnemonics do not pollute the FORTH namespace.
+\ Note: vForth's search order is single-vocabulary (no ALSO/PREVIOUS/ONLY).
+\ CONTEXT holds exactly one vocabulary at a time.
 \
-\ Reference: sec.2.12.9, sec.2.12.12
+\
+\ Reference: sec.2.12.13
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
-\   011 TUTORIAL
+\   018 TUTORIAL
 \ To unload and reload interactively:
-\   NEWTASK 011 TUTORIAL
+\   NEWTASK 018 TUTORIAL
 \
 
 MARKER NEWTASK
 
 CR
-.( --- Tutorial 011: vocabularies loaded. ) CR
+.( --- Tutorial 018: vocabularies loaded. ) CR
 .(     Type NEWTASK to unload.   ) CR
 
 
 \ ===========================================================================
-\ 1. The two control variables: CONTEXT and CURRENT
-\ ===========================================================================
-\
-\ CONTEXT and CURRENT are user variables holding the address of the latest
-\ word in the respective vocabulary (i.e. a pointer into the NFA chain).
-\
-\   CONTEXT @  .    => (address of FORTH vocabulary header)
-\   CURRENT @  .    => (same at startup)
-\
-\ Executing a vocabulary name sets CONTEXT to that vocabulary:
-\   ASSEMBLER       ( CONTEXT now points to ASSEMBLER )
-\   FORTH           ( CONTEXT back to FORTH )
-\
-\ DEFINITIONS sets CURRENT to whatever CONTEXT currently is:
-\   ASSEMBLER DEFINITIONS   ( new words go into ASSEMBLER )
-\   FORTH DEFINITIONS       ( restore: new words go into FORTH )
-\
-\ Always restore FORTH DEFINITIONS after working in another vocabulary.
-
-
-\ ===========================================================================
-\ 2. VOCABULARY -- creating a new namespace
+\ 1. Creating a vocabulary
 \ ===========================================================================
 \
 \ VOCABULARY name  ( -- )
-\   Creates a new vocabulary word called name.  Executing name sets
-\   CONTEXT to the new vocabulary.  The new vocabulary is initially
-\   empty (it inherits no words from FORTH automatically).
+\   Creates a new named vocabulary.  The vocabulary initially contains
+\   the words of FORTH (it shares the same tail).
 \
-\ Pattern for a self-contained module:
+\   VOCABULARY MYWORDS      \ create the vocabulary
+\   MYWORDS DEFINITIONS     \ new definitions go into MYWORDS
+\   : HELLO  ." Hello from MYWORDS" CR ;
+\   FORTH DEFINITIONS       \ switch back to FORTH
 \
-\   VOCABULARY MYMODULE
-\   MYMODULE DEFINITIONS    \ new words go into MYMODULE
-\
-\   : HELPER  ( -- )  ... ;   \ private to MYMODULE
-\   : API     ( -- )  ... ;   \ also in MYMODULE
-\
-\   FORTH DEFINITIONS         \ restore: new words back to FORTH
-\
-\ Words in MYMODULE are accessible only when CONTEXT = MYMODULE.
-\ From FORTH, call them as:  MYMODULE  API
+\ After the above, HELLO exists only in MYWORDS, not in FORTH.
+\ To use it, make MYWORDS the CONTEXT:
+\   MYWORDS   HELLO         \ => Hello from MYWORDS
 
 VOCABULARY SHAPES
 SHAPES DEFINITIONS
@@ -86,107 +62,75 @@ SHAPES DEFINITIONS
 : .SQUARE   ( -- )  ." []" CR ;
 : .TRIANGLE ( -- )  ." /\" CR ;
 
-FORTH DEFINITIONS   \ always restore before continuing
+FORTH DEFINITIONS
 
 .( Try: SHAPES .CIRCLE   ) CR
 .( Try: SHAPES .SQUARE   ) CR
 
 
 \ ===========================================================================
-\ 3. WORDS -- inspecting a vocabulary
+\ 2. DEFINITIONS -- switching compilation target
 \ ===========================================================================
 \
-\ WORDS  ( -- )
-\   Lists all words in the CONTEXT vocabulary, newest first.
-\   Output wraps at the screen edge automatically.
+\ Switching the CURRENT vocabulary controls where new definitions land.
+\ The pattern is always:
+\   name DEFINITIONS  \ switch to name
+\   ...definitions...
+\   FORTH DEFINITIONS \ switch back
 \
-\   WORDS               ( list FORTH vocabulary )
-\   SHAPES WORDS        ( list SHAPES vocabulary )
-\
-\ WORDS scans the NFA chain from CONTEXT @ @ backward to the beginning.
-\ It respects ?TERMINAL: press [BREAK] to interrupt a long listing.
+\ Forgetting to switch back is the classic vocabulary mistake.
 
-
-\ ===========================================================================
-\ 4. Hiding words with SMUDGE
-\ ===========================================================================
-\
-\ During compilation of a colon-definition, the word being defined is
-\ temporarily "smudged" -- invisible to the dictionary search.  This
-\ prevents a definition from accidentally calling itself before it is
-\ complete.  SMUDGE toggles the smudge bit in the NFA.
-\
-\ Normally you never call SMUDGE directly.  It is mentioned here because
-\ understanding it clarifies why a word is not found during its own
-\ compilation and why a recursive word needs RECURSE (or an explicit
-\ forward reference).
-\
-\   : FACTORIAL  ( n -- n! )
-\       DUP 1 > IF  DUP 1-  RECURSE  *  ELSE  DROP 1  THEN ;
-\
-\   5 FACTORIAL .   => 120
+.( SHAPES vocabulary created with .CIRCLE, .SQUARE, .TRIANGLE. ) CR
 
 
 \ ===========================================================================
-\ 5. FORGET -- removing words from the dictionary
+\ 3. CONTEXT -- searching the right vocabulary
 \ ===========================================================================
 \
-\ FORGET name  ( -- )
-\   Removes name and every word defined after it from the CURRENT
-\   vocabulary.  The dictionary pointer (DP) is reset to just before
-\   name's NFA.
+\ Executing a vocabulary name sets CONTEXT so the interpreter searches
+\ that vocabulary first.  If the word is not found there, FORTH is
+\ searched (because the new vocabulary's tail points to FORTH).
 \
-\ Use carefully: FORGET is permanent and cannot be undone.
-\ MARKER is safer for temporary definitions (see tutorial 005).
-\
-\   : TEMP  ( -- )  ." temporary" CR ;
-\   TEMP                    => temporary
-\   FORGET TEMP
-\   TEMP                    => error: word not found
+\ CONTEXT @  gives the address of the current context vocabulary PFA.
+\ CURRENT @  gives the address of the current compilation vocabulary PFA.
 
 
 \ ===========================================================================
-\ 6. The ASSEMBLER vocabulary
+\ 4. Searching order: CONTEXT is searched first
 \ ===========================================================================
 \
-\ ASSEMBLER is a pre-defined vocabulary containing the Z80 mnemonic words
-\ (ld, add, push, pop, ...).  It is kept separate from FORTH so that
-\ mnemonic names do not shadow ordinary Forth words.
+\ If a word with the same name exists in both vocabularies, the CONTEXT
+\ vocabulary wins.  This is how vocabularies provide selective override.
 \
-\ Inside a CODE definition the system automatically switches to ASSEMBLER;
-\ C; switches back to FORTH.  You should not need to manage
-\ the ASSEMBLER vocabulary manually unless you are writing your own CODE
-\ words or extending the assembler.
+\ Example: ASSEMBLER defines words like LD, ADD, etc. that override
+\ any same-named FORTH words while ASSEMBLER is CONTEXT.
 \
-\   CODE MY-WORD  ( -- )
-\       \ assembler mnemonics available here
-\       halt
-\       Next            \ standard vForth exit from a CODE word
-\   C;
+\   ASSEMBLER       \ set CONTEXT to ASSEMBLER
+\   ...assembler words...
+\   FORTH           \ reset CONTEXT to FORTH
 \
-\ See the assembler tutorial for a full treatment.
+\ The same pattern is used by any domain-specific vocabulary.
+
+.( Try: SHAPES WORDS    ) CR
 
 
 \ ===========================================================================
-\ 7. Demonstration
-\ ===========================================================================
-
-: .CONTEXT  ( -- )
-    ." CONTEXT = " CONTEXT @ @ U. CR ;
-
-: .CURRENT  ( -- )
-    ." CURRENT = " CURRENT @ @ U. CR ;
-
-.( Try: .CONTEXT  ) CR
-.( Try: .CURRENT  ) CR
-.( Try: SHAPES WORDS  ) CR
-
-
-\ ===========================================================================
-\ 8. Simple tests (requires NEEDS TESTING)
+\ 5. Cleaning up -- vocabulary words live until FORGET or MARKER
 \ ===========================================================================
 \
-\ (Vocabulary state is hard to test automatically; use interactive checks.)
+\ The MARKER placed at the top of this file (NEWTASK) forgets
+\ everything defined here, including SHAPES and its words.
+\ This is the recommended way to manage vocabulary lifetimes.
+\
+\ FORGET name  can also remove a specific word and everything after it,
+\ but MARKER is preferred for module-level cleanup.
+
+
+\ ===========================================================================
+\ 6. Simple tests (requires NEEDS TESTING)
+\ ===========================================================================
 \
 \ NEEDS TESTING
-\ T{  CONTEXT @  CURRENT @  =  -> -1  }T   \ both FORTH at startup
+\ T{  CURRENT @ .VOCAB  -> }T   \ prints "FORTH"
+\ T{  SHAPES  CONTEXT @ .VOCAB -> }T  \ prints "SHAPES"
+\ T{  FORTH    CONTEXT @ .VOCAB -> }T   \ prints "FORTH"

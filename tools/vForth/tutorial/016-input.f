@@ -93,7 +93,9 @@ CREATE INPUT-BUF  32 ALLOT
     \ Attempt to parse addr/len as a decimal number.
     \ Returns ( n -1 ) on success or ( 0 0 ) on failure.
     \ Uses the current BASE.
+    1- 
     IF                          ( a )
+        1-
         DUP C@                  ( a c )
         \ check leading minus
         [CHAR] - = IF           ( a )
@@ -116,7 +118,7 @@ CREATE INPUT-BUF  32 ALLOT
     \ Prompt the user for a number; return it as a double.
     .( Enter a number: )
     INPUT-BUF 20 ACCEPT
-    INPUT-BUF 1- SWAP
+    INPUT-BUF SWAP
     ?NUMBER IF
         ." Got: " 2DUP D. CR
     ELSE

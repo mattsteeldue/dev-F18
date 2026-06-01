@@ -1,11 +1,16 @@
 \
-\ 020-compilation.f
-\ Compilation internals: STATE, [ ], IMMEDIATE, POSTPONE, COMPILE,.
+\ 020-standard.f
+\ Compilation internals: STATE, [ ], IMMEDIATE, COMPILE,, POSTPONE.
+\ (Standard Forth approach)
 \
 \ Forth blurs the boundary between interpretation and compilation.
 \ Understanding STATE, immediate words, and POSTPONE lets you write
 \ words that behave differently depending on whether they run at
 \ compile time or interpret time.
+\
+\ This tutorial emphasizes POSTPONE, the high-level Forth standard that
+\ abstracts away the distinction between compiling regular vs immediate words.
+\ For the low-level vForth minimalist approach, see tutorial/019-compilation.f.
 \
 \ Core words (no NEEDS):
 \   STATE    -- user variable: 0=interpreting, nonzero=compiling
@@ -21,9 +26,11 @@
 \
 \ Reference: sec.2.12.4
 \
-\ Load from a clean session:
+\ Load from a clean session (to see both approaches):
 \   NEEDS TUTORIAL
-\   020 TUTORIAL
+\   019 TUTORIAL      \ vForth minimalist version (low-level)
+\   020 TUTORIAL      \ Standard Forth version (POSTPONE-based, this file)
+\
 \ To unload and reload interactively:
 \   NEWTASK 020 TUTORIAL
 \
@@ -31,7 +38,7 @@
 MARKER NEWTASK
 
 CR
-.( --- Tutorial 020: compilation loaded. ) CR
+." --- Tutorial 020-standard: compilation (standard Forth style). " CR
 .(     Type NEWTASK to unload.   ) CR
 
 NEEDS POSTPONE
@@ -52,7 +59,7 @@ NEEDS [']
 : .STATE  ( -- )
     STATE @ IF  ." compiling"  ELSE  ." interpreting"  THEN  CR ;
 
-.( Try: .STATE   ) CR        \ => interpreting
+.( Try: .STATE   ) CR               \ => interpreting
 .( Try: : FOO  .STATE ;  FOO  ) CR  \ => interpreting (runs at runtime)
 
 
@@ -108,49 +115,62 @@ IMMEDIATE
 
 
 \ ===========================================================================
-\ 4. COMPILE,  --  compiling an xt
+\ 4. COMPILE,  --  compiling from the stack vs from source
 \ ===========================================================================
 \
-\ COMPILE, ( xt -- )  appends xt to the current definition.
-\ This is the low-level operation behind all compilation.
+\ COMPILE, ( xt -- )  compiles an xt (taken from the stack) into the current
+\ definition. It is the stack-based counterpart to POSTPONE.
 \
-\ Example: a word that compiles DUP into the current definition:
+\ POSTPONE name   -- takes the word name from source, compiles its semantics
+\ COMPILE, (xt)   -- takes an xt from the stack, compiles it
 \
-\   : COMPILE-DUP  ( -- )   ['] DUP  COMPILE, ;  IMMEDIATE
+\ Example: two ways to compile DUP into the current definition:
 \
-\ Then:   : TRIPLE  ( n -- n n n )  COMPILE-DUP  COMPILE-DUP ;
-\ is equivalent to:   : TRIPLE  DUP DUP ;
+\ Version 1: POSTPONE directly (source-based):
+\   : COMPILE-DUP-V1  ( -- )   POSTPONE DUP ;  IMMEDIATE
+\
+\ Version 2: via stack (using ['] and COMPILE,):
+\   : COMPILE-DUP-V2  ( -- )   ['] DUP  COMPILE, ;  IMMEDIATE
+\
+\ Both are equivalent. Use POSTPONE when you know the word at compile-time.
+\ Use COMPILE, when the xt comes from the stack (e.g., computed or passed as parameter).
 
-: COMPILE-DUP  ( -- )   ['] DUP  COMPILE, ;  IMMEDIATE
+: COMPILE-DUP-V1  ( -- )   POSTPONE DUP ;  IMMEDIATE
 
-: TRIPLE  ( n -- n n n )   COMPILE-DUP  COMPILE-DUP ;
+: COMPILE-DUP-V2  ( -- )   ['] DUP  COMPILE, ;  IMMEDIATE
 
-.( Try: 5 TRIPLE .S 2DROP .  ) CR   \ => 5 5 5
+: TRIPLE-V1  ( n -- n n n )   COMPILE-DUP-V1  COMPILE-DUP-V1 ;
+: TRIPLE-V2  ( n -- n n n )   COMPILE-DUP-V2  COMPILE-DUP-V2 ;
+
+.( Try: 5 TRIPLE-V1 .S 2DROP . ) CR   \ => 5 5 5
+.( Try: 5 TRIPLE-V2 .S 2DROP . ) CR   \ => 5 5 5
 
 
 \ ===========================================================================
-\ 5. POSTPONE  --  the modern way to compile immediate words
+\ 5. POSTPONE  --  the modern way to compile any word
 \ ===========================================================================
 \
 \ POSTPONE name  compiles the compilation-semantics of name, whether or
-\ not name is immediate.  It replaces both COMPILE and [COMPILE].
+\ not name is immediate. It works uniformly for any word, eliminating the
+\ need to distinguish between immediate and non-immediate words.
 \
-\ If name is NOT immediate: same as [ ' name ] LITERAL COMPILE,
-\ If name IS immediate:      same as [COMPILE] name
+\ POSTPONE replaces both COMPILE and [COMPILE].
 \
-\ Example: a word that conditionally compiles a SWAP:
+\ Example 1: define a synonym for THEN using POSTPONE:
 \
-\   : ?SWAP  ( f -- )
-\       IF  POSTPONE SWAP  THEN ;  IMMEDIATE
+\ Pattern: when you use POSTPONE on an immediate word, the word that
+\ contains POSTPONE should also be IMMEDIATE. Both execute at compile-time.
+\
+\   : END-IF  POSTPONE THEN ;  IMMEDIATE
+\
+\ Now END-IF is an alias for THEN, usable in colon definitions:
 
-: COMPILE-SWAP-IF  ( f -- )
-    IF  POSTPONE SWAP  THEN ;  IMMEDIATE
+: END-IF  POSTPONE THEN ;  IMMEDIATE
 
-: TEST-POSTPONE  ( -- )
-    [ -1 ] LITERAL  COMPILE-SWAP-IF
-    1 2 ;   \ if flag was true, stack becomes 2 1
+: TEST-END-IF  ( -- )
+    1 IF  ." yes"  END-IF  CR ;
 
-.( Try: TEST-POSTPONE . .  ) CR   \ => 2 1
+.( Try: TEST-END-IF  ) CR   \ => yes
 
 
 \ ===========================================================================

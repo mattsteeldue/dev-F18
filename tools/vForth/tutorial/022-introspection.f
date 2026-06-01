@@ -120,11 +120,12 @@ NEEDS SEE
 \
 \ WHERE is used after a compilation error during LOAD or INCLUDE.
 \ It displays the screen and line number where the error occurred.
-\ Normally called automatically by the error handler; use manually with:
+\ In case of error LOAD leaves on top of stack the content of >BLK and >IN
+\ so that you can give WHERE and see the offending line and position.
 \
-\   >IN @  BLK @  WHERE
+\   WHERE
 
-.( WHERE is called automatically after LOAD errors. ) CR
+.( WHERE isn't called automatically after LOAD errors. ) CR
 
 
 \ ===========================================================================

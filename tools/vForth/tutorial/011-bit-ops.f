@@ -1,6 +1,6 @@
 \
 \ 011-bit-ops.f
-\ Bitwise operations: AND OR XOR INVERT LSHIFT RSHIFT.
+\ Bitwise operations: AND OR XOR INVERT LSHIFT RSHIFT SPLIT FLIP.
 \
 \ The Z80 has an 8-bit ALU; vForth cells are 16 bits.  All bitwise
 \ words operate on all 16 bits simultaneously.  Bit 0 is the least-
@@ -32,6 +32,9 @@ CR
 .(     Type NEWTASK to unload.          ) CR
 
 NEEDS INVERT
+NEEDS SPLIT
+NEEDS FLIP
+NEEDS NOT
 
 \ ===========================================================================
 \ 1. AND, OR, XOR  --  core bitwise words
@@ -147,7 +150,50 @@ $0080 CONSTANT BIT7
 
 
 \ ===========================================================================
-\ 7. Simple tests (requires NEEDS TESTING)
+\ 7. SPLIT and FLIP  --  operating on individual bytes
+\ ===========================================================================
+\
+\ SPLIT ( n -- lo hi )   split n into its low byte (lo) and high byte (hi)
+\ FLIP  ( n -- n' )      swap the low byte and high byte of n
+\
+\ Both live in inc/ and need NEEDS before use.
+\
+\   $1234 SPLIT . .    => 18 52    (hi=$12=18 is TOS; lo=$34=52 below)
+\   $1234 FLIP  .      => $3412
+\
+\ When lo and hi come from SPLIT they are in 0-255 range, so FLIP
+\ reassembles the original cell in one step (no 8 LSHIFT OR needed):
+\   $1234 SPLIT FLIP .   => $1234
+\
+\ Note: FLIP works as a reassembler only for byte values (0-255).
+\ For a general 8-bit field not obtained via SPLIT, use 8 LSHIFT OR.
+\
+\ Practical use: when a 16-bit value holds two 8-bit fields, SPLIT decodes
+\ both in one step without manual masking:
+\   $2B5F SPLIT   ( lo=$5F  hi=$2B )
+\
+\ FLIP converts between big-endian and little-endian byte order:
+\   $4142 FLIP .   => $4241    ('AB' swapped to 'BA')
+
+: .LO-HI  ( n -- )
+    \ Print high and low bytes of n on separate lines.
+    SPLIT
+    ." hi=" . CR
+    ." lo=" . CR ;
+
+: LO-ZERO?  ( n -- f )
+    \ True if the low byte of n is zero.
+    SPLIT DROP NOT ;
+
+.( Try: $1234 SPLIT . .      ) CR
+.( Try: $1234 FLIP  .        ) CR
+.( Try: $A05F .LO-HI         ) CR
+.( Try: $1200 LO-ZERO?  .    ) CR
+.( Try: $1234 LO-ZERO?  .    ) CR
+
+
+\ ===========================================================================
+\ 8. Simple tests (requires NEEDS TESTING)
 \ ===========================================================================
 \
 \ NEEDS TESTING
@@ -163,3 +209,7 @@ $0080 CONSTANT BIT7
 \ T{  $41 BIT0 BIT-CLEAR -> $40           }T
 \ T{  $41 BIT0 BIT-TOGGLE -> $40          }T
 \ T{  $40 BIT0 BIT-TOGGLE -> $41          }T
+\ T{  $1234 SPLIT  ->  $34 $12  }T
+\ T{  $00FF SPLIT  ->  $FF 0    }T
+\ T{  $1234 FLIP   ->  $3412    }T
+\ T{  $FF00 FLIP   ->  $00FF    }T

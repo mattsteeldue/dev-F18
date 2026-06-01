@@ -242,6 +242,11 @@ The ZX Spectrum Next is a retro machine: it does not support Unicode or multi-by
 - Do not use any character outside the range `0x20–0x7E` plus `0x09` (tab), `0x0A` (LF), `0x0D` (CR), and `0x7F` (©).
 - When generating help `.txt` files: plain ASCII, no BOM, no smart quotes, no em-dashes.
 
+**EMIT vs EMITC for extended character codes:**
+- `EMIT` ( c -- ) may apply a mask to the input, limiting output to the 7-bit ASCII range (0–127) on some systems.
+- `EMITC` ( c -- ) emits the full character code (0–255) without masking, suitable for UDG (User-Defined Graphics) codes and extended character sets on the ZX Spectrum (codes 128–255).
+- Use `EMITC` when emitting ZX Spectrum graphic codes, UDG characters, or any character outside the ASCII range. Use `EMIT` for standard printable ASCII characters.
+
 ## FAT Filename Character Mapping
 
 Because Forth names use characters illegal in FAT filenames, NEEDS maps them automatically.

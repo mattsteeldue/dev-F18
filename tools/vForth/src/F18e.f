@@ -4337,7 +4337,7 @@ CHAR . C,  CHAR . C,  CHAR . C,  CHAR . C,
 
 \ 7178h
 .( 2FIND )
-\ used in the form -FIND "cccc"
+\ used in the form 2FIND "cccc"
 \ searches the dictionary giving CFA and the heading byte 
 \ or zero if not found
 : 2find ( a -- cfa b 1 | 0 )
