@@ -6,17 +6,21 @@
 \ disassemble any word, and inspect name/link/code fields directly.
 \
 \ Core words (no NEEDS):
-\   '   ( -- cfa )    look up the next token; return its CFA
-\   NFA ( cfa -- nfa ) CFA to Name Field Address
-\   LFA ( cfa -- lfa ) CFA to Link Field Address
-\   ID. ( nfa -- )    print the name at NFA
+\   '     ( -- xt )      look up the follwing word; return its xt 
+\   <NAME (  xt -- nfa )  xt to Name Field Address (NFA) on Heap
+\   >BODY (  xt -- pfa )  xt to Parameter Field Address (PFA)
+\   CFA   ( pfa -- xt  )  pfa to xt (or Code Field Address)
+\   LFA   ( pfa -- lfa ) pfa to Link Field Address (LFA)
+\   NFA   ( pfa -- nfa ) pfa to Name Field Address (NFA)
+\   PFA   ( nfa -- pfa ) nfa to Parameter Field Address (PFA)
+\   ID.   ( nfa -- )     print the name at NFA
 \
 \ Words requiring NEEDS:
 \   WORDS   ( -- )       list all words in CONTEXT vocabulary
 \   SEE     ( -- cccc )  disassemble a word
 \   WHERE   ( n n -- )   show the source line after a LOAD error
 \
-\ Reference: sec.2.12.4
+\ Reference: sec.2.12.4, 3.6.1, 4.6
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
@@ -31,44 +35,49 @@ CR
 .( --- Tutorial 022: dictionary loaded. ) CR
 .(     Type NEWTASK to unload.   ) CR
 
-NEEDS WORDS
 NEEDS SEE
 
 
 \ ===========================================================================
-\ 1.  '  (tick)  --  get the CFA of a word
+\ 1.  '  (tick)  --  get the xt (or CFA) of a word
 \ ===========================================================================
 \
-\ ' name ( -- cfa )
-\   Returns the CFA (execution token) of name.  Unlike ['] (which is
-\   immediate and works inside definitions), ' runs at interpret time.
+\ ' name ( -- xt )
+\   Returns the xt (Code Field Address) of name.  
+\   When compiled, it delays it operation at run-time when it expects a name
+\   from the current input source.
+\   Unlike ['] which is immediate and works inside definitions and compiles 
+\   a literal of such execution token.
 \
-\   ' DUP .         => (prints CFA address of DUP)
-\   ' DUP EXECUTE   => same as DUP (duplicates TOS)
+\   ' DUP HEX .         => (prints xt of DUP)
+\   ' DUP EXECUTE       => same as DUP ALONE (duplicates TOS)
 \
-\ Inside a definition, use ['] (NEEDS [']) to compile the CFA as a literal:
+\ Inside a definition, use ['] (NEEDS [']) to compile the xt as a literal:
 \   : GET-DUP-XT  ( -- xt )  ['] DUP ;
 
 .( ' DUP CFA: ) ' DUP U. CR
-.( ' + CFA:   ) ' + U. CR
+.( ' +   CFA: ) ' +   U. CR
 
 
 \ ===========================================================================
 \ 2. NFA, LFA, ID.  --  walking the dictionary
 \ ===========================================================================
 \
-\ Each dictionary entry has three fields relative to its CFA:
-\   NFA ( cfa -- nfa )  Name Field Address: length+flags byte then name
-\   LFA ( cfa -- lfa )  Link Field Address: points to the previous entry
+\ Each dictionary entry has some fields relative to its xt:
+\   <NAME ( cfa -- nfa )  Name Field Address: length+flags byte then name
+\   >BODY ( cfa -- pfa )  Parameter Field Address: its definition
+\   LFA ( pfa -- lfa )  Link Field Address: points to the previous name entry
 \   ID. ( nfa -- )      print the name stored at nfa
+\ 
+\   n.b. vForth namespace is kept in heap.
 \
 \ Walk two entries back from DUP:
 \
-\   ' DUP  NFA  ID. CR              \ => DUP
-\   ' DUP  LFA  @                   \ address of previous entry
-\   NFA    ID. CR                   \ print its name
+\   ' DUP  <NAME ID. CR             \ => DUP
+\   ' DUP  >BODY LFA  @             \ heap-address of previous entry
+\   ' DUP  >BODY LFA @ FAR ID. CR   \ => SWAP (the name of previous entry)
 
-.( DUP name: ) ' DUP NFA ID. CR
+.( DUP name: ) ' DUP <NAME ID. CR
 
 
 \ ===========================================================================
@@ -95,8 +104,8 @@ NEEDS SEE
 \   shows the hex bytes of the machine code.
 \
 \   SEE DUP         \ show DUP's code
-\   SEE +           \ show +'s code
-\   SEE SWAP        \ show SWAP's code
+\   SEE =           \ show ='s code, i.e. the sequence  - 0= EXIT
+\   SEE [CHAR]      \ show [CHAR]'s code. [CHAR] is an immediate word.
 \
 .( Try: SEE SWAP ) CR
 
@@ -105,11 +114,11 @@ NEEDS SEE
 \ 5. Inspecting a word manually
 \ ===========================================================================
 \
-\ Example: print name and link of the word before SWAP in the dictionary.
+\ Example: print name and link of the word before DUP in the dictionary.
 
 : .WORD-INFO  ( cfa -- )
-    DUP  NFA ID.  SPACE
-    LFA  @  DUP IF  NFA ID.  ELSE  DROP ." (end)"  THEN  CR ;
+    DUP  <NAME ID.  SPACE
+    >BODY LFA  @ DUP IF  FAR ID.  ELSE  DROP ." (end)"  THEN  CR ;
 
 .( DUP info: ) ' DUP .WORD-INFO
 
@@ -125,8 +134,10 @@ NEEDS SEE
 \
 \   WHERE
 
-.( WHERE isn't called automatically after LOAD errors. ) CR
+.( The following definition has an error. ) CR
+.( Type:  WHERE  when you receive "Syntax error" ) CR
 
+: WRONG  BEGIN WHILE LOOP  ;
 
 \ ===========================================================================
 \ 7. Simple tests (requires NEEDS TESTING)

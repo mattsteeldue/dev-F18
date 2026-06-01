@@ -20,7 +20,7 @@
 \ work.  Its address can move after ALLOT -- never store PAD across calls
 \ that may modify the dictionary.
 \
-\ Reference: sec.2.12.6, 3.4
+\ Reference: sec.2.12.6, 6.1
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL

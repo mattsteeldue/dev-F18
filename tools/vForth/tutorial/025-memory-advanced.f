@@ -24,7 +24,7 @@
 \   UNUSED   -- free dictionary bytes
 \   ROOM     -- print free dictionary bytes
 \
-\ Reference: sec.2.12.7
+\ Reference: sec.2.12.7, 4.5, 6.3
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
@@ -79,8 +79,9 @@ CREATE SCRATCH  20 ALLOT    \ 20-byte scratch area
 \   S" hello" PAD SWAP CMOVE       \ copy string to PAD
 \   PAD  5 TYPE CR                 \ print it
 
-PAD 5 0 FILL      \ zero first 5 bytes
-S" vForth" PAD SWAP CMOVE
+PAD C/L BLANK  \ blank 64 character at PAD
+S" vForth"     \ allocate a string in Heap
+PAD SWAP CMOVE \ move it to PAD
 .( PAD contains: ) PAD 6 TYPE CR
 
 

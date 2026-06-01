@@ -73,7 +73,7 @@ CREATE TUT-TABLE
     H" tutorial/019-compilation.f"     ,
     H" tutorial/020-standard.f"        ,
     H" tutorial/021-evaluate.f"        ,
-    H" tutorial/022-dictionary.f"      ,
+    H" tutorial/022-introspection.f"      ,
     H" tutorial/023-structures.f"      ,
     H" tutorial/024-floating-point.f"  ,
     H" tutorial/025-memory-advanced.f" ,

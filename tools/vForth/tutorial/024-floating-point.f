@@ -24,7 +24,7 @@
 \
 \ NO-FLOATING removes the library and restores integer mode.
 \
-\ Reference: lib/floating.f
+\ Reference: 3.7 - lib/floating.f
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
@@ -33,11 +33,12 @@
 \   NEWTASK 024 TUTORIAL
 \
 
-MARKER NEWTASK
+\ MARKER NEWTASK
 
 CR
 .( --- Tutorial 024: floating point loaded. ) CR
-.(     Type NEWTASK to unload.        ) CR
+.(     This tutorial examples cannot be discarded via NEWTASK ) CR
+.(     Type NO-FLOATING to unload.        ) CR
 
 NEEDS FLOATING
 
@@ -68,20 +69,20 @@ FLOATING
 \ F+ F- F* F/  all take two fp values and leave one:
 \   ( fp1 fp2 -- fp3 )
 \
-\   3.0  2.0  F+  F.     => 5.0
-\   3.0  2.0  F-  F.     => 1.0
-\   3.0  2.0  F*  F.     => 6.0
-\   7.0  2.0  F/  F.     => 3.5
+\   3.0  2.0  F+  F.     => 5.0000e0
+\   3.0  2.0  F-  F.     => 1.0000e0
+\   3.0  2.0  F*  F.     => 6.0000e0
+\   7.0  2.0  F/  F.     => 3.5000e0
 \
 \ FNEGATE ( fp -- fp' )   changes sign
 \ FABS    ( fp -- fp' )   absolute value
 \
-\   -3.0  FNEGATE  F.    => 3.0
-\   -2.5  FABS     F.    => 2.5
+\   -3.0  FNEGATE  F.    => 3.0000e0
+\   -2.5  FABS     F.    => 2.5000e0
 
-.( Try: 3.0 2.0 F+ F. ) CR     \ => 5.
-.( Try: 7.0 2.0 F/ F. ) CR     \ => 3.5
-.( Try: -3.0 FNEGATE F. ) CR   \ => 3.
+.( Try: 3.0 2.0 F+ F. ) CR     \ => 5.0000e0
+.( Try: 7.0 2.0 F/ F. ) CR     \ => 3.5000e0
+.( Try: -3.0 FNEGATE F. ) CR   \ => 3.0000e0
 
 
 \ ===========================================================================
@@ -110,11 +111,11 @@ FLOATING
 \ D>F   ( d -- fp )   convert double to fp
 \ F>D   ( fp -- d )   convert fp to double (truncates)
 \
-\   42  FLOAT  F.    => 42.
+\   42  FLOAT  F.    => 4.2000e1
 \   3.7  F>D   D.    => 3  (truncated)
 
 .( Try: 42 FLOAT F. ) CR      \ => 42.
-.( Try: 3.7 F>D D.  ) CR      \ => 3
+\ .( Try: 3.7 F>D D.  ) CR      \ => 3
 
 
 \ ===========================================================================
@@ -125,9 +126,9 @@ FLOATING
 \ F.R ( fp u -- )   print fp right-aligned in a field of u characters
 \ PLACES ( n -- )   set the number of decimal places printed by F. (default 4)
 \
-\   PI F.          => 3.1416    (with PLACES = 4)
+\   PI F.          => 3.1416e0    (with PLACES = 4 as default)
 \   2 PLACES
-\   PI F.          => 3.14
+\   PI F.          => 3.14e0
 
 .( PI = ) PI F. CR
 2 PLACES

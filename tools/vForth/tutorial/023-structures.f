@@ -64,11 +64,11 @@ CREATE MY-POINT   POINT-SIZE ALLOT
 
 : INIT-POINT  ( x y addr -- )
     DUP  pt.y  !
-        pt.x  ! ;
+         pt.x  ! ;
 
 : .POINT  ( addr -- )
-    ." x=" DUP pt.x @ .
-    ." y="     pt.y @ . CR ;
+    DUP ." x=" pt.x @ .
+        ." y=" pt.y @ . CR ;
 
 10 20 MY-POINT  INIT-POINT
 .( MY-POINT: ) MY-POINT .POINT   \ => x=10 y=20
@@ -150,7 +150,7 @@ ENUM COLOR
 \
 \ Useful for hardware addresses and values that exceed 16-bit range.
 
-$A000  0  2CONSTANT  ROM-COPY-ADDR     \ example address as double
+$A000     0  2CONSTANT  ROM-COPY-ADDR     \ example address as double
 $0001 $0000  2CONSTANT  ONE-D
 
 .( ONE-D: ) ONE-D D. CR    \ => 1

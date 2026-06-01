@@ -1,5 +1,5 @@
 \
-\ 018-catch-throw.f
+\ 026-catch-throw.f
 \ Exception handling: CATCH, THROW, ABORT.
 \
 \ Forth's exception model is lightweight and explicit.  THROW signals
@@ -29,21 +29,23 @@
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
-\   018 TUTORIAL
+\   026 TUTORIAL
 \ To unload and reload interactively:
-\   NEWTASK 018 TUTORIAL
+\   NEWTASK 026 TUTORIAL
 \
 
 MARKER NEWTASK
 
 CR
-.( --- Tutorial 018: exceptions loaded. ) CR
+.( --- Tutorial 026: exceptions loaded. ) CR
 .(     Type NEWTASK to unload.  ) CR
 
 NEEDS CATCH
 NEEDS THROW
 NEEDS ABORT"
+NEEDS SQRT
 
+CR
 
 \ ===========================================================================
 \ 1. THROW -- signalling an exception
@@ -151,7 +153,7 @@ NEEDS ABORT"
 \ If ABORT" is called inside a CATCH, the catch sees throw code -2.
 
 : POSITIVE-ONLY  ( n -- n )
-    DUP 0<= ABORT" requires a positive number" ;
+    DUP 0> NOT ABORT" requires a positive number" ;
 
 .( Try: 5 POSITIVE-ONLY .   ) CR   \ => 5
 .( Try: 0 POSITIVE-ONLY .   ) CR   \ aborts with message
