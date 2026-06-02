@@ -57,15 +57,17 @@ NEEDS .BORDER
 \ 60 Hz (NTSC) -- one interrupt per video frame.
 \
 \ One PAL frame  = 20 ms
-\ One NTSC frame = approximately 16 ms
+\ One NTSC frame = approximately 17 ms
 \
 \ ISR-SYNC is a CODE word (from lib/INTERRUPTS.f) that executes a
 \ Z80 HALT instruction.  HALT suspends the CPU until the next
 \ interrupt fires, giving exact frame synchronisation.
+\ In this demo we use directly CODE ISR-SYNC with no NEEDS INTERRUPT needed.
 \
 \ Usage pattern for frame-synchronised animation:
 \
-\   NEEDS INTERRUPTS
+\   CODE ISR-SYNC $76 C, $DD C, $E9 C, SMUDGE 
+\
 \   BEGIN
 \       \ ... update display ...
 \       ISR-SYNC    \ wait for next vertical blank
@@ -123,9 +125,11 @@ NEEDS .AT
 \ ===========================================================================
 \
 \ The following demo uses ISR-SYNC for exact 50 Hz frame timing.
-\ Load INTERRUPTS before using ISR-SYNC.
 
-NEEDS INTERRUPTS
+CODE ISR-SYNC  ( -- )
+    $76 C,             \ halt
+    $DD C, $E9 C,      \ jp (ix)   -- NEXT
+    SMUDGE
 
 : FRAME-FLASH  ( -- )
     CLS

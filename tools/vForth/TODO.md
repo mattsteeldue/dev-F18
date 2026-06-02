@@ -24,4 +24,6 @@ strings it does not work well.
 **2026-06-01**
 The example in tutorial 024:  3.7 F>D D. display 37 instead of 3
 Removed from tutorial/024-floating-point.f until fixed.    
+UPDATE: False positive, probably I missed typing FLOATING before testing.
+**Status: Done** 2026-06-02
 

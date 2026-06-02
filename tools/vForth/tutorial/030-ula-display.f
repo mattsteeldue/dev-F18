@@ -8,7 +8,7 @@
 \ bits5-3=paper color, bits2-0=ink color.  Colors 0-7:
 \ 0=black 1=blue 2=red 3=magenta 4=green 5=cyan 6=yellow 7=white
 \
-\ Reference: sec.7.1
+\ Reference: sec.3.2
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
@@ -30,6 +30,10 @@ NEEDS .BRIGHT
 NEEDS .FLASH
 NEEDS .AT
 NEEDS .TAB
+NEEDS CASE
+NEEDS LAYER0
+NEEDS LAYER12    
+
 
 \ ===========================================================================
 \ 1. The attribute byte
@@ -141,7 +145,7 @@ NEEDS .TAB
 
 : .COLOR-DEMO  ( -- )
     CLS
-    0 7 .AT
+    0 2 .AT
     7 .PAPER  0 .INK
     ."  Color swatches (ink=paper): " CR
     8 0 DO
@@ -163,7 +167,6 @@ NEEDS .TAB
 ;
 
 \ Helper: print color name for demo.
-NEEDS CASE
 
 : .COLOR-NAME  ( n -- )
     CASE
@@ -184,14 +187,28 @@ NEEDS CASE
     CLS
     TITLE-BAR
     8 0 DO
-        2 I + I 4 * .AT
-        I .INK  0 .PAPER
+        2 I + I 3 * .AT
+        I .INK  
+        I IF 0 ELSE 7 THEN .PAPER 
         I .
-        SPACE
         I .COLOR-NAME
     LOOP
     7 .PAPER  0 .INK
 ;
+
+
+: DEMO
+    LAYER0
+    COLOR-POS-DEMO
+    CURS KEY 
+    .COLOR-DEMO
+    CURS KEY 
+    LAYER12 1 .PAPER
+;
+
+CR
+.( Try: DEMO ) CR
+
 
 \ ===========================================================================
 \ 7. Attribute memory: direct access

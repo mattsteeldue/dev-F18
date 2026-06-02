@@ -246,3 +246,4 @@ supported and will produce incorrect behaviour.
 
 Pressing `[BREAK]` stops any active I/O operation immediately. If `LED` is driving an
 I/O sequence at the time, this may produce data loss.
+

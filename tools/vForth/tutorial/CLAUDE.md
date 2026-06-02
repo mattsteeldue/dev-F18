@@ -198,3 +198,21 @@ refactoring pattern.
 - Unlike `inc/` files (which have minimal comments), tutorials are primarily
   documentation. Explain the *why*, show the stack effects, describe expected output.
   The target reader is a programmer new to vForth but not necessarily new to programming.
+
+
+## 12. Caveats: Silent Behavioral Changes
+
+When a word's behavior depends on internal state (NMODE, BASE, etc.), explicitly warn
+readers about the consequences of forgetting to set or reset that state:
+
+- **What the default state is** — so readers know what to expect on entry.
+- **What happens if they forget to change it** — silent misparsing, wrong output, crashes.
+- **Why this is dangerous** — hard to debug because no error is raised.
+
+Example: forgetting `FLOATING` before entering floating-point numbers causes the parser
+to interpret them as double integers (silently), producing incorrect results or crashes.
+Forgetting `INTEGER` afterwards causes subsequent integer literals with a decimal point
+to be misparsed as floating-point.
+
+Include a clear warning in the narrative or as an inline comment so readers internalize
+the trap before they encounter it in practice.
