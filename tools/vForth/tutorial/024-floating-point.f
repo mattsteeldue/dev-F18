@@ -79,7 +79,7 @@ FLOATING
 \
 \   -3.0  FNEGATE  F.    => 3.0000e0
 \   -2.5  FABS     F.    => 2.5000e0
-
+CR
 .( Try: 3.0 2.0 F+ F. ) CR     \ => 5.0000e0
 .( Try: 7.0 2.0 F/ F. ) CR     \ => 3.5000e0
 .( Try: -3.0 FNEGATE F. ) CR   \ => 3.0000e0

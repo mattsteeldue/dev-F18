@@ -58,7 +58,7 @@ NEEDS [']
 
 : .STATE  ( -- )
     STATE @ IF  ." compiling"  ELSE  ." interpreting"  THEN  CR ;
-
+CR
 .( Try: .STATE   ) CR               \ => interpreting
 .( Try: : FOO  .STATE ;  FOO  ) CR  \ => interpreting (runs at runtime)
 
