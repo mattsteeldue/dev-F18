@@ -102,7 +102,7 @@ FORTH DEFINITIONS
 \ If a word with the same name exists in both vocabularies, the CONTEXT
 \ vocabulary wins.  This is how vocabularies provide selective override.
 \
-\ Example: ASSEMBLER defines words like LD, ADD, etc. that override
+\ Example: ASSEMBLER defines words like LD, JP, etc. that override
 \ any same-named FORTH words while ASSEMBLER is CONTEXT.
 \
 \   ASSEMBLER       \ set CONTEXT to ASSEMBLER

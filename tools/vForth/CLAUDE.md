@@ -347,6 +347,18 @@ Summary:
 
 Forth code in uppercase; Z80 opcode comments in lowercase for reading fluency.
 
+**ASSEMBLER vocabulary: case convention inside CODE bodies.**
+When using the ASSEMBLER vocabulary (not raw `C,` hex), follow the case
+rule visible in the documentation examples:
+- Z80 mnemonic words and register/flag specifiers: **lowercase**
+  (`halt`, `exx`, `nop`, `pop bc|`, `adda (hl)|`, `jpf pe|`, `ld c'| a|`, …)
+- Forth meta-words and commaers: **UPPERCASE**
+  (`HERE`, `NEXT`, `HOLDPLACE`, `BACK,`, `DISP,`, `AA,`, `N,`, `NN,`, `D,`, `LH,`, `C;`)
+
+Rationale: lowercase reads as conventional Z80 assembly; uppercase
+stands out as "Forth plumbing" that controls the assembler itself.
+This matches the style used throughout the vForth documentation (§3.9).
+
 ### lib/ module conventions
 
 Each module covers a coherent feature or hardware subsystem. Conventions:
