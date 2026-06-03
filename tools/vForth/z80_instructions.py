@@ -351,10 +351,17 @@ def inst_call_nn(cpu):
 
 
 def inst_ret(cpu):
-    """0xC9: RET - return from subroutine"""
-    # vForth uses DE as return stack (RP), not SP
-    cpu.PC = cpu.mem16_le(cpu.DE)
+    """0xC9: RET - EXIT from high-level definition (matches vForth EXIT in L0.asm)"""
+    # In vForth direct threading, RET executes EXIT:
+    # 1. Pop IP (BC) from vForth return stack (DE)
+    # 2. Update DE (return stack pointer)
+    # 3. Jump to Next_Ptr (IX) to continue interpretation
+    # This exactly matches the Z80 code in L0.asm lines 1402-1411
+    cpu.BC = cpu.mem16_le(cpu.DE)
     cpu.DE = (cpu.DE + 2) & 0xFFFF
+    # The actual jump to IX is handled by the emulator setting PC = IX
+    # (This will be done in the dispatch loop after RET returns)
+    # Jump to Next_Ptr is handled by the emulator's dispatch recognizing this as native
 
 
 def inst_jp_nz_nn(cpu):

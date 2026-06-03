@@ -314,13 +314,42 @@ class VForthEmulator:
             self.cpu.fetch_byte()
 
         elif opcode in INSTRUCTION_MAP:
-            # Special tracing for CALL, RET, and JP
+            # Special tracing and native implementation for CALL, RET, and JP
             if opcode == 0xCD:  # CALL nn
                 # Look ahead to find target address (next two bytes are lo,hi)
                 target_lo = self.memory[(self.cpu.PC) & 0xFFFF]
                 target_hi = self.memory[(self.cpu.PC + 1) & 0xFFFF]
                 target = target_lo | (target_hi << 8)
 
+                # Check if this is a CALL to Enter_Ptr (native implementation)
+                if self.Enter_Ptr and target == self.Enter_Ptr:
+                    # Execute Enter_Ptr natively instead of Z80 emulation
+                    if self.instr_count < 10000:
+                        print(f"[{self.instr_count:6d}] CALL Enter_Ptr native: BC=${self.cpu.BC:04X}")
+
+                    # The CALL instruction will push return address (PFA) onto hardware stack (SP)
+                    # We need to execute that CALL first, then implement ENTER logic
+
+                    # Execute the normal CALL (saves PC on SP)
+                    self.cpu.SP = (self.cpu.SP - 2) & 0xFFFF
+                    self.cpu.mem16_le_set(self.cpu.SP, self.cpu.PC + 2)  # PC+2 points after the 2-byte address operand
+
+                    # Now we're at the start of ENTER_Ptr. Execute ENTER logic:
+                    # 1. Save current IP (BC) on vForth return stack (via DE)
+                    self.cpu.DE = (self.cpu.DE - 2) & 0xFFFF
+                    self.cpu.mem16_le_set(self.cpu.DE, self.cpu.BC)
+
+                    # 2. POP BC from hardware stack (SP) - this gets the PFA
+                    pfa = self.cpu.mem16_le(self.cpu.SP)
+                    self.cpu.SP = (self.cpu.SP + 2) & 0xFFFF
+                    self.cpu.BC = pfa
+
+                    # 3. Jump to Next_Ptr
+                    self.cpu.PC = self.cpu.IX
+
+                    return  # Skip normal CALL execution
+
+                # Normal CALL
                 self.call_stack.append(self.cpu.PC - 1)
                 self.call_targets.append(target)
 
@@ -330,32 +359,22 @@ class VForthEmulator:
                 if self.instr_count < 1000 or len(self.call_stack) <= 5:
                     print(f"[{self.instr_count:6d}] CALL depth {len(self.call_stack):2d}: ${self.cpu.PC-1:04X} -> ${target:04X}")
 
-            elif opcode == 0xC9:  # RET
-                if self.instr_count < 100000 or len(self.call_stack) <= 3:
-                    ret_addr = self.cpu.mem16_le(self.cpu.SP)
-                    print(f"[{self.instr_count:6d}] RET  depth {len(self.call_stack):2d}: SP=${self.cpu.SP:04X} -> PC=${ret_addr:04X}, BC=${self.cpu.BC:04X}")
+            elif opcode == 0xC9:  # RET (EXIT from high-level word)
+                # In vForth, RET at end of colon-definition:
+                # 1. Pop IP (BC) from vForth return stack (DE)
+                # 2. Jump to Next_Ptr (IX) to continue interpretation
 
-                if self.call_stack:
-                    ret_from = self.call_stack.pop()
-                else:
-                    if self.instr_count < 100:
-                        print(f"[{self.instr_count:6d}] RET  without matching CALL (stack empty)")
+                if self.instr_count < 100000:
+                    print(f"[{self.instr_count:6d}] RET  (EXIT): BC=${self.cpu.BC:04X}, DE=${self.cpu.DE:04X}")
 
-                # Execute the RET instruction
-                INSTRUCTION_MAP[opcode](self.cpu)
+                # Pop BC from return stack (vForth stack at DE)
+                self.cpu.BC = self.cpu.mem16_le(self.cpu.DE)
+                self.cpu.DE = (self.cpu.DE + 2) & 0xFFFF
 
-                # Check for call stack depth limit
-                if len(self.call_stack) > self.max_call_stack_depth:
-                    self.max_call_stack_depth = len(self.call_stack)
+                # Jump to Next_Ptr to continue interpretation
+                self.cpu.PC = self.cpu.IX
 
-                if len(self.call_stack) > 50:
-                    print(f"[{self.instr_count:6d}] Call stack depth > 50, stopping for inspection")
-                    print(f"  PC=${self.cpu.PC:04X} BC=${self.cpu.BC:04X} DE=${self.cpu.DE:04X} HL=${self.cpu.HL:04X}")
-                    print(f"  Call targets: {[f'${x:04X}' for x in self.call_targets[-10:]]}")
-                    raise StopIteration()
-
-                # Return early to avoid double-execution
-                return
+                return  # Skip normal RET execution
 
             elif opcode == 0xC3:  # JP nn
                 jp_lo = self.memory[(self.cpu.PC) & 0xFFFF]
