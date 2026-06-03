@@ -41,12 +41,11 @@
 \   NEWTASK 024 TUTORIAL
 \
 
-\ MARKER NEWTASK
+: NEWTASK  NO-FLOATING ;
 
 CR
 .( --- Tutorial 024: floating point loaded. ) CR
-.(     This tutorial examples cannot be discarded via NEWTASK ) CR
-.(     Type NO-FLOATING to unload.        ) CR
+.(     Type NEWTASK to restore integer mode. ) CR
 
 NEEDS FLOATING
 

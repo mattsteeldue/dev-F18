@@ -142,8 +142,9 @@ symbol** and may appear in Forth source that targets the machine's display direc
 **Practical rules:**
 - Always write files with **no BOM**. Use `[System.IO.File]::WriteAllBytes()` or
   `-Encoding ascii` with explicit BOM removal.
-- Do not use any character outside the range `0x20-0x7E` plus `0x09` (tab), `0x0A`
-  (LF), `0x0D` (CR), and `0x7F` (copyright).
+- Do not use any character outside the range `0x20-0x7E` plus `0x0A` (LF), `0x0D`
+  (CR), and `0x7F` (copyright). **TAB (`0x09`) is forbidden**: it disrupts the Forth
+  tokeniser and must be replaced with spaces.
 - When generating help `.txt` files: plain ASCII, no BOM, no smart quotes, no em-dashes.
 
 **EMIT vs EMITC:**
@@ -222,11 +223,12 @@ Canonical example from `inc/2constant.f`:
 
 ### `INCLUDE` / `NEEDS`
 
-The source file being loaded must end with a blank line. If the last line has no trailing
-newline, the system crashes -- typically displaying a vertical grid pattern on screen.
+The system crashes -- typically displaying a vertical grid pattern on screen -- if the
+last line of the loaded file ends with one or more trailing spaces before the newline.
+The crash occurs regardless of what non-space content precedes the trailing spaces.
 `NEEDS` is affected by the same bug because it uses `INCLUDE` internally.
 
-**Workaround:** always ensure every `.f` file ends with a blank line.
+**Workaround:** ensure the last line of every `.f` file has no trailing spaces.
 
 ### `LOAD` (block/screen interpreter)
 

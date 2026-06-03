@@ -27,6 +27,35 @@ When the module's primary word is the natural unload handle, define a stub early
 After loading, `TUTORIAL` behaves exactly like `LOAD-TUTORIAL`. `FORGET TUTORIAL` removes
 the stub and every definition that follows it, cleanly unloading the entire module.
 
+### Patch-requiring libraries (FLOATING, ASSEMBLER)
+
+Some libraries cannot use `MARKER` for unloading because they **patch core definitions**
+at load time. A plain `MARKER` + `FORGET` would remove the library words but leave the
+patched core in an inconsistent state.
+
+**FLOATING** patches `INTERPRET` by replacing the `NUMBER` call with `FNUMBER`, so that
+decimal literals (e.g. `3.14`) are parsed as floating-point values. `NO-FLOATING` undoes
+this patch, restoring `NUMBER` in `INTERPRET`.
+
+**ASSEMBLER** is a `VOCABULARY`. It patches `;CODE` in the core by replacing the `NOOP`
+placeholder left intentionally in the core for this purpose. The patch installs the
+ASSEMBLER vocabulary so that words after `;CODE` are looked up in the assembler word-set.
+There is currently no `NO-ASSEMBLER` equivalent to restore `;CODE` -- see `TODO.md`.
+
+For FLOATING, the correct unload sequence is:
+
+1. Call `NO-FLOATING` first to restore `NUMBER` inside `INTERPRET`.
+2. Then remove the library words via `FORGET` or the module's own unload word.
+
+In tutorials that use FLOATING, `MARKER NEWTASK` is replaced with:
+
+```forth
+: NEWTASK  NO-FLOATING ;   \ restores INTERPRET; does NOT remove lib words
+```
+
+`NEWTASK` in tutorial 024 only restores integer mode -- it does not unload the
+floating-point vocabulary. Reload via `024 TUTORIAL` from a clean session for a full reset.
+
 ### Other conventions
 
 - **NEEDS for dependencies**: always use `NEEDS` to pull in prerequisites -- never assume
