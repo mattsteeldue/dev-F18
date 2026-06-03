@@ -214,6 +214,8 @@ class VForthEmulator:
             self.handle_f_open()
         elif func == 0x9B:  # F_CLOSE
             self.handle_f_close()
+        elif func == 0x9C:  # F_SYNC
+            self.handle_f_sync()
         elif func == 0x9D:  # F_READ
             self.handle_f_read()
         elif func == 0x9E:  # F_WRITE
@@ -222,6 +224,10 @@ class VForthEmulator:
             self.handle_f_seek()
         elif func == 0xA0:  # F_FGETPOS
             self.handle_f_fgetpos()
+        elif func == 0xA3:  # F_OPENDIR
+            self.handle_f_opendir()
+        elif func == 0xA4:  # F_READDIR
+            self.handle_f_readdir()
         else:
             if self.instr_count < 100000:
                 print(f"[{self.instr_count:6d}] NextZXOS call func=${ func:02X} (unimplemented)")
@@ -403,6 +409,86 @@ class VForthEmulator:
                 self.cpu.HL = 0xFFFF  # error
         else:
             self.cpu.HL = 0xFFFF  # error (file not open)
+
+    def handle_f_sync(self):
+        """F_SYNC: flush file to disk
+        Input: A=file handle
+        Output: HL=error flag (0=success, -1=error)
+        """
+        handle = self.cpu.A
+        if handle in self.file_handles:
+            try:
+                self.file_handles[handle].flush()
+                self.cpu.HL = 0  # success
+            except:
+                self.cpu.HL = 0xFFFF  # error
+        else:
+            self.cpu.HL = 0xFFFF  # error (file not open)
+
+    def handle_f_opendir(self):
+        """F_OPENDIR: open directory for listing
+        Input: IX=directory path (null-terminated)
+        Output: A=handle, HL=error flag (0=success, -1=error)
+        """
+        import os
+        # Read directory path from memory at IX
+        dir_addr = self.cpu.IX
+        dir_bytes = []
+        while True:
+            byte = self.memory[dir_addr]
+            if byte == 0:
+                break
+            dir_bytes.append(byte)
+            dir_addr = (dir_addr + 1) & 0xFFFF
+
+        dirname = ''.join(chr(b) for b in dir_bytes if 32 <= b < 127)
+
+        try:
+            # Emulate directory handle by storing file list
+            if os.path.isdir(dirname):
+                entries = os.listdir(dirname)
+                handle = self.next_file_handle
+                self.file_handles[handle] = {'type': 'dir', 'entries': entries, 'index': 0, 'path': dirname}
+                self.next_file_handle += 1
+                self.cpu.A = handle & 0xFF
+                self.cpu.HL = 0  # success
+            else:
+                self.cpu.A = 0
+                self.cpu.HL = 0xFFFF  # error (directory not found)
+        except Exception as e:
+            self.cpu.A = 0
+            self.cpu.HL = 0xFFFF  # error
+
+    def handle_f_readdir(self):
+        """F_READDIR: read next directory entry
+        Input: A=handle, DE=buffer for entry, IX=pointer
+        Output: A=handle, HL=error flag (0=success, -1=error)
+        """
+        handle = self.cpu.A
+        if handle in self.file_handles and isinstance(self.file_handles[handle], dict) and self.file_handles[handle].get('type') == 'dir':
+            try:
+                entries = self.file_handles[handle]['entries']
+                idx = self.file_handles[handle]['index']
+                if idx < len(entries):
+                    entry = entries[idx]
+                    # Write entry to buffer at IX
+                    entry_bytes = entry.encode('ascii', errors='ignore')
+                    for i, b in enumerate(entry_bytes):
+                        if (self.cpu.IX + i) & 0xFFFF >= 0x10000:
+                            break
+                        self.memory[(self.cpu.IX + i) & 0xFFFF] = b & 0xFF
+                    # Null terminator
+                    self.memory[(self.cpu.IX + len(entry_bytes)) & 0xFFFF] = 0
+                    self.file_handles[handle]['index'] = idx + 1
+                    self.cpu.HL = 0  # success
+                else:
+                    # End of directory
+                    self.memory[self.cpu.IX] = 0  # Empty entry
+                    self.cpu.HL = 0xFFFF  # EOF marker
+            except:
+                self.cpu.HL = 0xFFFF  # error
+        else:
+            self.cpu.HL = 0xFFFF  # error (not a directory handle)
 
     def print_trace_report(self):
         """Print execution trace report"""
