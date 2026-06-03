@@ -212,10 +212,9 @@ selects the instruction:
     $A4  ldirx           (not used in core)
 
 
-## 5. Inner Interpreter
+## 5. Inner Interpreter and Direct Threading
 
-The inner interpreter lives at `Next_Ptr` (`L0.asm:86`).  Its machine
-code is:
+The inner interpreter (NEXT) lives at `Next_Ptr` (`L0.asm:86`). Its machine code:
 
     Next_Ptr:
         ld  a, (bc)   ; fetch low byte of next CFA from IP
@@ -227,43 +226,68 @@ code is:
     Exec_Ptr:
         jp  (hl)      ; jump to code at CFA
 
-In Python terms:
+In direct threading, the CFA contains either:
+- **Low-level (CODE) word**: Z80 machine code ending with `jp (ix)` to return to NEXT
+- **High-level (colon) word**: `call ENTER_PTR` (3 bytes) followed by PFA data
 
-    def inner_next(cpu, mem):
-        lo = mem[cpu.BC]; cpu.BC = (cpu.BC + 1) & 0xFFFF
-        hi = mem[cpu.BC]; cpu.BC = (cpu.BC + 1) & 0xFFFF
-        cpu.HL = (hi << 8) | lo          # HL = CFA
-        cpu.PC = cpu.HL                  # jp (hl)
+When NEXT executes `jp (hl)` to a high-level word:
+1. The `call ENTER_PTR` pushes its return address (the PFA) onto the hardware stack (SP)
+2. ENTER_PTR (native):
+   - Saves the current IP (BC) onto the vForth return stack (via DE)
+   - Pops the PFA from the hardware stack (SP) into BC (the new IP)
+   - Jumps back to NEXT via `jp (ix)`
+3. NEXT continues interpretation of the new word's code tokens
+4. At the end, EXIT (native):
+   - Pops the saved IP (BC) from the vForth return stack (via DE)
+   - Jumps back to NEXT via `jp (ix)`
 
-`IX` always holds `Next_Ptr`.  `jp (ix)` at the end of every CODE word
-transfers control back here.
+**Register roles (vForth permanent assignments):**
+- `BC`: Instruction Pointer (IP) — points to next CFA to execute
+- `DE`: Return Stack Pointer (RP) — manages nested call depth
+- `SP`: Hardware stack — used by CALL/RET and for temporary storage
+- `IX`: Address of NEXT (`Next_Ptr`) — `jp (ix)` returns to interpreter
+- `HL`: Working register and CFA holder
 
 
-## 6. Threading Model
+## 6. Threading Model and Native Implementation
 
-Direct threading means the CFA holds executable Z80 code:
+**Direct threading** means the CFA holds executable Z80 code:
 
     Low-level word:   CFA -> Z80 machine code ... jp (ix)
-    High-level word:  CFA -> CALL Enter_Ptr
+    High-level word:  CFA -> CALL ENTER_PTR
                       PFA -> xt_1, xt_2, ..., EXIT_xt
 
-`Enter_Ptr` (`L1.asm`) pushes the current IP onto the return stack, then
-sets BC (IP) to PFA+0:
+**ENTER_PTR** (native operation in emulator, Z80 code in `L0.asm:1402`):
 
-    Enter_Ptr:
-        push bc          ; save IP on return stack (via DE)
-        ...              ; DE is RP, grows downward
-        ld   bc, hl+3    ; PFA = CFA + 3 (CALL = 3 bytes)
-        next
+    call ENTER_PTR      ; Z80 instruction that pushes return addr (PFA) onto hardware stack
+    
+    ; Then ENTER_PTR code:
+    ex   de, hl         ; swap DE (RP) and HL (CFA)
+    ld   c, (hl)        ; pop low byte of IP from vForth return stack
+    inc  hl
+    ld   b, (hl)        ; pop high byte of IP (now BC = saved IP)
+    inc  hl
+    ex   de, hl         ; restore DE (RP)
+    next                ; return to NEXT
 
-`EXIT` pops IP from the return stack:
+**Emulator native implementation** of ENTER_PTR:
+1. Execute the `call ENTER_PTR` normally (save return addr on SP)
+2. Pop BC from the vForth return stack (DE) — the saved IP
+3. Pop PFA from the hardware stack (SP) — this becomes the new BC
+4. Jump to NEXT (IX)
 
-    EXIT:
-        pop  bc          ; (from return stack via DE)
-        next
+**EXIT** (defined at `L0.asm:1402`, implemented as RET in emulator):
 
-For the emulator, both can be handled as special cases in the dispatch
-loop rather than executing real Z80 code, which is faster and simpler.
+    ex   de, hl         ; swap DE (RP) and HL
+    ld   c, (hl)        ; pop IP from return stack
+    inc  hl
+    ld   b, (hl)        ; load high byte
+    inc  hl
+    ex   de, hl         ; restore DE
+    next                ; jump to NEXT
+
+Both ENTER_PTR and EXIT can be handled as special cases in the dispatch
+loop for efficiency (no need to execute Z80 code step-by-step).
 
 
 ## 7. Cold Start Sequence
@@ -291,47 +315,57 @@ The emulator must:
 
 ## 8. I/O and ROM Stubs
 
-vForth calls the ZX Spectrum Next OS via `rst 08 / db $94` (esxDOS /
-NextZXOS) and direct port I/O.  For the minimal emulator these need stubs.
+vForth calls the ZX Spectrum Next OS via `rst 08 / db $94` (esxDOS / NextZXOS).
+The emulator stubs these at the dispatch level rather than emulating Z80 RST instructions.
 
-| Mechanism | Real action | Stub strategy |
-|---|---|---|
-| `rst 08 / db $94` | NextZXOS call | intercept opcode; dispatch on `(IX_Echo)` / C register |
-| `out (c), l` with BC=$243B | select Next register | record `selected_reg = L` |
-| `in l, (c)` with BC=$253B | read Next register | return value from `next_regs[selected_reg]` |
-| `out (c), l` with BC=$253B | write Next register | `next_regs[selected_reg] = L`; if reg=87 swap page |
-| `nextreg 87, a` | set MMU slot 7 | see section 3 |
-| `out ($FE), a` | set border colour | ignore |
-| `in a, ($FE)` | read keyboard | return $BF (no key pressed) |
-| ROM `PRINT` / `CLS` | character output | map to `sys.stdout.write` |
+**Phase 2 (Terminal I/O) critical stubs:**
+
+| Mechanism | C register | Real action | Emulator stub |
+|---|---|---|---|
+| `rst 08 / db $94` | 1 | `KEY` — read character | read from stdin (blocking) |
+| `rst 08 / db $94` | 2 | `EMIT` — write character | write to stdout (7-bit ASCII) |
+| `rst 08 / db $94` | 2 | `EMITC` — write byte | write to stdout (full byte) |
+| `out (c), l` BC=$243B | — | Select Next register | record `selected_reg = L` |
+| `in l, (c)` BC=$253B | — | Read Next register | return value from `next_regs[selected_reg]` |
+| `out (c), l` BC=$253B | — | Write Next register | `next_regs[selected_reg] = L`; if reg=87 swap page |
+| `nextreg 87, a` | — | Set MMU slot 7 | dispatch MMU paging |
+| `out ($FE), a` | — | Set border colour | stub (no-op) |
+| `in a, ($FE)` | — | Read keyboard | return $BF (no key pressed) |
 
 **ROM entry points via CALL#:**
 
-The word `CALL#` (in `inc/call#.f`) allows arbitrary ROM routine calls.  Very few
-words in the codebase use this; the only known usage is `.PERM` (makes permanent
-the last color setting via ROM call `$1CAD`).  Valid ROM entry points are limited
-and hardware-specific; for Phase 1, `CALL#` can safely no-op or raise a warning.
+The word `CALL#` (in `inc/call#.f`) allows arbitrary ROM calls. Only `.PERM` uses it 
+(ROM call `$1CAD`). For Phase 2, `CALL#` can safely no-op or warn.
 
-**File I/O priority:**
+**Later phases (Phase 3+):**
 
-The critical one for basic operation is the NextZXOS file I/O (used by
-`INCLUDE`, `NEEDS`, block read/write).  For a tutorial runner, at minimum
-stub `F_OPEN`, `F_READ`, `F_CLOSE` to read files from the host filesystem.
+File I/O via `F_OPEN`, `F_READ`, `F_CLOSE` (used by `INCLUDE`, `NEEDS`, block I/O).
+Not needed for Phase 2 interactive REPL.
 
 
 ## 9. Implementation Phases
 
 ### Phase 1 -- Inner interpreter only (no I/O)
 
-- Flat 64 KB `bytearray`.
-- Load the three binaries:
+**Status**: ✅ Complete — emulator loads binaries, initializes CPU, executes inner interpreter
+
+**Implementation:**
+- Flat 64 KB `bytearray` for Z80 memory space
+- Load three binaries:
   - Extract payload from `low.bin` (skip 128-byte TAP header), load to `$5B00`
   - Load `forth18e.bin` to `$6366`
   - Load `ram8.bin` to `$E000` (as initial MMU page 32)
-- Implement all standard Z80 instructions + `add de,a` + `nextreg`.
-- Implement `Enter_Ptr` and `EXIT` natively (bypass Z80 emulation).
-- Stub all I/O and OS calls as no-ops.
-- Goal: execute `COLD` through to the `QUIT` loop, then stop at `KEY`.
+- Implement 150+ standard Z80 instructions + Z80N extensions (`add de,a`, `nextreg`, `mul`, `push nn`)
+- **Native implementation** of critical threading operations:
+  - `CALL ENTER_PTR`: Recognize calls to Enter_Ptr; execute natively:
+    - Save BC (current IP) onto vForth return stack (DE)
+    - Pop PFA from hardware stack (SP) into BC
+    - Jump to NEXT (IX)
+  - `RET (EXIT)`: Recognize RET as EXIT; execute natively:
+    - Pop BC (saved IP) from vForth return stack (DE)
+    - Jump to NEXT (IX)
+- Stub all I/O and OS calls as no-ops
+- **Goal**: Execute COLD initialization and inner interpreter loop; stop at KEY
 
 Recommended Z80 Python library: **`z80`** (PyPI, pure Python, Z80 only)
 or **`py65`**-style custom implementation targeting just the instructions
@@ -339,10 +373,27 @@ actually present in `forth18e.bin`.
 
 ### Phase 2 -- Terminal I/O
 
-- Stub `KEY` to read from `sys.stdin`.
-- Stub `EMIT` / `EMITC` to write to `sys.stdout`.
-- Stub `CR` as `print()`.
-- Goal: interactive Forth prompt in the terminal.
+**Objective**: Interactive Forth REPL in the terminal
+
+**Implementation:**
+- Intercept `rst 08 / db $94` (NextZXOS call) in dispatch loop
+- Stub the following OS calls:
+  - `KEY` (C=1): Read character from stdin; block until available
+    - vForth polling: checks FLAGS bit 5 for key ready
+    - Emulator: read from `sys.stdin` and return character
+  - `EMIT` / `EMITC` (C=2): Write character to stdout
+    - `EMIT`: mask to 7-bit ASCII
+    - `EMITC`: full byte (0-255)
+  - `CR` / `LF`: Line feed via `EMITC`
+  - `CLS`: Clear screen (stub as no-op)
+  - `SELECT`: Stream selection (stub as no-op)
+
+**Stopping condition:**
+- When COLD initialization completes, vForth enters the QUIT loop
+- QUIT calls `KEY` to wait for user input
+- At this point the emulator has completed Phase 2
+
+**Goal**: `python3 emulator.py` shows a Forth prompt and can accept commands
 
 ### Phase 3 -- File I/O
 
