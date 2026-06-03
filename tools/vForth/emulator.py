@@ -133,6 +133,10 @@ class VForthEmulator:
         self.loop_detector = {}  # Track PC -> instruction count for loop detection
         self.max_call_stack_depth = 0  # Track max depth for stats
 
+        # File I/O (Phase 3)
+        self.file_handles = {}  # Map file handle -> file object
+        self.next_file_handle = 1  # Next available file handle
+
     def load_binary(self, filename, address):
         """Load binary file into memory at given address"""
         with open(filename, "rb") as f:
@@ -189,15 +193,13 @@ class VForthEmulator:
         return ORIGIN + 0x086
 
     def handle_nextzxos_call(self):
-        """Handle NextZXOS call via rst 08 / db $94"""
-        # After the RST 08 instruction, need to fetch the function byte
+        """Handle NextZXOS call via rst 08 / db <func>"""
+        # After the RST 08 instruction, fetch the function byte
         func = self.cpu.fetch_byte()
 
         if func == 0x94:
-            # This is the NextZXOS call indicator
-            # The actual function is in the C register
+            # Terminal I/O function - dispatch on C register
             c_register = self.cpu.C
-
             if c_register == 1:  # KEY
                 self.handle_key()
             elif c_register == 2:  # EMIT / EMITC
@@ -207,6 +209,22 @@ class VForthEmulator:
             else:
                 if self.instr_count < 100000:
                     print(f"[{self.instr_count:6d}] NextZXOS call C=${c_register:02X} (unimplemented)")
+
+        elif func == 0x9A:  # F_OPEN
+            self.handle_f_open()
+        elif func == 0x9B:  # F_CLOSE
+            self.handle_f_close()
+        elif func == 0x9D:  # F_READ
+            self.handle_f_read()
+        elif func == 0x9E:  # F_WRITE
+            self.handle_f_write()
+        elif func == 0x9F:  # F_SEEK
+            self.handle_f_seek()
+        elif func == 0xA0:  # F_FGETPOS
+            self.handle_f_fgetpos()
+        else:
+            if self.instr_count < 100000:
+                print(f"[{self.instr_count:6d}] NextZXOS call func=${ func:02X} (unimplemented)")
 
     def handle_key(self):
         """KEY: read character from stdin, return in A register"""
@@ -230,6 +248,161 @@ class VForthEmulator:
     def handle_cls(self):
         """CLS: clear screen (stub as no-op)"""
         pass
+
+    def handle_f_open(self):
+        """F_OPEN: open file
+        Input: A=mode, B=*, DE=buffer addr, IX=filename (null-terminated)
+        Output: A=file handle, HL=error flag (0=success, -1=error)
+        """
+        # Read filename from memory at IX (null-terminated string)
+        filename_addr = self.cpu.IX
+        filename_bytes = []
+        while True:
+            byte = self.memory[filename_addr]
+            if byte == 0:  # null terminator
+                break
+            filename_bytes.append(byte)
+            filename_addr = (filename_addr + 1) & 0xFFFF
+
+        filename = ''.join(chr(b) for b in filename_bytes if 32 <= b < 127)
+
+        # Parse mode byte (C register contains the mode)
+        mode = self.cpu.C
+        read_mode = bool(mode & 0x01)
+        write_mode = bool(mode & 0x02)
+        create_mode = mode & 0x0C
+
+        # Open file
+        try:
+            py_mode = ''
+            if read_mode and write_mode:
+                py_mode = 'r+b'
+            elif write_mode:
+                py_mode = 'w+b'
+            elif read_mode:
+                py_mode = 'rb'
+            else:
+                py_mode = 'rb'
+
+            # Handle create modes
+            if create_mode == 0x08:  # open or create
+                py_mode = 'a+b'
+            elif create_mode == 0x04:  # create new, error if exists
+                py_mode = 'x+b'
+            elif create_mode == 0x0C:  # create/truncate
+                py_mode = 'w+b'
+
+            f = open(filename, py_mode)
+            handle = self.next_file_handle
+            self.file_handles[handle] = f
+            self.next_file_handle += 1
+
+            self.cpu.A = handle & 0xFF
+            self.cpu.HL = 0  # success
+        except Exception as e:
+            self.cpu.A = 0
+            self.cpu.HL = 0xFFFF  # error
+
+    def handle_f_close(self):
+        """F_CLOSE: close file
+        Input: A=file handle
+        Output: HL=error flag (0=success, -1=error)
+        """
+        handle = self.cpu.A
+        if handle in self.file_handles:
+            try:
+                self.file_handles[handle].close()
+                del self.file_handles[handle]
+                self.cpu.HL = 0  # success
+            except:
+                self.cpu.HL = 0xFFFF  # error
+        else:
+            self.cpu.HL = 0xFFFF  # error (file not open)
+
+    def handle_f_read(self):
+        """F_READ: read from file
+        Input: A=file handle, BC=bytes to read, IX=address
+        Output: DE=bytes read, HL=error flag (0=success, -1=error)
+        """
+        handle = self.cpu.A
+        num_bytes = self.cpu.BC
+        addr = self.cpu.IX
+
+        if handle in self.file_handles:
+            try:
+                data = self.file_handles[handle].read(num_bytes)
+                bytes_read = len(data)
+
+                # Write data to memory
+                for i, byte in enumerate(data):
+                    self.memory[(addr + i) & 0xFFFF] = byte
+
+                self.cpu.DE = bytes_read
+                self.cpu.HL = 0  # success
+            except:
+                self.cpu.DE = 0
+                self.cpu.HL = 0xFFFF  # error
+        else:
+            self.cpu.DE = 0
+            self.cpu.HL = 0xFFFF  # error (file not open)
+
+    def handle_f_write(self):
+        """F_WRITE: write to file
+        Input: A=file handle, BC=bytes to write, IX=address
+        Output: DE=bytes written, HL=error flag (0=success, -1=error)
+        """
+        handle = self.cpu.A
+        num_bytes = self.cpu.BC
+        addr = self.cpu.IX
+
+        if handle in self.file_handles:
+            try:
+                data = bytes(self.memory[(addr + i) & 0xFFFF] for i in range(num_bytes))
+                bytes_written = self.file_handles[handle].write(data)
+
+                self.cpu.DE = bytes_written
+                self.cpu.HL = 0  # success
+            except:
+                self.cpu.DE = 0
+                self.cpu.HL = 0xFFFF  # error
+        else:
+            self.cpu.DE = 0
+            self.cpu.HL = 0xFFFF  # error (file not open)
+
+    def handle_f_seek(self):
+        """F_SEEK: seek in file
+        Input: A=file handle, BC:DE=offset (32-bit), HL=whence (0=start)
+        Output: HL=error flag (0=success, -1=error)
+        """
+        handle = self.cpu.A
+        offset = (self.cpu.BC << 16) | self.cpu.DE
+
+        if handle in self.file_handles:
+            try:
+                self.file_handles[handle].seek(offset, 0)  # 0 = SEEK_SET
+                self.cpu.HL = 0  # success
+            except:
+                self.cpu.HL = 0xFFFF  # error
+        else:
+            self.cpu.HL = 0xFFFF  # error (file not open)
+
+    def handle_f_fgetpos(self):
+        """F_FGETPOS: get file position
+        Input: A=file handle
+        Output: BC:DE=position (32-bit), HL=error flag (0=success, -1=error)
+        """
+        handle = self.cpu.A
+
+        if handle in self.file_handles:
+            try:
+                pos = self.file_handles[handle].tell()
+                self.cpu.BC = (pos >> 16) & 0xFFFF
+                self.cpu.DE = pos & 0xFFFF
+                self.cpu.HL = 0  # success
+            except:
+                self.cpu.HL = 0xFFFF  # error
+        else:
+            self.cpu.HL = 0xFFFF  # error (file not open)
 
     def print_trace_report(self):
         """Print execution trace report"""
