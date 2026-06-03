@@ -58,20 +58,44 @@ vForth uses **only slot 7** (the heap).  The relevant Next register is:
 The instruction `nextreg 87, a` (Z80N opcode `$ED $92 $57`) writes `A`
 into register 87, swapping which physical 8 KB page appears at $E000.
 
-vForth uses this during `(FIND)` and `HALLOT` to walk the heap when it
-spans more than one 8 KB page.  For the **minimal emulator** (single
-8 KB heap = ram8.bin only) slot 7 is always the same page and
-`nextreg 87, x` can be a no-op, provided `x` is always the page that
-holds ram8.bin.
+### Initial heap page
 
-### Minimal paging model
+`ram8.bin` is the initial content of **RAM page 32 (`$20`)**, the first
+8 KB page of heap.  On a real ZX Spectrum Next, the BASIC loader does:
 
-    page 0 : the 8 KB block loaded from ram8.bin
-    nextreg 87, 0  -- already mapped; do nothing
-    nextreg 87, x  -- if x != 0, page fault / emulator error
+    LOAD "ram8.bin" BANK 32     ; loads into 8K physical page $20
 
-This is sufficient to run the cold start, the inner interpreter, and
-any tutorial that does not exercise multi-page heap expansion.
+At power-on, page $20 is fitted at slot 7 ($E000).  The heap variable
+`HP` starts at `$0002` which encodes page $20, offset $0002 (see §3.1).
+
+### Heap-Pointer encoding  (§6.3.1, vForth 1.8 manual)
+
+A Heap-Pointer (`ha`) is a 16-bit integer that encodes both the physical
+page and the offset within it.  The base page is 32 (`$20`).
+
+    page   = 32 + (ha >> 13)           ; upper 3 bits select page offset from base
+    offset = $E000 + (ha & $1FFF)      ; lower 13 bits = byte offset within 8K page
+
+Examples from the manual (§6.3.2):
+
+    ha = $0F80  ->  page $20,  physical address $EF80
+    ha = $2000  ->  page $21,  physical address $E000   (start of 2nd heap page)
+
+Conversion words:
+- `>FAR  ha -- a p`  decode ha into physical offset `a` ($E000..$FFFF) and page `p`
+- `<FAR  a p -- ha`  encode physical offset + page into ha
+- `FAR   ha -- a`    decode AND fit the page into MMU7 (calls `>FAR` then `MMU7!`)
+- `MMU7! n --`       write page number `n` into Next register 87 (slot 7)
+
+### Minimal paging model (Phase 1 emulator)
+
+Load `ram8.bin` as page $20.  On `nextreg 87, n`:
+
+    if n == 32 ($20): already mapped -- do nothing
+    else:             raise EmulatorError('multi-page heap not yet supported')
+
+This is sufficient to run the cold start, inner interpreter, and any
+tutorial that does not overflow the first 8 KB of heap.
 
 ### Full paging model (future)
 
@@ -82,6 +106,43 @@ Allocate a dictionary of `{page_number: bytearray(8192)}`.  On
     slot7 -> pages[n]
 
 Read/write to $E000-$FFFF dispatches through `pages[mmu7_page]`.
+New pages are allocated lazily (zeroed bytearray) when first written.
+
+
+## 3a. Heap Internal Structure  (§6.3.2, vForth 1.8 manual)
+
+The heap is a doubly-linked list of allocated chunks.  It starts at
+page $20, offset $0002.  `HP` (user variable) holds the Heap-Pointer to
+the next free location.
+
+Each call to `HEAP n` allocates a chunk as follows (all addresses in
+`page:offset` notation, base page $20):
+
+    page:offset   content
+    ─────────────────────────────────────────────────────────────
+    hp-0          forward pointer  (2 bytes)  ──┐ points to next hp
+    hp+2          allocated data   (n bytes)    │
+    hp+2+n        trailing NUL     (2 bytes)    │
+    hp+2+n+2      backward pointer (2 bytes)  ──┼─ points to previous hp
+    hp+2+n+4      new HP           (next free)◄─┘
+    ─────────────────────────────────────────────────────────────
+
+So each allocation consumes `n + 6` bytes of heap (2 forward + n data +
+2 NUL trailer + 2 backward).
+
+Concrete example from the manual (HP starts at `$0F80`, page $20):
+
+    After `7 HEAP` (7-byte allocation, returns `$0F82`):
+    20:0F80  0F8D    forward ptr  -> new HP
+    20:0F82  .. x7   7 bytes (uninitialised)
+    20:0F89  00 00   NUL trailer
+    20:0F8B  0F80    backward ptr -> previous HP
+    20:0F8D  ....    new free HP
+
+For the emulator, `HEAP` / `HALLOT` update the in-memory HP cell and
+page-map the correct page via `nextreg 87`.  The linked-list is in
+memory; the emulator does not need to parse it -- it just needs the
+paging to be correct.
 
 
 ## 4. Z80N Instruction Set
@@ -267,4 +328,7 @@ actually present in `forth18e.bin`.
 | `Warm_Start` | `Cold_Start - 2` | `L2.asm:260` |
 | `Cold_Start` | `Cold_Start` | `L2.asm:261` |
 | Heap (slot 7) | `$E000-$FFFF` | `main.asm` SAVEBIN |
+| Heap base page | RAM page 32 (`$20`) | §6.3.2 manual; BASIC `LOAD "ram8.bin" BANK 32` |
+| Heap-Pointer base | `$0002` (page $20 offset $0002) | initial `HP` value |
+| HP encoding | `page = 32 + (ha>>13)`, `offset = $E000 + (ha & $1FFF)` | §6.3.1 manual |
 | MMU reg slot 7 | Next register 87 (`$57`) | `L0.asm` nextreg usage |
