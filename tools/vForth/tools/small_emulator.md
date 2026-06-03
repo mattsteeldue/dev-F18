@@ -3,21 +3,29 @@
 
 Goal: run `forth18e.bin` on a headless Python machine that is just big
 enough to host the Forth inner interpreter and the heap paging mechanism.
-The result is a fast debug loop that does not require CSpect or real ZX
-Spectrum Next hardware.
+The result is a fast debug loop that does not require CSpect, Mame or real 
+ZX Spectrum Next hardware.
 
 
-## 1. The Two Binaries
+## 1. The Three Binaries
 
-| File | Load address | Size | Content |
-|---|---|---|---|
-| `forth18e.bin` | `$6366` | 9 999 bytes | Origin area + full Forth dictionary |
-| `ram8.bin` | `$E000` | 8 192 bytes | Initial heap (name-space + code-space) |
+| File | Load address | Size | Content | Format |
+|---|---|---|---|---|
+| `low.bin` | `$5B00` | 1 792 bytes | System variables + BASIC area | TAP/TZX with 128-byte header |
+| `forth18e.bin` | `$6366` | 9 999 bytes | Origin area + full Forth dictionary | Raw binary |
+| `ram8.bin` | `$E000` | 8 192 bytes | Initial heap (name-space + code-space) | Raw binary |
 
-`main.asm` saves them with these directives:
+**File origins:**
 
+- `forth18e.bin` and `ram8.bin` are saved by `main.asm`:
+    ```
     SAVEBIN "output/forth18e.bin", ORIGIN, 9999   ; ORIGIN = $6366
     SAVEBIN "output/ram8.bin",     $E000, $2000   ; heap page
+    ```
+- `low.bin` is generated externally via BASIC: `SAVE "low.bin" CODE $5B00,($6200-$5B00)`
+  (i.e. from address `$5B00` for length `$700` = 1792 bytes)
+  - Contains a 128-byte TAP/TZX header followed by 1792 bytes of raw payload
+  - The emulator ignores the header and loads only the payload (bytes 128-1919) to `$5B00`
 
 
 ## 2. Memory Map
@@ -25,7 +33,10 @@ Spectrum Next hardware.
 The emulator needs a flat 64 KB address space.  Only a subset of
 addresses are actually touched at startup.
 
-    $0000 - $6365   not used by vForth (ROM area on real hardware; not needed)
+    $0000 - $4000   not used by vForth (ROM area on real hardware; not needed)
+    $4000 - $5AFF   display file, attributes (output video)
+    $5B00 - $61FF   system variables, BASIC area (low.bin payload)
+    $6200 - $6365   interrupt vectors + padding (gap)
     $6366 - $8A75   forth18e.bin  (9 999 bytes, loaded verbatim)
     $8A76 - $D2F7   unused gap    (zero-initialise)
     $D2F8           S0 / TIB      (calc-stack top; TIB starts here)
@@ -55,15 +66,28 @@ vForth uses **only slot 7** (the heap).  The relevant Next register is:
 
     Next register 87 ($57) = page number currently mapped at slot 7
 
-The instruction `nextreg 87, a` (Z80N opcode `$ED $92 $57`) writes `A`
-into register 87, swapping which physical 8 KB page appears at $E000.
+The instruction `nextreg 87, a` (Z80N opcode `$ED $92 $57`) writes Z80 
+accumulator into register 87, changing which physical 8 KB page appears 
+at $E000. Pages are numbered between 0 and 223, but the those 0-31 are
+reserved by NextZXOS.
+
+On everyday life, only Heap Pages $20 and $21 will be actually used.
+When working with GRAPHICS, slot 7 is fitted with the RAM page that holds
+the graphics, e.g. Layer 2 
 
 ### Initial heap page
 
 `ram8.bin` is the initial content of **RAM page 32 (`$20`)**, the first
 8 KB page of heap.  On a real ZX Spectrum Next, the BASIC loader does:
 
-    LOAD "ram8.bin" BANK 32     ; loads into 8K physical page $20
+    LOAD "ram8.bin" BANK 16     ; loads into 8K physical page $20
+
+**BANK vs Page terminology:**
+- A **BANK** is 16 KB and is referenced in BASIC (`LOAD ... BANK n`)
+- A **Page** is 8 KB and is referenced in machine code and vForth (`nextreg 87`)
+- The equivalence: `BANK n <=> Pages (2n) and (2n+1)`
+  - Example: `BANK 16 <=> Pages 32 ($20) and 33 ($21)`
+- Pages 0-31 are reserved by NextZXOS; user code typically uses pages 32+
 
 At power-on, page $20 is fitted at slot 7 ($E000).  The heap variable
 `HP` starts at `$0002` which encodes page $20, offset $0002 (see §3.1).
@@ -111,20 +135,23 @@ New pages are allocated lazily (zeroed bytearray) when first written.
 
 ## 3a. Heap Internal Structure  (§6.3.2, vForth 1.8 manual)
 
-The heap is a doubly-linked list of allocated chunks.  It starts at
+The heap consists of allocated code-space chunks managed by the `HEAP` word.
+Each chunk maintains pointers for bookkeeping.  The heap starts at
 page $20, offset $0002.  `HP` (user variable) holds the Heap-Pointer to
 the next free location.
+
+**Code-space allocation (via HEAP):**
 
 Each call to `HEAP n` allocates a chunk as follows (all addresses in
 `page:offset` notation, base page $20):
 
     page:offset   content
     ─────────────────────────────────────────────────────────────
-    hp-0          forward pointer  (2 bytes)  ──┐ points to next hp
-    hp+2          allocated data   (n bytes)    │
-    hp+2+n        trailing NUL     (2 bytes)    │
-    hp+2+n+2      backward pointer (2 bytes)  ──┼─ points to previous hp
-    hp+2+n+4      new HP           (next free)◄─┘
+    hp+0          forward pointer  (2 bytes)  ──┐ 
+    hp+2          allocated data   (n bytes)    │ doubly-linked
+    hp+2+n        trailing NUL     (2 bytes)    │ structure
+    hp+2+n+2      backward pointer (2 bytes)  ──┘
+    hp+2+n+4      new HP           (next free)
     ─────────────────────────────────────────────────────────────
 
 So each allocation consumes `n + 6` bytes of heap (2 forward + n data +
@@ -139,10 +166,15 @@ Concrete example from the manual (HP starts at `$0F80`, page $20):
     20:0F8B  0F80    backward ptr -> previous HP
     20:0F8D  ....    new free HP
 
-For the emulator, `HEAP` / `HALLOT` update the in-memory HP cell and
-page-map the correct page via `nextreg 87`.  The linked-list is in
-memory; the emulator does not need to parse it -- it just needs the
-paging to be correct.
+**Note on dictionary name-space:** The heap also hosts the dictionary
+name-space (headers for word lookup).  The internal linking structure
+of name-space entries may differ from the code-space doubly-linked model
+above; exact details are not essential for the emulator.
+
+**For the emulator:** `HEAP` / `HALLOT` update the in-memory HP cell and
+page-map the correct page via `nextreg 87`.  The internal linked-list
+structure is irrelevant—the emulator simply ensures correct memory paging.
+Code execution depends only on memory contents, not on list traversal.
 
 
 ## 4. Z80N Instruction Set
@@ -273,6 +305,15 @@ NextZXOS) and direct port I/O.  For the minimal emulator these need stubs.
 | `in a, ($FE)` | read keyboard | return $BF (no key pressed) |
 | ROM `PRINT` / `CLS` | character output | map to `sys.stdout.write` |
 
+**ROM entry points via CALL#:**
+
+The word `CALL#` (in `inc/call#.f`) allows arbitrary ROM routine calls.  Very few
+words in the codebase use this; the only known usage is `.PERM` (makes permanent
+the last color setting via ROM call `$1CAD`).  Valid ROM entry points are limited
+and hardware-specific; for Phase 1, `CALL#` can safely no-op or raise a warning.
+
+**File I/O priority:**
+
 The critical one for basic operation is the NextZXOS file I/O (used by
 `INCLUDE`, `NEEDS`, block read/write).  For a tutorial runner, at minimum
 stub `F_OPEN`, `F_READ`, `F_CLOSE` to read files from the host filesystem.
@@ -283,7 +324,10 @@ stub `F_OPEN`, `F_READ`, `F_CLOSE` to read files from the host filesystem.
 ### Phase 1 -- Inner interpreter only (no I/O)
 
 - Flat 64 KB `bytearray`.
-- Load the two binaries.
+- Load the three binaries:
+  - Extract payload from `low.bin` (skip 128-byte TAP header), load to `$5B00`
+  - Load `forth18e.bin` to `$6366`
+  - Load `ram8.bin` to `$E000` (as initial MMU page 32)
 - Implement all standard Z80 instructions + `add de,a` + `nextreg`.
 - Implement `Enter_Ptr` and `EXIT` natively (bypass Z80 emulation).
 - Stub all I/O and OS calls as no-ops.
@@ -328,7 +372,7 @@ actually present in `forth18e.bin`.
 | `Warm_Start` | `Cold_Start - 2` | `L2.asm:260` |
 | `Cold_Start` | `Cold_Start` | `L2.asm:261` |
 | Heap (slot 7) | `$E000-$FFFF` | `main.asm` SAVEBIN |
-| Heap base page | RAM page 32 (`$20`) | §6.3.2 manual; BASIC `LOAD "ram8.bin" BANK 32` |
+| Heap base page | RAM page 32 (`$20`) | §6.3.2 manual; BASIC `LOAD "ram8.bin" BANK 16` |
 | Heap-Pointer base | `$0002` (page $20 offset $0002) | initial `HP` value |
 | HP encoding | `page = 32 + (ha>>13)`, `offset = $E000 + (ha & $1FFF)` | §6.3.1 manual |
 | MMU reg slot 7 | Next register 87 (`$57`) | `L0.asm` nextreg usage |
