@@ -125,6 +125,14 @@ class VForthEmulator:
         self.instr_count = 0
         self.max_instructions = 1000000  # Safety limit
 
+        # Trace logging
+        self.trace_enabled = False
+        self.call_stack = []  # Track CALL/RET for debugging
+        self.call_targets = []  # Track actual CALL targets
+        self.pc_histogram = {}  # Track which addresses execute most
+        self.loop_detector = {}  # Track PC -> instruction count for loop detection
+        self.max_call_stack_depth = 0  # Track max depth for stats
+
     def load_binary(self, filename, address):
         """Load binary file into memory at given address"""
         with open(filename, "rb") as f:
@@ -157,6 +165,7 @@ class VForthEmulator:
         S0 = 0xD2F8
         R0 = 0xD398
         Next_Ptr = self.find_next_ptr()
+        self.Enter_Ptr = self.find_enter_ptr()  # For native implementation
 
         self.cpu.SP = S0
         self.cpu.DE = R0
@@ -165,6 +174,8 @@ class VForthEmulator:
         self.cpu.PC = Next_Ptr  # Start execution at inner interpreter
 
         print(f"Cold start: SP=${self.cpu.SP:04X}, DE=${self.cpu.DE:04X}, BC=${self.cpu.BC:04X}, IX=${self.cpu.IX:04X}, PC=${self.cpu.PC:04X}")
+        if self.Enter_Ptr:
+            print(f"Enter_Ptr found at ${self.Enter_Ptr:04X}")
 
     def find_next_ptr(self):
         """Scan binary for Next_Ptr pattern (inner interpreter)"""
@@ -177,6 +188,23 @@ class VForthEmulator:
         print("Warning: Next_Ptr pattern not found, using default")
         return ORIGIN + 0x086
 
+    def print_trace_report(self):
+        """Print execution trace report"""
+        print("\n=== Trace Report ===")
+
+        # Top executing addresses
+        print("\nTop 20 most-executed addresses:")
+        sorted_pcs = sorted(self.pc_histogram.items(), key=lambda x: x[1], reverse=True)
+        for pc, count in sorted_pcs[:20]:
+            pct = 100.0 * count / self.instr_count
+            print(f"  ${pc:04X}: {count:8d} times ({pct:5.1f}%)")
+
+        # Call stack depth
+        print(f"\nMax call stack depth reached: {max(self.call_stack) if self.call_stack else 0}")
+        print(f"Current CPU state:")
+        print(f"  PC=${self.cpu.PC:04X}  BC=${self.cpu.BC:04X}  DE=${self.cpu.DE:04X}  HL=${self.cpu.HL:04X}")
+        print(f"  SP=${self.cpu.SP:04X}  IX=${self.cpu.IX:04X}  IY=${self.cpu.IY:04X}  A=${self.cpu.A:02X}")
+
     def find_cold_start(self):
         """Find Cold_Start address in binary"""
         # Cold_Start is referenced from ColdRoutine
@@ -185,6 +213,23 @@ class VForthEmulator:
         # For now, assume it's at ORIGIN + 2 (after Warm_Start entry)
         # This will be verified when we trace execution
         return ORIGIN + 2
+
+    def find_enter_ptr(self):
+        """Find Enter_Ptr address - look for PUSH BC followed by pattern"""
+        ORIGIN = 0x6366
+        # Enter_Ptr starts with PUSH BC (0xC5), followed by more instructions
+        # and typically followed by "ld bc, hl+3" sequence
+        for i in range(0x1000):
+            addr = ORIGIN + i
+            if addr >= 0x10000:
+                break
+            # Look for PUSH BC (0xC5) at address that looks like a function
+            if self.memory[addr] == 0xC5:
+                # Check if there's a plausible pattern afterward
+                # For now, just try a few candidates
+                if addr > ORIGIN + 100:  # Skip early addresses
+                    return addr
+        return None
 
     def execute(self, verbose=False):
         """Fetch-decode-execute loop"""
@@ -213,9 +258,33 @@ class VForthEmulator:
                 break
 
         print(f"\n=== Stopped after {self.instr_count} instructions ===")
+        self.print_trace_report()
+
+    def log_trace(self, opcode, desc=""):
+        """Log instruction for tracing"""
+        if self.trace_enabled:
+            print(f"[{self.instr_count:7d}] PC=${self.cpu.PC-1:04X}: 0x{opcode:02X} {desc:30s} | BC=${self.cpu.BC:04X} DE=${self.cpu.DE:04X} HL=${self.cpu.HL:04X}")
+
+    def track_pc(self):
+        """Track PC for histogram and loop detection"""
+        pc = self.cpu.PC
+        if pc not in self.pc_histogram:
+            self.pc_histogram[pc] = 0
+        self.pc_histogram[pc] += 1
+
+        # Loop detection: if same PC appears 100+ times in last 1000 instructions
+        if pc not in self.loop_detector:
+            self.loop_detector[pc] = self.instr_count
+        else:
+            delta = self.instr_count - self.loop_detector[pc]
+            if delta > 0 and delta < 50:  # Tight loop
+                if self.instr_count % 10000 == 0:
+                    print(f"[Loop detected] PC=${pc:04X} repeats every ~{delta} instructions")
 
     def dispatch(self, opcode):
         """Main instruction dispatcher"""
+        self.track_pc()
+
         if opcode == 0xED:
             # Extended instruction
             ext_opcode = self.cpu.fetch_byte()
@@ -245,6 +314,60 @@ class VForthEmulator:
             self.cpu.fetch_byte()
 
         elif opcode in INSTRUCTION_MAP:
+            # Special tracing for CALL, RET, and JP
+            if opcode == 0xCD:  # CALL nn
+                # Look ahead to find target address (next two bytes are lo,hi)
+                target_lo = self.memory[(self.cpu.PC) & 0xFFFF]
+                target_hi = self.memory[(self.cpu.PC + 1) & 0xFFFF]
+                target = target_lo | (target_hi << 8)
+
+                self.call_stack.append(self.cpu.PC - 1)
+                self.call_targets.append(target)
+
+                if len(self.call_stack) > self.max_call_stack_depth:
+                    self.max_call_stack_depth = len(self.call_stack)
+
+                if self.instr_count < 1000 or len(self.call_stack) <= 5:
+                    print(f"[{self.instr_count:6d}] CALL depth {len(self.call_stack):2d}: ${self.cpu.PC-1:04X} -> ${target:04X}")
+
+            elif opcode == 0xC9:  # RET
+                if self.instr_count < 100000 or len(self.call_stack) <= 3:
+                    ret_addr = self.cpu.mem16_le(self.cpu.SP)
+                    print(f"[{self.instr_count:6d}] RET  depth {len(self.call_stack):2d}: SP=${self.cpu.SP:04X} -> PC=${ret_addr:04X}, BC=${self.cpu.BC:04X}")
+
+                if self.call_stack:
+                    ret_from = self.call_stack.pop()
+                else:
+                    if self.instr_count < 100:
+                        print(f"[{self.instr_count:6d}] RET  without matching CALL (stack empty)")
+
+                # Execute the RET instruction
+                INSTRUCTION_MAP[opcode](self.cpu)
+
+                # Check for call stack depth limit
+                if len(self.call_stack) > self.max_call_stack_depth:
+                    self.max_call_stack_depth = len(self.call_stack)
+
+                if len(self.call_stack) > 50:
+                    print(f"[{self.instr_count:6d}] Call stack depth > 50, stopping for inspection")
+                    print(f"  PC=${self.cpu.PC:04X} BC=${self.cpu.BC:04X} DE=${self.cpu.DE:04X} HL=${self.cpu.HL:04X}")
+                    print(f"  Call targets: {[f'${x:04X}' for x in self.call_targets[-10:]]}")
+                    raise StopIteration()
+
+                # Return early to avoid double-execution
+                return
+
+            elif opcode == 0xC3:  # JP nn
+                jp_lo = self.memory[(self.cpu.PC) & 0xFFFF]
+                jp_hi = self.memory[(self.cpu.PC + 1) & 0xFFFF]
+                jp_addr = jp_lo | (jp_hi << 8)
+                if self.instr_count < 100:
+                    print(f"[{self.instr_count:6d}] JP    ${self.cpu.PC-1:04X} -> ${jp_addr:04X}")
+
+            elif opcode == 0xE9:  # JP (HL)
+                if self.instr_count < 200 and self.instr_count % 100 == 0:
+                    print(f"[{self.instr_count:6d}] JP (HL) = ${self.cpu.HL:04X}")
+
             INSTRUCTION_MAP[opcode](self.cpu)
 
         else:

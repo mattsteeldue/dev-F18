@@ -181,11 +181,6 @@ def inst_jp_hl(cpu):
     cpu.PC = cpu.HL
 
 
-def inst_ret(cpu):
-    """0xC9: RET - return from subroutine"""
-    cpu.PC = cpu.pop()
-
-
 def inst_exx(cpu):
     """0xD9: EXX - exchange main and alternate registers"""
     cpu.BC, cpu.BC_alt = cpu.BC_alt, cpu.BC
@@ -349,8 +344,17 @@ def inst_call_nn(cpu):
     lo = cpu.fetch_byte()
     hi = cpu.fetch_byte()
     addr = lo | (hi << 8)
-    cpu.push(cpu.PC)
+    # vForth uses DE as return stack (RP), not SP
+    cpu.DE = (cpu.DE - 2) & 0xFFFF
+    cpu.mem16_le_set(cpu.DE, cpu.PC)
     cpu.PC = addr
+
+
+def inst_ret(cpu):
+    """0xC9: RET - return from subroutine"""
+    # vForth uses DE as return stack (RP), not SP
+    cpu.PC = cpu.mem16_le(cpu.DE)
+    cpu.DE = (cpu.DE + 2) & 0xFFFF
 
 
 def inst_jp_nz_nn(cpu):
