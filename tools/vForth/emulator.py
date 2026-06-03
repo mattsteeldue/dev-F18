@@ -188,6 +188,49 @@ class VForthEmulator:
         print("Warning: Next_Ptr pattern not found, using default")
         return ORIGIN + 0x086
 
+    def handle_nextzxos_call(self):
+        """Handle NextZXOS call via rst 08 / db $94"""
+        # After the RST 08 instruction, need to fetch the function byte
+        func = self.cpu.fetch_byte()
+
+        if func == 0x94:
+            # This is the NextZXOS call indicator
+            # The actual function is in the C register
+            c_register = self.cpu.C
+
+            if c_register == 1:  # KEY
+                self.handle_key()
+            elif c_register == 2:  # EMIT / EMITC
+                self.handle_emit()
+            elif c_register == 7:  # CLS (clear screen)
+                self.handle_cls()
+            else:
+                if self.instr_count < 100000:
+                    print(f"[{self.instr_count:6d}] NextZXOS call C=${c_register:02X} (unimplemented)")
+
+    def handle_key(self):
+        """KEY: read character from stdin, return in A register"""
+        try:
+            char = input()  # Read line from stdin
+            if char:
+                self.cpu.A = ord(char[0]) & 0xFF
+            else:
+                self.cpu.A = 0x0D  # CR if empty line
+        except EOFError:
+            raise StopIteration()  # Exit emulator on EOF
+
+    def handle_emit(self):
+        """EMIT / EMITC: write character in A register to stdout"""
+        # EMITC writes full byte (0-255), EMIT masks to 7-bit ASCII
+        # We'll write both the same way for now
+        char = chr(self.cpu.A & 0x7F) if self.cpu.A < 128 else chr(self.cpu.A)
+        sys.stdout.write(char)
+        sys.stdout.flush()
+
+    def handle_cls(self):
+        """CLS: clear screen (stub as no-op)"""
+        pass
+
     def print_trace_report(self):
         """Print execution trace report"""
         print("\n=== Trace Report ===")
@@ -304,6 +347,11 @@ class VForthEmulator:
             else:
                 if self.instr_count < 10:
                     print(f"Unimplemented IX instruction: 0xDD 0x{ix_opcode:02X}")
+
+        elif opcode == 0x08:  # RST 08 -- NextZXOS call
+            # NextZXOS uses C register to select function
+            self.handle_nextzxos_call()
+            return  # Skip normal instruction execution
 
         elif opcode == 0xCB:
             # Bit operations - skip for now
