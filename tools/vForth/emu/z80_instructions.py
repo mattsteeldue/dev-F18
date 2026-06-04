@@ -1,7 +1,201 @@
 """
 Z80/Z80N instruction implementation for vForth emulator
 Instruction reference: Z80 User Manual, Z80N extensions
+
+IMPORTANT - canonical Z80 semantics:
+  CALL/RET operate on the Z80 hardware stack (SP). In vForth, SP doubles as the
+  Forth calculation-stack pointer, but that is irrelevant to these opcodes: they
+  behave exactly like real hardware. The Forth EXIT word is a SEPARATE CODE word
+  (made of ex de,hl / ld c,(hl) / ... / jp (ix)), NOT opcode 0xC9.
+  EXECUTE is literally a single `ret` (0xC9): it pops the xt from SP into PC.
+
+Flag register F (bit layout):
+  7=S  6=Z  5=F5  4=H  3=F3  2=P/V  1=N  0=C
 """
+
+# Flag bit masks
+FLAG_S = 0x80   # sign     (bit 7 of result)
+FLAG_Z = 0x40   # zero     (result == 0)
+FLAG_5 = 0x20   # undocumented copy of result bit 5
+FLAG_H = 0x10   # half carry
+FLAG_3 = 0x08   # undocumented copy of result bit 3
+FLAG_PV = 0x04  # parity / overflow
+FLAG_N = 0x02   # add(0)/subtract(1)
+FLAG_C = 0x01   # carry
+
+
+def _parity_even(v):
+    """Return True if v (8-bit) has an even number of set bits (P/V parity)."""
+    v &= 0xFF
+    p = 1
+    while v:
+        p ^= 1
+        v &= v - 1
+    return p == 1
+
+
+# --- 8-bit ALU flag helpers (return the 8-bit result, set cpu.F canonically) ---
+
+def _add8(cpu, a, b, carry=0):
+    res = a + b + carry
+    r = res & 0xFF
+    f = 0
+    if r & 0x80:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= r & (FLAG_5 | FLAG_3)
+    if ((a & 0x0F) + (b & 0x0F) + carry) & 0x10:
+        f |= FLAG_H
+    if (~(a ^ b) & (a ^ r)) & 0x80:
+        f |= FLAG_PV
+    if res & 0x100:
+        f |= FLAG_C
+    cpu.F = f  # N = 0
+    return r
+
+
+def _sub8(cpu, a, b, carry=0):
+    res = a - b - carry
+    r = res & 0xFF
+    f = FLAG_N
+    if r & 0x80:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= r & (FLAG_5 | FLAG_3)
+    if ((a & 0x0F) - (b & 0x0F) - carry) & 0x10:
+        f |= FLAG_H
+    if ((a ^ b) & (a ^ r)) & 0x80:
+        f |= FLAG_PV
+    if res & 0x100:
+        f |= FLAG_C  # borrow
+    cpu.F = f
+    return r
+
+
+def _cp8(cpu, a, b):
+    """CP: flags as for (A - b) but result is discarded. F3/F5 come from b."""
+    res = a - b
+    r = res & 0xFF
+    f = FLAG_N
+    if r & 0x80:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= b & (FLAG_5 | FLAG_3)
+    if ((a & 0x0F) - (b & 0x0F)) & 0x10:
+        f |= FLAG_H
+    if ((a ^ b) & (a ^ r)) & 0x80:
+        f |= FLAG_PV
+    if res & 0x100:
+        f |= FLAG_C
+    cpu.F = f
+
+
+def _logic8(cpu, result, hflag):
+    """Flags for AND (hflag=True) / OR / XOR (hflag=False). C=0, N=0, P/V=parity."""
+    r = result & 0xFF
+    f = 0
+    if r & 0x80:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= r & (FLAG_5 | FLAG_3)
+    if hflag:
+        f |= FLAG_H
+    if _parity_even(r):
+        f |= FLAG_PV
+    cpu.F = f
+    return r
+
+
+def _inc8(cpu, v):
+    r = (v + 1) & 0xFF
+    f = cpu.F & FLAG_C  # carry preserved
+    if r & 0x80:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= r & (FLAG_5 | FLAG_3)
+    if (v & 0x0F) == 0x0F:
+        f |= FLAG_H
+    if v == 0x7F:
+        f |= FLAG_PV
+    cpu.F = f  # N = 0
+    return r
+
+
+def _dec8(cpu, v):
+    r = (v - 1) & 0xFF
+    f = (cpu.F & FLAG_C) | FLAG_N  # carry preserved, N = 1
+    if r & 0x80:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= r & (FLAG_5 | FLAG_3)
+    if (v & 0x0F) == 0x00:
+        f |= FLAG_H
+    if v == 0x80:
+        f |= FLAG_PV
+    cpu.F = f
+    return r
+
+
+# --- 16-bit ALU flag helpers ---
+
+def _add16(cpu, a, b):
+    """ADD HL,rr: affects H,N,C and F3/F5; S,Z,P/V preserved."""
+    res = a + b
+    r = res & 0xFFFF
+    f = cpu.F & (FLAG_S | FLAG_Z | FLAG_PV)
+    f |= (r >> 8) & (FLAG_5 | FLAG_3)
+    if ((a & 0x0FFF) + (b & 0x0FFF)) & 0x1000:
+        f |= FLAG_H
+    if res & 0x10000:
+        f |= FLAG_C
+    cpu.F = f  # N = 0
+    return r
+
+
+def _adc16(cpu, a, b):
+    carry = 1 if (cpu.F & FLAG_C) else 0
+    res = a + b + carry
+    r = res & 0xFFFF
+    f = 0
+    if r & 0x8000:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= (r >> 8) & (FLAG_5 | FLAG_3)
+    if ((a & 0x0FFF) + (b & 0x0FFF) + carry) & 0x1000:
+        f |= FLAG_H
+    if (~(a ^ b) & (a ^ r)) & 0x8000:
+        f |= FLAG_PV
+    if res & 0x10000:
+        f |= FLAG_C
+    cpu.F = f  # N = 0
+    return r
+
+
+def _sbc16(cpu, a, b):
+    carry = 1 if (cpu.F & FLAG_C) else 0
+    res = a - b - carry
+    r = res & 0xFFFF
+    f = FLAG_N
+    if r & 0x8000:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= (r >> 8) & (FLAG_5 | FLAG_3)
+    if ((a & 0x0FFF) - (b & 0x0FFF) - carry) & 0x1000:
+        f |= FLAG_H
+    if ((a ^ b) & (a ^ r)) & 0x8000:
+        f |= FLAG_PV
+    if res & 0x10000:
+        f |= FLAG_C
+    cpu.F = f
+    return r
 
 
 def inst_nop(cpu):
@@ -156,12 +350,12 @@ def inst_inc_sp(cpu):
 
 def inst_inc_a(cpu):
     """0x3C: INC A - increment A"""
-    cpu.A = (cpu.A + 1) & 0xFF
+    cpu.A = _inc8(cpu, cpu.A)
 
 
 def inst_dec_a(cpu):
     """0x3D: DEC A - decrement A"""
-    cpu.A = (cpu.A - 1) & 0xFF
+    cpu.A = _dec8(cpu, cpu.A)
 
 
 def inst_ld_hlm_a(cpu):
@@ -189,30 +383,35 @@ def inst_exx(cpu):
 
 
 def inst_halt(cpu):
-    """0x76: HALT - halt processor"""
-    cpu.halted = True
-    raise StopIteration()
+    """0x76: HALT - wait for the next interrupt, then continue.
+
+    On the ZX Spectrum, `ei halt` (e.g. the 1FRAME word) waits for the 50Hz
+    frame interrupt and then resumes at the following instruction. We do not
+    model the hardware interrupt, so the interrupt is treated as firing
+    immediately: HALT simply proceeds. (Frame-sync delays collapse to zero,
+    which is fine for headless functional emulation.)
+    """
+    cpu.frame_count = getattr(cpu, 'frame_count', 0) + 1
 
 
 def inst_or_a(cpu):
-    """0xB7: OR A - OR A with itself (test if zero)"""
-    cpu.A = cpu.A | cpu.A
-    # Set flags (simplified)
+    """0xB7: OR A - OR A with itself (test A; clears C, sets Z if A==0)"""
+    cpu.A = _logic8(cpu, cpu.A | cpu.A, False)
 
 
 def inst_cp_a(cpu):
-    """0xBF: CP A - compare A with itself (always equal)"""
-    # Sets flags: Z=1, N=1, others affected by subtraction
+    """0xBF: CP A - compare A with itself (always equal: Z=1, C=0, N=1)"""
+    _cp8(cpu, cpu.A, cpu.A)
 
 
 def inst_xor_a(cpu):
-    """0xAF: XOR A - XOR A with itself (clear A)"""
-    cpu.A = 0
+    """0xAF: XOR A - XOR A with itself (clear A; Z=1, C=0)"""
+    cpu.A = _logic8(cpu, 0, False)
 
 
 def inst_and_a(cpu):
-    """0xA7: AND A - AND A with itself (no change)"""
-    pass
+    """0xA7: AND A - AND A with itself (test A; clears C, sets Z if A==0, H=1)"""
+    cpu.A = _logic8(cpu, cpu.A & cpu.A, True)
 
 
 def inst_ld_a_nn(cpu):
@@ -233,74 +432,72 @@ def inst_ld_nn_a(cpu):
 
 def inst_inc_b(cpu):
     """0x04: INC B - increment B"""
-    cpu.B = (cpu.B + 1) & 0xFF
+    cpu.B = _inc8(cpu, cpu.B)
 
 
 def inst_inc_c(cpu):
     """0x0C: INC C - increment C"""
-    cpu.C = (cpu.C + 1) & 0xFF
+    cpu.C = _inc8(cpu, cpu.C)
 
 
 def inst_inc_d(cpu):
     """0x14: INC D - increment D"""
-    cpu.D = (cpu.D + 1) & 0xFF
+    cpu.D = _inc8(cpu, cpu.D)
 
 
 def inst_inc_e(cpu):
     """0x1C: INC E - increment E"""
-    cpu.E = (cpu.E + 1) & 0xFF
+    cpu.E = _inc8(cpu, cpu.E)
 
 
 def inst_inc_h(cpu):
     """0x24: INC H - increment H"""
-    cpu.H = (cpu.H + 1) & 0xFF
+    cpu.H = _inc8(cpu, cpu.H)
 
 
 def inst_inc_l(cpu):
     """0x2C: INC L - increment L"""
-    cpu.L = (cpu.L + 1) & 0xFF
+    cpu.L = _inc8(cpu, cpu.L)
 
 
 def inst_inc_hlm(cpu):
     """0x34: INC (HL) - increment memory at HL"""
-    val = (cpu.mem[cpu.HL] + 1) & 0xFF
-    cpu.mem[cpu.HL] = val
+    cpu.mem[cpu.HL] = _inc8(cpu, cpu.mem[cpu.HL])
 
 
 def inst_dec_b(cpu):
     """0x05: DEC B - decrement B"""
-    cpu.B = (cpu.B - 1) & 0xFF
+    cpu.B = _dec8(cpu, cpu.B)
 
 
 def inst_dec_c(cpu):
     """0x0D: DEC C - decrement C"""
-    cpu.C = (cpu.C - 1) & 0xFF
+    cpu.C = _dec8(cpu, cpu.C)
 
 
 def inst_dec_d(cpu):
     """0x15: DEC D - decrement D"""
-    cpu.D = (cpu.D - 1) & 0xFF
+    cpu.D = _dec8(cpu, cpu.D)
 
 
 def inst_dec_e(cpu):
     """0x1D: DEC E - decrement E"""
-    cpu.E = (cpu.E - 1) & 0xFF
+    cpu.E = _dec8(cpu, cpu.E)
 
 
 def inst_dec_h(cpu):
     """0x25: DEC H - decrement H"""
-    cpu.H = (cpu.H - 1) & 0xFF
+    cpu.H = _dec8(cpu, cpu.H)
 
 
 def inst_dec_l(cpu):
     """0x2D: DEC L - decrement L"""
-    cpu.L = (cpu.L - 1) & 0xFF
+    cpu.L = _dec8(cpu, cpu.L)
 
 
 def inst_dec_hlm(cpu):
     """0x35: DEC (HL) - decrement memory at HL"""
-    val = (cpu.mem[cpu.HL] - 1) & 0xFF
-    cpu.mem[cpu.HL] = val
+    cpu.mem[cpu.HL] = _dec8(cpu, cpu.mem[cpu.HL])
 
 
 def inst_ld_b_nn(cpu):
@@ -340,28 +537,90 @@ def inst_ld_hlm_nn(cpu):
 
 
 def inst_call_nn(cpu):
-    """0xCD nn: CALL nn - call subroutine at nn"""
+    """0xCD nn: CALL nn - canonical Z80 call: push return address on SP, jump.
+
+    This is plain hardware behaviour. The vForth `call Enter_Ptr` mechanism
+    relies on it: Enter_Ptr does `pop bc` to retrieve the PFA pushed here.
+    """
     lo = cpu.fetch_byte()
     hi = cpu.fetch_byte()
     addr = lo | (hi << 8)
-    # vForth uses DE as return stack (RP), not SP
-    cpu.DE = (cpu.DE - 2) & 0xFFFF
-    cpu.mem16_le_set(cpu.DE, cpu.PC)
+    cpu.push(cpu.PC)
     cpu.PC = addr
 
 
 def inst_ret(cpu):
-    """0xC9: RET - EXIT from high-level definition (matches vForth EXIT in L0.asm)"""
-    # In vForth direct threading, RET executes EXIT:
-    # 1. Pop IP (BC) from vForth return stack (DE)
-    # 2. Update DE (return stack pointer)
-    # 3. Jump to Next_Ptr (IX) to continue interpretation
-    # This exactly matches the Z80 code in L0.asm lines 1402-1411
-    cpu.BC = cpu.mem16_le(cpu.DE)
-    cpu.DE = (cpu.DE + 2) & 0xFFFF
-    # The actual jump to IX is handled by the emulator setting PC = IX
-    # (This will be done in the dispatch loop after RET returns)
-    # Jump to Next_Ptr is handled by the emulator's dispatch recognizing this as native
+    """0xC9: RET - canonical Z80 return: PC = pop(SP).
+
+    NOT the Forth EXIT (which is a separate CODE word operating on DE).
+    EXECUTE is a single RET: it pops the xt from SP into PC.
+    upper^ ends with RET as a normal subroutine return.
+    """
+    cpu.PC = cpu.pop()
+
+
+def inst_ret_nz(cpu):
+    """0xC0: RET NZ"""
+    if not (cpu.F & FLAG_Z):
+        cpu.PC = cpu.pop()
+
+
+def inst_ret_z(cpu):
+    """0xC8: RET Z"""
+    if cpu.F & FLAG_Z:
+        cpu.PC = cpu.pop()
+
+
+def inst_ret_nc(cpu):
+    """0xD0: RET NC - used by upper^ (case-folding routine)"""
+    if not (cpu.F & FLAG_C):
+        cpu.PC = cpu.pop()
+
+
+def inst_ret_c(cpu):
+    """0xD8: RET C - used by upper^ (case-folding routine)"""
+    if cpu.F & FLAG_C:
+        cpu.PC = cpu.pop()
+
+
+def inst_call_nz_nn(cpu):
+    """0xC4 nn: CALL NZ,nn"""
+    lo = cpu.fetch_byte()
+    hi = cpu.fetch_byte()
+    addr = lo | (hi << 8)
+    if not (cpu.F & FLAG_Z):
+        cpu.push(cpu.PC)
+        cpu.PC = addr
+
+
+def inst_call_z_nn(cpu):
+    """0xCC nn: CALL Z,nn"""
+    lo = cpu.fetch_byte()
+    hi = cpu.fetch_byte()
+    addr = lo | (hi << 8)
+    if cpu.F & FLAG_Z:
+        cpu.push(cpu.PC)
+        cpu.PC = addr
+
+
+def inst_call_nc_nn(cpu):
+    """0xD4 nn: CALL NC,nn"""
+    lo = cpu.fetch_byte()
+    hi = cpu.fetch_byte()
+    addr = lo | (hi << 8)
+    if not (cpu.F & FLAG_C):
+        cpu.push(cpu.PC)
+        cpu.PC = addr
+
+
+def inst_call_c_nn(cpu):
+    """0xDC nn: CALL C,nn"""
+    lo = cpu.fetch_byte()
+    hi = cpu.fetch_byte()
+    addr = lo | (hi << 8)
+    if cpu.F & FLAG_C:
+        cpu.push(cpu.PC)
+        cpu.PC = addr
 
 
 def inst_jp_nz_nn(cpu):
@@ -432,38 +691,32 @@ def inst_ld_e_b(cpu):
 
 def inst_add_a_b(cpu):
     """0x80: ADD A,B - add B to A"""
-    result = (cpu.A + cpu.B) & 0xFF
-    cpu.A = result
+    cpu.A = _add8(cpu, cpu.A, cpu.B)
 
 
 def inst_add_a_c(cpu):
     """0x81: ADD A,C - add C to A"""
-    result = (cpu.A + cpu.C) & 0xFF
-    cpu.A = result
+    cpu.A = _add8(cpu, cpu.A, cpu.C)
 
 
 def inst_add_a_d(cpu):
     """0x82: ADD A,D - add D to A"""
-    result = (cpu.A + cpu.D) & 0xFF
-    cpu.A = result
+    cpu.A = _add8(cpu, cpu.A, cpu.D)
 
 
 def inst_add_a_e(cpu):
     """0x83: ADD A,E - add E to A"""
-    result = (cpu.A + cpu.E) & 0xFF
-    cpu.A = result
+    cpu.A = _add8(cpu, cpu.A, cpu.E)
 
 
 def inst_sub_a_b(cpu):
     """0x90: SUB A,B - subtract B from A"""
-    result = (cpu.A - cpu.B) & 0xFF
-    cpu.A = result
+    cpu.A = _sub8(cpu, cpu.A, cpu.B)
 
 
 def inst_sub_a_c(cpu):
     """0x91: SUB A,C - subtract C from A"""
-    result = (cpu.A - cpu.C) & 0xFF
-    cpu.A = result
+    cpu.A = _sub8(cpu, cpu.A, cpu.C)
 
 
 def inst_ld_bc_a(cpu):
@@ -560,7 +813,7 @@ def inst_jr_c_n(cpu):
     """0x38 n: JR C,n - jump relative if carry"""
     disp = cpu.fetch_byte()
     if disp & 0x80:
-        disp = -(~disp & 0xFF)
+        disp -= 0x100
     if cpu.F & 0x01:  # C flag set
         cpu.PC = (cpu.PC + disp) & 0xFFFF
 
@@ -569,7 +822,7 @@ def inst_jr_nc_n(cpu):
     """0x30 n: JR NC,n - jump relative if no carry"""
     disp = cpu.fetch_byte()
     if disp & 0x80:
-        disp = -(~disp & 0xFF)
+        disp -= 0x100
     if not (cpu.F & 0x01):  # C flag not set
         cpu.PC = (cpu.PC + disp) & 0xFFFF
 
@@ -578,7 +831,7 @@ def inst_jr_z_n(cpu):
     """0x28 n: JR Z,n - jump relative if zero"""
     disp = cpu.fetch_byte()
     if disp & 0x80:
-        disp = -(~disp & 0xFF)
+        disp -= 0x100
     if cpu.F & 0x40:  # Z flag set
         cpu.PC = (cpu.PC + disp) & 0xFFFF
 
@@ -587,7 +840,7 @@ def inst_jr_nz_n(cpu):
     """0x20 n: JR NZ,n - jump relative if not zero"""
     disp = cpu.fetch_byte()
     if disp & 0x80:
-        disp = -(~disp & 0xFF)
+        disp -= 0x100
     if not (cpu.F & 0x40):  # Z flag not set
         cpu.PC = (cpu.PC + disp) & 0xFFFF
 
@@ -596,7 +849,7 @@ def inst_jr_n(cpu):
     """0x18 n: JR n - jump relative"""
     disp = cpu.fetch_byte()
     if disp & 0x80:
-        disp = -(~disp & 0xFF)
+        disp -= 0x100
     cpu.PC = (cpu.PC + disp) & 0xFFFF
 
 
@@ -634,88 +887,118 @@ def inst_ld_nnm_bc(cpu):
 
 def inst_sub_a_h(cpu):
     """0x94: SUB A,H - subtract H from A"""
-    result = (cpu.A - cpu.H) & 0xFF
-    cpu.A = result
+    cpu.A = _sub8(cpu, cpu.A, cpu.H)
 
 
 def inst_sub_a_l(cpu):
     """0x95: SUB A,L - subtract L from A"""
-    result = (cpu.A - cpu.L) & 0xFF
-    cpu.A = result
+    cpu.A = _sub8(cpu, cpu.A, cpu.L)
 
 
 def inst_sub_a_hlm(cpu):
     """0x96: SUB A,(HL) - subtract memory at HL from A"""
-    result = (cpu.A - cpu.mem[cpu.HL]) & 0xFF
-    cpu.A = result
+    cpu.A = _sub8(cpu, cpu.A, cpu.mem[cpu.HL])
 
 
 def inst_sub_a_nn(cpu):
     """0xD6 n: SUB A,n - subtract immediate from A"""
     val = cpu.fetch_byte()
-    result = (cpu.A - val) & 0xFF
-    cpu.A = result
+    cpu.A = _sub8(cpu, cpu.A, val)
 
 
 def inst_add_a_h(cpu):
     """0x84: ADD A,H - add H to A"""
-    result = (cpu.A + cpu.H) & 0xFF
-    cpu.A = result
+    cpu.A = _add8(cpu, cpu.A, cpu.H)
 
 
 def inst_add_a_l(cpu):
     """0x85: ADD A,L - add L to A"""
-    result = (cpu.A + cpu.L) & 0xFF
-    cpu.A = result
+    cpu.A = _add8(cpu, cpu.A, cpu.L)
 
 
 def inst_add_a_hlm(cpu):
     """0x86: ADD A,(HL) - add memory at HL to A"""
-    result = (cpu.A + cpu.mem[cpu.HL]) & 0xFF
-    cpu.A = result
+    cpu.A = _add8(cpu, cpu.A, cpu.mem[cpu.HL])
 
 
 def inst_add_a_nn(cpu):
     """0xC6 n: ADD A,n - add immediate to A"""
     val = cpu.fetch_byte()
-    result = (cpu.A + val) & 0xFF
-    cpu.A = result
+    cpu.A = _add8(cpu, cpu.A, val)
 
 
 def inst_cp_nn(cpu):
-    """0xFE n: CP n - compare A with immediate"""
+    """0xFE n: CP n - compare A with immediate (sets flags, A unchanged)"""
     val = cpu.fetch_byte()
-    # Sets flags (Z if equal, etc.) but doesn't modify A
+    _cp8(cpu, cpu.A, val)
 
 
 def inst_cp_hlm(cpu):
-    """0xBE: CP (HL) - compare A with memory at HL"""
-    # Sets flags (Z if equal, etc.) but doesn't modify A
+    """0xBE: CP (HL) - compare A with memory at HL (sets flags, A unchanged)"""
+    _cp8(cpu, cpu.A, cpu.mem[cpu.HL])
 
 
 def inst_and_nn(cpu):
     """0xE6 n: AND A,n - AND A with immediate"""
     val = cpu.fetch_byte()
-    cpu.A = cpu.A & val
+    cpu.A = _logic8(cpu, cpu.A & val, True)
 
 
 def inst_or_nn(cpu):
     """0xF6 n: OR A,n - OR A with immediate"""
     val = cpu.fetch_byte()
-    cpu.A = cpu.A | val
+    cpu.A = _logic8(cpu, cpu.A | val, False)
 
 
 def inst_xor_nn(cpu):
     """0xEE n: XOR A,n - XOR A with immediate"""
     val = cpu.fetch_byte()
-    cpu.A = cpu.A ^ val
+    cpu.A = _logic8(cpu, cpu.A ^ val, False)
 
 
-def inst_ld_hl_de_a(cpu):
-    """0xED 0x31 nn: LDDR-style instruction placeholder"""
-    # Skip operands for now
-    cpu.fetch_byte()
-    cpu.fetch_byte()
+def inst_add_hl_a(cpu):
+    """0xED 0x31: ADD HL,A (Z80N) - HL = HL + A (A unsigned). Flags unaffected."""
+    cpu.HL = (cpu.HL + cpu.A) & 0xFFFF
+
+
+def inst_add_de_a_z80n(cpu):
+    """0xED 0x32: ADD DE,A (Z80N) - DE = DE + A (A unsigned). Flags unaffected."""
+    cpu.DE = (cpu.DE + cpu.A) & 0xFFFF
+
+
+def inst_add_bc_a(cpu):
+    """0xED 0x33: ADD BC,A (Z80N) - BC = BC + A (A unsigned). Flags unaffected."""
+    cpu.BC = (cpu.BC + cpu.A) & 0xFFFF
+
+
+def inst_add_hl_nn_z80n(cpu):
+    """0xED 0x34 nn nn: ADD HL,nn (Z80N) - 16-bit immediate, little-endian. Flags unaffected."""
+    lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+    cpu.HL = (cpu.HL + (lo | (hi << 8))) & 0xFFFF
+
+
+def inst_add_de_nn(cpu):
+    """0xED 0x35 nn nn: ADD DE,nn (Z80N) - 16-bit immediate, little-endian. Flags unaffected."""
+    lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+    cpu.DE = (cpu.DE + (lo | (hi << 8))) & 0xFFFF
+
+
+def inst_add_bc_nn(cpu):
+    """0xED 0x36 nn nn: ADD BC,nn (Z80N) - 16-bit immediate, little-endian. Flags unaffected."""
+    lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+    cpu.BC = (cpu.BC + (lo | (hi << 8))) & 0xFFFF
+
+
+def inst_bsla_de_b(cpu):
+    """0xED 0x28: BSLA DE,B (Z80N) - barrel shift left DE by (B & 0x1F)."""
+    n = cpu.B & 0x1F
+    cpu.DE = (cpu.DE << n) & 0xFFFF
+
+
+def inst_bsrl_de_b(cpu):
+    """0xED 0x2A: BSRL DE,B (Z80N) - barrel shift right logical DE by (B & 0x1F)."""
+    n = cpu.B & 0x1F
+    cpu.DE = (cpu.DE >> n) & 0xFFFF
 
 
 def inst_ld_a_e(cpu):
@@ -785,169 +1068,160 @@ def inst_ld_h_e(cpu):
 
 def inst_add_hl_bc(cpu):
     """0x09: ADD HL,BC - add BC to HL"""
-    cpu.HL = (cpu.HL + cpu.BC) & 0xFFFF
+    cpu.HL = _add16(cpu, cpu.HL, cpu.BC)
 
 
 def inst_add_hl_de(cpu):
     """0x19: ADD HL,DE - add DE to HL"""
-    cpu.HL = (cpu.HL + cpu.DE) & 0xFFFF
+    cpu.HL = _add16(cpu, cpu.HL, cpu.DE)
 
 
 def inst_add_hl_hl(cpu):
     """0x29: ADD HL,HL - add HL to HL (shift left)"""
-    cpu.HL = (cpu.HL + cpu.HL) & 0xFFFF
+    cpu.HL = _add16(cpu, cpu.HL, cpu.HL)
 
 
 def inst_add_hl_sp(cpu):
     """0x39: ADD HL,SP - add SP to HL"""
-    cpu.HL = (cpu.HL + cpu.SP) & 0xFFFF
+    cpu.HL = _add16(cpu, cpu.HL, cpu.SP)
 
 
 def inst_or_a_b(cpu):
     """0xB0: OR A,B - OR A with B"""
-    cpu.A = cpu.A | cpu.B
+    cpu.A = _logic8(cpu, cpu.A | cpu.B, False)
 
 
 def inst_or_a_c(cpu):
     """0xB1: OR A,C - OR A with C"""
-    cpu.A = cpu.A | cpu.C
+    cpu.A = _logic8(cpu, cpu.A | cpu.C, False)
 
 
 def inst_or_a_d(cpu):
     """0xB2: OR A,D - OR A with D"""
-    cpu.A = cpu.A | cpu.D
+    cpu.A = _logic8(cpu, cpu.A | cpu.D, False)
 
 
 def inst_or_a_e(cpu):
     """0xB3: OR A,E - OR A with E"""
-    cpu.A = cpu.A | cpu.E
+    cpu.A = _logic8(cpu, cpu.A | cpu.E, False)
 
 
 def inst_or_a_h(cpu):
     """0xB4: OR A,H - OR A with H"""
-    cpu.A = cpu.A | cpu.H
+    cpu.A = _logic8(cpu, cpu.A | cpu.H, False)
 
 
 def inst_or_a_l(cpu):
     """0xB5: OR A,L - OR A with L"""
-    cpu.A = cpu.A | cpu.L
+    cpu.A = _logic8(cpu, cpu.A | cpu.L, False)
 
 
 def inst_or_a_hlm(cpu):
     """0xB6: OR A,(HL) - OR A with memory at HL"""
-    cpu.A = cpu.A | cpu.mem[cpu.HL]
+    cpu.A = _logic8(cpu, cpu.A | cpu.mem[cpu.HL], False)
 
 
 def inst_and_a_b(cpu):
     """0xA0: AND A,B - AND A with B"""
-    cpu.A = cpu.A & cpu.B
+    cpu.A = _logic8(cpu, cpu.A & cpu.B, True)
 
 
 def inst_and_a_c(cpu):
     """0xA1: AND A,C - AND A with C"""
-    cpu.A = cpu.A & cpu.C
+    cpu.A = _logic8(cpu, cpu.A & cpu.C, True)
 
 
 def inst_and_a_d(cpu):
     """0xA2: AND A,D - AND A with D"""
-    cpu.A = cpu.A & cpu.D
+    cpu.A = _logic8(cpu, cpu.A & cpu.D, True)
 
 
 def inst_and_a_e(cpu):
     """0xA3: AND A,E - AND A with E"""
-    cpu.A = cpu.A & cpu.E
+    cpu.A = _logic8(cpu, cpu.A & cpu.E, True)
 
 
 def inst_and_a_h(cpu):
     """0xA4: AND A,H - AND A with H"""
-    cpu.A = cpu.A & cpu.H
+    cpu.A = _logic8(cpu, cpu.A & cpu.H, True)
 
 
 def inst_and_a_l(cpu):
     """0xA5: AND A,L - AND A with L"""
-    cpu.A = cpu.A & cpu.L
+    cpu.A = _logic8(cpu, cpu.A & cpu.L, True)
 
 
 def inst_and_a_hlm(cpu):
     """0xA6: AND A,(HL) - AND A with memory at HL"""
-    cpu.A = cpu.A & cpu.mem[cpu.HL]
+    cpu.A = _logic8(cpu, cpu.A & cpu.mem[cpu.HL], True)
 
 
 def inst_xor_a_b(cpu):
     """0xA8: XOR A,B - XOR A with B"""
-    cpu.A = cpu.A ^ cpu.B
+    cpu.A = _logic8(cpu, cpu.A ^ cpu.B, False)
 
 
 def inst_xor_a_c(cpu):
     """0xA9: XOR A,C - XOR A with C"""
-    cpu.A = cpu.A ^ cpu.C
+    cpu.A = _logic8(cpu, cpu.A ^ cpu.C, False)
 
 
 def inst_xor_a_d(cpu):
     """0xAA: XOR A,D - XOR A with D"""
-    cpu.A = cpu.A ^ cpu.D
+    cpu.A = _logic8(cpu, cpu.A ^ cpu.D, False)
 
 
 def inst_xor_a_e(cpu):
     """0xAB: XOR A,E - XOR A with E"""
-    cpu.A = cpu.A ^ cpu.E
+    cpu.A = _logic8(cpu, cpu.A ^ cpu.E, False)
 
 
 def inst_xor_a_h(cpu):
     """0xAC: XOR A,H - XOR A with H"""
-    cpu.A = cpu.A ^ cpu.H
+    cpu.A = _logic8(cpu, cpu.A ^ cpu.H, False)
 
 
 def inst_xor_a_l(cpu):
     """0xAD: XOR A,L - XOR A with L"""
-    cpu.A = cpu.A ^ cpu.L
+    cpu.A = _logic8(cpu, cpu.A ^ cpu.L, False)
 
 
 def inst_xor_a_hlm(cpu):
     """0xAE: XOR A,(HL) - XOR A with memory at HL"""
-    cpu.A = cpu.A ^ cpu.mem[cpu.HL]
+    cpu.A = _logic8(cpu, cpu.A ^ cpu.mem[cpu.HL], False)
 
 
 def inst_cp_a_b(cpu):
     """0xB8: CP A,B - compare A with B"""
-    pass
+    _cp8(cpu, cpu.A, cpu.B)
 
 
 def inst_cp_a_c(cpu):
     """0xB9: CP A,C - compare A with C"""
-    pass
+    _cp8(cpu, cpu.A, cpu.C)
 
 
 def inst_cp_a_d(cpu):
     """0xBA: CP A,D - compare A with D"""
-    pass
+    _cp8(cpu, cpu.A, cpu.D)
 
 
 def inst_cp_a_e(cpu):
     """0xBB: CP A,E - compare A with E"""
-    pass
+    _cp8(cpu, cpu.A, cpu.E)
 
 
 def inst_cp_a_h(cpu):
     """0xBC: CP A,H - compare A with H"""
-    pass
+    _cp8(cpu, cpu.A, cpu.H)
 
 
 def inst_cp_a_l(cpu):
     """0xBD: CP A,L - compare A with L"""
-    pass
+    _cp8(cpu, cpu.A, cpu.L)
 
 
 # Extended instructions (prefix 0xED)
-def inst_add_de_a(cpu):
-    """0xED 0x36: ADD DE,A - signed add A to DE"""
-    # Sign-extend A to 16-bit
-    if cpu.A & 0x80:
-        val = cpu.A | 0xFF00  # Negative
-        val = -(~val & 0xFFFF)
-    else:
-        val = cpu.A
-    cpu.DE = (cpu.DE + val) & 0xFFFF
 
 
 def inst_nextreg_a(cpu):
@@ -974,16 +1248,59 @@ def inst_nextreg_nn(cpu):
 
 
 def inst_push_nn(cpu):
-    """0xED 0x23 nn: PUSH nn - push 16-bit immediate"""
-    lo = cpu.fetch_byte()
+    """0xED 0x8A nn nn: PUSH nn (Z80N) - push 16-bit immediate.
+
+    Note: the Z80N PUSH nn immediate is stored BIG-ENDIAN (high byte first).
+    """
     hi = cpu.fetch_byte()
-    cpu.push(lo | (hi << 8))
+    lo = cpu.fetch_byte()
+    cpu.push((hi << 8) | lo)
 
 
 def inst_mul_de(cpu):
-    """0xED 0x30: MUL D,E - multiply D*E -> DE (unsigned)"""
+    """0xED 0x30: MUL D,E - multiply D*E -> DE (unsigned). Z80N: flags unaffected."""
     result = (cpu.D * cpu.E) & 0xFFFF
     cpu.DE = result
+
+
+def inst_sbc_hl_bc(cpu):
+    """0xED 0x42: SBC HL,BC"""
+    cpu.HL = _sbc16(cpu, cpu.HL, cpu.BC)
+
+
+def inst_sbc_hl_de(cpu):
+    """0xED 0x52: SBC HL,DE"""
+    cpu.HL = _sbc16(cpu, cpu.HL, cpu.DE)
+
+
+def inst_sbc_hl_hl(cpu):
+    """0xED 0x62: SBC HL,HL"""
+    cpu.HL = _sbc16(cpu, cpu.HL, cpu.HL)
+
+
+def inst_sbc_hl_sp(cpu):
+    """0xED 0x72: SBC HL,SP"""
+    cpu.HL = _sbc16(cpu, cpu.HL, cpu.SP)
+
+
+def inst_adc_hl_bc(cpu):
+    """0xED 0x4A: ADC HL,BC"""
+    cpu.HL = _adc16(cpu, cpu.HL, cpu.BC)
+
+
+def inst_adc_hl_de(cpu):
+    """0xED 0x5A: ADC HL,DE"""
+    cpu.HL = _adc16(cpu, cpu.HL, cpu.DE)
+
+
+def inst_adc_hl_hl(cpu):
+    """0xED 0x6A: ADC HL,HL"""
+    cpu.HL = _adc16(cpu, cpu.HL, cpu.HL)
+
+
+def inst_adc_hl_sp(cpu):
+    """0xED 0x7A: ADC HL,SP"""
+    cpu.HL = _adc16(cpu, cpu.HL, cpu.SP)
 
 
 def inst_ld_de_nnm(cpu):
@@ -1022,7 +1339,7 @@ def inst_ld_l_ixm_disp(cpu):
     """0xDD 0x6E d: LD L,(IX+d) - load L from memory at IX+displacement"""
     disp = cpu.fetch_byte()
     if disp & 0x80:
-        disp = -(~disp & 0xFF)
+        disp -= 0x100
     addr = (cpu.IX + disp) & 0xFFFF
     cpu.L = cpu.mem[addr]
 
@@ -1031,7 +1348,7 @@ def inst_ld_h_ixm_disp(cpu):
     """0xDD 0x66 d: LD H,(IX+d) - load H from memory at IX+displacement"""
     disp = cpu.fetch_byte()
     if disp & 0x80:
-        disp = -(~disp & 0xFF)
+        disp -= 0x100
     addr = (cpu.IX + disp) & 0xFFFF
     cpu.H = cpu.mem[addr]
 
@@ -1180,20 +1497,28 @@ INSTRUCTION_MAP = {
     0xBD: inst_cp_a_l,
     0xBE: inst_cp_hlm,
     0xBF: inst_cp_a,
+    0xC0: inst_ret_nz,
     0xC1: inst_pop_bc,
     0xC2: inst_jp_nz_nn,
     0xC3: inst_jp_nn,
+    0xC4: inst_call_nz_nn,
     0xC5: inst_push_bc,
     0xC6: inst_add_a_nn,
+    0xC8: inst_ret_z,
     0xC9: inst_ret,
     0xCA: inst_jp_z_nn,
+    0xCC: inst_call_z_nn,
     0xCD: inst_call_nn,
+    0xD0: inst_ret_nc,
     0xD1: inst_pop_de,
     0xD2: inst_jp_nc_nn,
+    0xD4: inst_call_nc_nn,
     0xD5: inst_push_de,
     0xD6: inst_sub_a_nn,
+    0xD8: inst_ret_c,
     0xD9: inst_exx,
     0xDA: inst_jp_c_nn,
+    0xDC: inst_call_c_nn,
     0xEB: inst_ex_de_hl,
     0xE1: inst_pop_hl,
     0xE5: inst_push_hl,
@@ -1208,20 +1533,524 @@ INSTRUCTION_MAP = {
 }
 
 EXTENDED_MAP = {  # 0xED prefix
-    0x23: inst_push_nn,
-    0x30: inst_mul_de,
-    0x31: inst_ld_hl_de_a,
-    0x36: inst_add_de_a,
+    # Z80N register arithmetic
+    0x28: inst_bsla_de_b,    # BSLA DE,B
+    0x2A: inst_bsrl_de_b,    # BSRL DE,B
+    0x30: inst_mul_de,       # MUL D,E
+    0x31: inst_add_hl_a,     # ADD HL,A
+    0x32: inst_add_de_a_z80n,  # ADD DE,A
+    0x33: inst_add_bc_a,     # ADD BC,A
+    0x34: inst_add_hl_nn_z80n,  # ADD HL,nn
+    0x35: inst_add_de_nn,    # ADD DE,nn
+    0x36: inst_add_bc_nn,    # ADD BC,nn
+    0x8A: inst_push_nn,      # PUSH nn (big-endian immediate)
+    # Standard Z80 16-bit load / arithmetic
+    0x42: inst_sbc_hl_bc,
+    0x4A: inst_adc_hl_bc,
+    0x52: inst_sbc_hl_de,
+    0x5A: inst_adc_hl_de,
     0x5B: inst_ld_de_nnm,
+    0x62: inst_sbc_hl_hl,
+    0x6A: inst_adc_hl_hl,
+    0x72: inst_sbc_hl_sp,
     0x73: inst_ld_nnm_sp,
+    0x7A: inst_adc_hl_sp,
     0x7B: inst_ld_sp_nnm,
-    0x91: inst_nextreg_nn,
-    0x92: inst_nextreg_a,
+    # Next register access
+    0x91: inst_nextreg_nn,   # NEXTREG nn,mm
+    0x92: inst_nextreg_a,    # NEXTREG nn,A
 }
 
-IX_INSTRUCTION_MAP = {  # 0xDD prefix
+IX_INSTRUCTION_MAP = {  # 0xDD prefix (legacy; superseded by execute_index)
     0x21: inst_ld_ix_nn,
     0x66: inst_ld_h_ixm_disp,
     0x6E: inst_ld_l_ixm_disp,
     0xE9: inst_jp_ix,
 }
+
+
+# =====================================================================
+# Complete base Z80 instruction set
+# The blocks below are fully regular and are generated programmatically,
+# then registered into INSTRUCTION_MAP. This guarantees coverage of every
+# LD r,r', ALU A,r / A,n, INC/DEC r and LD r,n opcode, plus the CB and
+# DD/FD prefix groups -- exactly as the real Z80 the binary was built for.
+# =====================================================================
+
+# 8-bit register selector: 0=B 1=C 2=D 3=E 4=H 5=L 6=(HL) 7=A
+def _get_r(cpu, idx):
+    if idx == 0:
+        return cpu.B
+    if idx == 1:
+        return cpu.C
+    if idx == 2:
+        return cpu.D
+    if idx == 3:
+        return cpu.E
+    if idx == 4:
+        return cpu.H
+    if idx == 5:
+        return cpu.L
+    if idx == 6:
+        return cpu.mem[cpu.HL]
+    return cpu.A
+
+
+def _set_r(cpu, idx, v):
+    v &= 0xFF
+    if idx == 0:
+        cpu.B = v
+    elif idx == 1:
+        cpu.C = v
+    elif idx == 2:
+        cpu.D = v
+    elif idx == 3:
+        cpu.E = v
+    elif idx == 4:
+        cpu.H = v
+    elif idx == 5:
+        cpu.L = v
+    elif idx == 6:
+        cpu.mem[cpu.HL] = v
+    else:
+        cpu.A = v
+
+
+def _do_alu(cpu, group, b):
+    """ALU group: 0 ADD 1 ADC 2 SUB 3 SBC 4 AND 5 XOR 6 OR 7 CP."""
+    carry = 1 if (cpu.F & FLAG_C) else 0
+    if group == 0:
+        cpu.A = _add8(cpu, cpu.A, b)
+    elif group == 1:
+        cpu.A = _add8(cpu, cpu.A, b, carry)
+    elif group == 2:
+        cpu.A = _sub8(cpu, cpu.A, b)
+    elif group == 3:
+        cpu.A = _sub8(cpu, cpu.A, b, carry)
+    elif group == 4:
+        cpu.A = _logic8(cpu, cpu.A & b, True)
+    elif group == 5:
+        cpu.A = _logic8(cpu, cpu.A ^ b, False)
+    elif group == 6:
+        cpu.A = _logic8(cpu, cpu.A | b, False)
+    else:
+        _cp8(cpu, cpu.A, b)
+
+
+def _disp(base, d):
+    """Apply signed 8-bit displacement to a 16-bit base address."""
+    if d & 0x80:
+        d -= 0x100
+    return (base + d) & 0xFFFF
+
+
+def _gen_base_blocks():
+    # LD r,r'  (0x40-0x7F, excluding 0x76 = HALT)
+    for op in range(0x40, 0x80):
+        if op == 0x76:
+            continue
+        dst = (op >> 3) & 7
+        src = op & 7
+        INSTRUCTION_MAP[op] = (lambda d, s: lambda cpu: _set_r(cpu, d, _get_r(cpu, s)))(dst, src)
+
+    # ALU A,r  (0x80-0xBF)
+    for op in range(0x80, 0xC0):
+        grp = (op >> 3) & 7
+        src = op & 7
+        INSTRUCTION_MAP[op] = (lambda g, s: lambda cpu: _do_alu(cpu, g, _get_r(cpu, s)))(grp, src)
+
+    # ALU A,n  (immediate)
+    for op, grp in ((0xC6, 0), (0xCE, 1), (0xD6, 2), (0xDE, 3),
+                    (0xE6, 4), (0xEE, 5), (0xF6, 6), (0xFE, 7)):
+        INSTRUCTION_MAP[op] = (lambda g: lambda cpu: _do_alu(cpu, g, cpu.fetch_byte()))(grp)
+
+    # INC r / DEC r  (0x04+8i / 0x05+8i)
+    for idx in range(8):
+        INSTRUCTION_MAP[0x04 + 8 * idx] = (lambda i: lambda cpu: _set_r(cpu, i, _inc8(cpu, _get_r(cpu, i))))(idx)
+        INSTRUCTION_MAP[0x05 + 8 * idx] = (lambda i: lambda cpu: _set_r(cpu, i, _dec8(cpu, _get_r(cpu, i))))(idx)
+
+    # LD r,n  (0x06+8i)
+    for idx in range(8):
+        INSTRUCTION_MAP[0x06 + 8 * idx] = (lambda i: lambda cpu: _set_r(cpu, i, cpu.fetch_byte()))(idx)
+
+
+def _rlca(cpu):
+    """0x07: RLCA"""
+    c = (cpu.A >> 7) & 1
+    cpu.A = ((cpu.A << 1) | c) & 0xFF
+    cpu.F = (cpu.F & (FLAG_S | FLAG_Z | FLAG_PV)) | (cpu.A & (FLAG_5 | FLAG_3)) | (FLAG_C if c else 0)
+
+
+def _rrca(cpu):
+    """0x0F: RRCA"""
+    c = cpu.A & 1
+    cpu.A = ((cpu.A >> 1) | (c << 7)) & 0xFF
+    cpu.F = (cpu.F & (FLAG_S | FLAG_Z | FLAG_PV)) | (cpu.A & (FLAG_5 | FLAG_3)) | (FLAG_C if c else 0)
+
+
+def _rla(cpu):
+    """0x17: RLA"""
+    old = 1 if (cpu.F & FLAG_C) else 0
+    c = (cpu.A >> 7) & 1
+    cpu.A = ((cpu.A << 1) | old) & 0xFF
+    cpu.F = (cpu.F & (FLAG_S | FLAG_Z | FLAG_PV)) | (cpu.A & (FLAG_5 | FLAG_3)) | (FLAG_C if c else 0)
+
+
+def _rra(cpu):
+    """0x1F: RRA"""
+    old = 1 if (cpu.F & FLAG_C) else 0
+    c = cpu.A & 1
+    cpu.A = ((cpu.A >> 1) | (old << 7)) & 0xFF
+    cpu.F = (cpu.F & (FLAG_S | FLAG_Z | FLAG_PV)) | (cpu.A & (FLAG_5 | FLAG_3)) | (FLAG_C if c else 0)
+
+
+def _daa(cpu):
+    """0x27: DAA - decimal adjust A."""
+    a = cpu.A
+    f = cpu.F
+    corr = 0
+    carry = 0
+    if (f & FLAG_H) or (a & 0x0F) > 9:
+        corr |= 0x06
+    if (f & FLAG_C) or a > 0x99:
+        corr |= 0x60
+        carry = FLAG_C
+    if f & FLAG_N:
+        a = (a - corr) & 0xFF
+        h = FLAG_H if ((cpu.A & 0x0F) < (corr & 0x0F)) else 0
+    else:
+        h = FLAG_H if ((cpu.A & 0x0F) + (corr & 0x0F)) & 0x10 else 0
+        a = (a + corr) & 0xFF
+    nf = f & FLAG_N
+    cpu.A = a
+    res = 0
+    if a & 0x80:
+        res |= FLAG_S
+    if a == 0:
+        res |= FLAG_Z
+    res |= a & (FLAG_5 | FLAG_3)
+    res |= h | nf | carry
+    if _parity_even(a):
+        res |= FLAG_PV
+    cpu.F = res
+
+
+def _cpl(cpu):
+    """0x2F: CPL - A = ~A"""
+    cpu.A = (~cpu.A) & 0xFF
+    cpu.F = (cpu.F & (FLAG_S | FLAG_Z | FLAG_PV | FLAG_C)) | FLAG_H | FLAG_N | (cpu.A & (FLAG_5 | FLAG_3))
+
+
+def _scf(cpu):
+    """0x37: SCF - set carry"""
+    cpu.F = (cpu.F & (FLAG_S | FLAG_Z | FLAG_PV)) | (cpu.A & (FLAG_5 | FLAG_3)) | FLAG_C
+
+
+def _ccf(cpu):
+    """0x3F: CCF - complement carry"""
+    old = FLAG_H if (cpu.F & FLAG_C) else 0
+    newc = 0 if (cpu.F & FLAG_C) else FLAG_C
+    cpu.F = (cpu.F & (FLAG_S | FLAG_Z | FLAG_PV)) | (cpu.A & (FLAG_5 | FLAG_3)) | old | newc
+
+
+def _ex_af(cpu):
+    """0x08: EX AF,AF'"""
+    cpu.A, cpu.A_alt = cpu.A_alt, cpu.A
+    cpu.F, cpu.F_alt = cpu.F_alt, cpu.F
+
+
+def _nop(cpu):
+    pass
+
+
+def _make_rst(vector):
+    def f(cpu):
+        cpu.push(cpu.PC)
+        cpu.PC = vector
+    return f
+
+
+def _register_misc():
+    INSTRUCTION_MAP[0x07] = _rlca
+    INSTRUCTION_MAP[0x0F] = _rrca
+    INSTRUCTION_MAP[0x17] = _rla
+    INSTRUCTION_MAP[0x1F] = _rra
+    INSTRUCTION_MAP[0x27] = _daa
+    INSTRUCTION_MAP[0x2F] = _cpl
+    INSTRUCTION_MAP[0x37] = _scf
+    INSTRUCTION_MAP[0x3F] = _ccf
+    INSTRUCTION_MAP[0x08] = _ex_af
+    INSTRUCTION_MAP[0xF3] = _nop  # DI (interrupts not modelled)
+    INSTRUCTION_MAP[0xFB] = _nop  # EI
+    INSTRUCTION_MAP[0xF9] = lambda cpu: setattr(cpu, 'SP', cpu.HL)  # LD SP,HL
+    INSTRUCTION_MAP[0xE3] = _ex_sp_hl    # EX (SP),HL
+    INSTRUCTION_MAP[0xEB] = inst_ex_de_hl
+    # RST vectors (0xCF / 0xD7 are intercepted by the emulator for I/O)
+    for op, vec in ((0xC7, 0x00), (0xCF, 0x08), (0xD7, 0x10), (0xDF, 0x18),
+                    (0xE7, 0x20), (0xEF, 0x28), (0xF7, 0x30), (0xFF, 0x38)):
+        INSTRUCTION_MAP[op] = _make_rst(vec)
+
+
+def _ex_sp_hl(cpu):
+    """0xE3: EX (SP),HL"""
+    top = cpu.mem16_le(cpu.SP)
+    cpu.mem16_le_set(cpu.SP, cpu.HL)
+    cpu.HL = top
+
+
+def execute_cb(cpu):
+    """0xCB prefix: rotates/shifts and BIT/RES/SET."""
+    op = cpu.fetch_byte()
+    reg = op & 7
+    grp = op >> 6           # 0=rot/shift 1=BIT 2=RES 3=SET
+    bit = (op >> 3) & 7
+    val = _get_r(cpu, reg)
+
+    if grp == 0:
+        sub = (op >> 3) & 7  # 0 RLC 1 RRC 2 RL 3 RR 4 SLA 5 SRA 6 SLL 7 SRL
+        cin = 1 if (cpu.F & FLAG_C) else 0
+        if sub == 0:
+            carry = (val >> 7) & 1
+            val = ((val << 1) | carry) & 0xFF
+        elif sub == 1:
+            carry = val & 1
+            val = ((val >> 1) | (carry << 7)) & 0xFF
+        elif sub == 2:
+            carry = (val >> 7) & 1
+            val = ((val << 1) | cin) & 0xFF
+        elif sub == 3:
+            carry = val & 1
+            val = ((val >> 1) | (cin << 7)) & 0xFF
+        elif sub == 4:
+            carry = (val >> 7) & 1
+            val = (val << 1) & 0xFF
+        elif sub == 5:
+            carry = val & 1
+            val = ((val >> 1) | (val & 0x80)) & 0xFF
+        elif sub == 6:
+            carry = (val >> 7) & 1
+            val = ((val << 1) | 1) & 0xFF
+        else:
+            carry = val & 1
+            val = (val >> 1) & 0xFF
+        _set_r(cpu, reg, val)
+        f = 0
+        if val & 0x80:
+            f |= FLAG_S
+        if val == 0:
+            f |= FLAG_Z
+        f |= val & (FLAG_5 | FLAG_3)
+        if _parity_even(val):
+            f |= FLAG_PV
+        if carry:
+            f |= FLAG_C
+        cpu.F = f
+    elif grp == 1:  # BIT b,r
+        zero = (val >> bit) & 1
+        f = (cpu.F & FLAG_C) | FLAG_H
+        if zero == 0:
+            f |= FLAG_Z | FLAG_PV
+        if bit == 7 and zero:
+            f |= FLAG_S
+        f |= val & (FLAG_5 | FLAG_3)
+        cpu.F = f
+    elif grp == 2:  # RES b,r
+        _set_r(cpu, reg, val & ~(1 << bit))
+    else:           # SET b,r
+        _set_r(cpu, reg, val | (1 << bit))
+
+
+def execute_index(cpu, name):
+    """0xDD (IX) / 0xFD (IY) prefix decoder."""
+    op = cpu.fetch_byte()
+    ireg = getattr(cpu, name)
+
+    if op in (0x09, 0x19, 0x29, 0x39):
+        rr = {0x09: cpu.BC, 0x19: cpu.DE, 0x29: ireg, 0x39: cpu.SP}[op]
+        setattr(cpu, name, _add16(cpu, ireg, rr))
+        return
+    if op == 0x21:
+        lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+        setattr(cpu, name, lo | (hi << 8)); return
+    if op == 0x22:
+        lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+        cpu.mem16_le_set(lo | (hi << 8), ireg); return
+    if op == 0x2A:
+        lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+        setattr(cpu, name, cpu.mem16_le(lo | (hi << 8))); return
+    if op == 0x23:
+        setattr(cpu, name, (ireg + 1) & 0xFFFF); return
+    if op == 0x2B:
+        setattr(cpu, name, (ireg - 1) & 0xFFFF); return
+    if op == 0xE5:
+        cpu.push(ireg); return
+    if op == 0xE1:
+        setattr(cpu, name, cpu.pop()); return
+    if op == 0xE9:
+        cpu.PC = ireg; return
+    if op == 0xF9:
+        cpu.SP = ireg; return
+    if op == 0xE3:  # EX (SP),I
+        top = cpu.mem16_le(cpu.SP)
+        cpu.mem16_le_set(cpu.SP, ireg)
+        setattr(cpu, name, top); return
+    if op == 0x36:  # LD (I+d),n
+        d = cpu.fetch_byte(); n = cpu.fetch_byte()
+        cpu.mem[_disp(ireg, d)] = n & 0xFF; return
+    if op == 0x34:  # INC (I+d)
+        d = cpu.fetch_byte(); a = _disp(ireg, d)
+        cpu.mem[a] = _inc8(cpu, cpu.mem[a]); return
+    if op == 0x35:  # DEC (I+d)
+        d = cpu.fetch_byte(); a = _disp(ireg, d)
+        cpu.mem[a] = _dec8(cpu, cpu.mem[a]); return
+    if op != 0x76 and (op & 0xC7) == 0x46:  # LD r,(I+d)  (0x46/4E/56/5E/66/6E/7E)
+        d = cpu.fetch_byte(); a = _disp(ireg, d)
+        _set_r(cpu, (op >> 3) & 7, cpu.mem[a]); return
+    if 0x70 <= op <= 0x77 and op != 0x76:   # LD (I+d),r
+        d = cpu.fetch_byte(); a = _disp(ireg, d)
+        cpu.mem[a] = _get_r(cpu, op & 7); return
+    if 0x80 <= op <= 0xBF and (op & 7) == 6:  # ALU A,(I+d)
+        d = cpu.fetch_byte(); a = _disp(ireg, d)
+        _do_alu(cpu, (op >> 3) & 7, cpu.mem[a]); return
+    if op == 0xCB:  # DDCB d sub : bit ops on (I+d)
+        d = cpu.fetch_byte(); sub = cpu.fetch_byte()
+        _index_cb(cpu, _disp(ireg, d), sub); return
+
+    # Unrecognised: the prefix acts as a no-op; execute the byte normally.
+    if op in INSTRUCTION_MAP:
+        INSTRUCTION_MAP[op](cpu)
+
+
+def _index_cb(cpu, addr, sub):
+    """DDCB/FDCB: rotate/shift or BIT/RES/SET on memory at (I+d)."""
+    grp = sub >> 6
+    bit = (sub >> 3) & 7
+    val = cpu.mem[addr]
+    if grp == 0:
+        s = (sub >> 3) & 7
+        cin = 1 if (cpu.F & FLAG_C) else 0
+        if s == 0:
+            carry = (val >> 7) & 1; val = ((val << 1) | carry) & 0xFF
+        elif s == 1:
+            carry = val & 1; val = ((val >> 1) | (carry << 7)) & 0xFF
+        elif s == 2:
+            carry = (val >> 7) & 1; val = ((val << 1) | cin) & 0xFF
+        elif s == 3:
+            carry = val & 1; val = ((val >> 1) | (cin << 7)) & 0xFF
+        elif s == 4:
+            carry = (val >> 7) & 1; val = (val << 1) & 0xFF
+        elif s == 5:
+            carry = val & 1; val = ((val >> 1) | (val & 0x80)) & 0xFF
+        elif s == 6:
+            carry = (val >> 7) & 1; val = ((val << 1) | 1) & 0xFF
+        else:
+            carry = val & 1; val = (val >> 1) & 0xFF
+        cpu.mem[addr] = val
+        f = 0
+        if val & 0x80:
+            f |= FLAG_S
+        if val == 0:
+            f |= FLAG_Z
+        f |= val & (FLAG_5 | FLAG_3)
+        if _parity_even(val):
+            f |= FLAG_PV
+        if carry:
+            f |= FLAG_C
+        cpu.F = f
+    elif grp == 1:  # BIT
+        zero = (val >> bit) & 1
+        f = (cpu.F & FLAG_C) | FLAG_H
+        if zero == 0:
+            f |= FLAG_Z | FLAG_PV
+        if bit == 7 and zero:
+            f |= FLAG_S
+        cpu.F = f
+    elif grp == 2:
+        cpu.mem[addr] = val & ~(1 << bit)
+    else:
+        cpu.mem[addr] = val | (1 << bit)
+
+
+# --- Extended (ED) instructions used by the core but not yet mapped ---
+
+def inst_neg(cpu):
+    """0xED 0x44: NEG - A = 0 - A"""
+    cpu.A = _sub8(cpu, 0, cpu.A)
+
+
+def inst_ldir(cpu):
+    """0xED 0xB0: LDIR - block copy (HL)->(DE), BC times, ascending."""
+    while cpu.BC != 0:
+        cpu.mem[cpu.DE] = cpu.mem[cpu.HL]
+        cpu.HL = (cpu.HL + 1) & 0xFFFF
+        cpu.DE = (cpu.DE + 1) & 0xFFFF
+        cpu.BC = (cpu.BC - 1) & 0xFFFF
+    cpu.F &= ~(FLAG_H | FLAG_PV | FLAG_N)
+
+
+def inst_lddr(cpu):
+    """0xED 0xB8: LDDR - block copy descending."""
+    while cpu.BC != 0:
+        cpu.mem[cpu.DE] = cpu.mem[cpu.HL]
+        cpu.HL = (cpu.HL - 1) & 0xFFFF
+        cpu.DE = (cpu.DE - 1) & 0xFFFF
+        cpu.BC = (cpu.BC - 1) & 0xFFFF
+    cpu.F &= ~(FLAG_H | FLAG_PV | FLAG_N)
+
+
+def inst_ldi(cpu):
+    """0xED 0xA0: LDI"""
+    cpu.mem[cpu.DE] = cpu.mem[cpu.HL]
+    cpu.HL = (cpu.HL + 1) & 0xFFFF
+    cpu.DE = (cpu.DE + 1) & 0xFFFF
+    cpu.BC = (cpu.BC - 1) & 0xFFFF
+    cpu.F &= ~(FLAG_H | FLAG_N)
+    if cpu.BC != 0:
+        cpu.F |= FLAG_PV
+    else:
+        cpu.F &= ~FLAG_PV
+
+
+def inst_in_a_c(cpu):
+    """0xED 0x78: IN A,(C) - no I/O device modelled; read 0xFF."""
+    cpu.A = 0xFF
+
+
+def inst_out_c_a(cpu):
+    """0xED 0x79: OUT (C),A - no device modelled; ignore."""
+    pass
+
+
+def _register_extended():
+    EXTENDED_MAP[0x44] = inst_neg
+    EXTENDED_MAP[0xB0] = inst_ldir
+    EXTENDED_MAP[0xB8] = inst_lddr
+    EXTENDED_MAP[0xA0] = inst_ldi
+    EXTENDED_MAP[0x78] = inst_in_a_c
+    EXTENDED_MAP[0x79] = inst_out_c_a
+    # LD (nn),rr / LD rr,(nn) for BC,DE,SP (HL forms are in the main map)
+    EXTENDED_MAP[0x43] = _ld_nn_bc
+    EXTENDED_MAP[0x4B] = _ld_bc_nn_mem
+    EXTENDED_MAP[0x53] = _ld_nn_de
+    # 0x5B (LD DE,(nn)) and 0x73/0x7B already present
+
+
+def _ld_nn_bc(cpu):
+    lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+    cpu.mem16_le_set(lo | (hi << 8), cpu.BC)
+
+
+def _ld_bc_nn_mem(cpu):
+    lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+    cpu.BC = cpu.mem16_le(lo | (hi << 8))
+
+
+def _ld_nn_de(cpu):
+    lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+    cpu.mem16_le_set(lo | (hi << 8), cpu.DE)
+
+
+# Populate the maps with the generated/complete instruction set.
+_gen_base_blocks()
+_register_misc()
+_register_extended()

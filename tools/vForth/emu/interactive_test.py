@@ -8,10 +8,9 @@ import sys
 import time
 from emulator import VForthEmulator
 
-def run_emulator_with_timeout(emu, timeout=5):
+def run_emulator_with_timeout(emu, timeout=15):
     """Run emulator for up to timeout seconds or until it halts"""
     start_time = time.time()
-    max_instr_before = emu.instr_count
 
     try:
         while not emu.cpu.halted and emu.instr_count < emu.max_instructions:
@@ -59,7 +58,9 @@ def interactive_repl():
     emu.initialize_cold_start()
     print(f"Cold start initialized at PC=${emu.cpu.PC:04X}\n")
     print("Type Forth words and press Enter")
-    print("Commands: 'quit' to exit, 'reset' to reinit, 'status' for CPU state\n")
+    print("Commands: 'quit' to exit, 'reset' to reinit, 'status' for CPU state")
+    print("\nNOTE: Use forward slashes in paths (e.g. INCLUDE tutorial/001-stack-basics.f)")
+    print("Execution timeout: 15 seconds per command\n")
 
     # Main REPL loop
     while True:
@@ -125,8 +126,13 @@ Commands:
 
             # Execute Forth command
             print(f"Executing: {cmd}")
+            sys.stdout.flush()
             emu.queue_input(cmd)
-            run_emulator_with_timeout(emu, timeout=5)
+            instr_before = emu.instr_count
+            run_emulator_with_timeout(emu, timeout=15)
+            instr_executed = emu.instr_count - instr_before
+            if instr_executed > 0:
+                print(f"\n[OK] Executed {instr_executed} instructions")
             print()  # Blank line for readability
 
         except KeyboardInterrupt:

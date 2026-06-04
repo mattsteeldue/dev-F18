@@ -7,6 +7,7 @@ Z80/Z80N emulator for forth18e.bin on headless Python
 import sys
 import struct
 import time
+import z80_instructions as z80
 from z80_instructions import INSTRUCTION_MAP, EXTENDED_MAP, IX_INSTRUCTION_MAP
 
 
@@ -141,6 +142,8 @@ class VForthEmulator:
         # Interactive input buffer (Phase B)
         self.input_queue = []  # Queue of characters to be read by KEY
         self.input_echo = True  # Echo input to stdout
+        # Simulated 50Hz frame interrupt: deliver a key every N instructions
+        self.interrupt_interval = 1000
 
         # Session recording (Phase C)
         self.transcript_file = None  # File handle for transcript
@@ -179,22 +182,23 @@ class VForthEmulator:
         print(f"Loaded low.bin payload (1792 bytes) at $5B00")
 
     def initialize_cold_start(self):
-        """Set up CPU state for COLD start"""
-        # From small_emulator.md section 7
-        S0 = 0xD2F8
-        R0 = 0xD398
-        Next_Ptr = self.find_next_ptr()
-        self.Enter_Ptr = self.find_enter_ptr()  # For native implementation
+        """Set up CPU state for COLD start.
 
-        self.cpu.SP = S0
-        self.cpu.DE = R0
-        self.cpu.BC = self.find_cold_start()
-        self.cpu.IX = Next_Ptr
-        self.cpu.PC = Next_Ptr  # Start execution at inner interpreter
+        The real entry point is ORIGIN ($6366): `and a` (clears carry => cold)
+        then `jp ColdRoutine`. ColdRoutine self-initialises SP/DE/BC/IX from the
+        binary (S0_origin/R0_origin/Warm_Start/Next_Ptr), so we only need to set
+        PC=ORIGIN and a sane initial SP (it is saved as SP_Basic then replaced).
+        """
+        ORIGIN = 0x6366
+        self.cpu.PC = ORIGIN
+        self.cpu.SP = 0xD2F8   # transient; ColdRoutine reloads from S0_origin
+        self.cpu.F = 0         # carry clear -> cold start path
+        # IY must point to the ZX system-variable base $5C3A (the OS keeps it
+        # there for the 50Hz interrupt handler). KEY reads FLAGS via (iy+1).
+        self.cpu.IY = 0x5C3A
+        self.Enter_Ptr = None  # no longer needed (canonical CALL runs real Enter_Ptr)
 
-        print(f"Cold start: SP=${self.cpu.SP:04X}, DE=${self.cpu.DE:04X}, BC=${self.cpu.BC:04X}, IX=${self.cpu.IX:04X}, PC=${self.cpu.PC:04X}")
-        if self.Enter_Ptr:
-            print(f"Enter_Ptr found at ${self.Enter_Ptr:04X}")
+        print(f"Cold start: PC=${self.cpu.PC:04X} (entry runs ColdRoutine self-init)")
 
     def find_next_ptr(self):
         """Scan binary for Next_Ptr pattern (inner interpreter)"""
@@ -246,6 +250,30 @@ class VForthEmulator:
         else:
             if self.instr_count < 100000:
                 print(f"[{self.instr_count:6d}] NextZXOS call func=${ func:02X} (unimplemented)")
+
+    # ZX system variables used by the KEY word
+    LASTK = 0x5C08   # last key pressed (decoded by the ISR)
+    FLAGS = 0x5C3B   # (iy+1); bit 5 = "a new key is available"
+
+    def service_frame_interrupt(self):
+        """Emulate the effect of the 50Hz ZX keyboard interrupt.
+
+        KEY busy-waits on bit 5 of FLAGS ($5C3B), then reads LASTK ($5C08) and
+        clears the bit. We deliver the next queued character only once the
+        previous one has been consumed (bit 5 already clear), so each keypress
+        is seen exactly once.
+        """
+        if not self.input_queue:
+            return
+        if self.memory[self.FLAGS] & 0x20:
+            return  # previous key not yet consumed
+        ch = self.input_queue.pop(0)
+        code = ord(ch) & 0xFF if isinstance(ch, str) else ch & 0xFF
+        self.memory[self.LASTK] = code
+        self.memory[self.FLAGS] |= 0x20
+        if self.input_echo:
+            sys.stdout.write(ch if isinstance(ch, str) else chr(code))
+            sys.stdout.flush()
 
     def handle_key(self):
         """KEY: read character from input queue, or stdin if queue empty"""
@@ -636,6 +664,12 @@ class VForthEmulator:
         while not self.cpu.halted and self.instr_count < self.max_instructions:
             self.instr_count += 1
 
+            # Simulate the 50Hz ZX frame interrupt: periodically deliver a
+            # queued key into LASTK and raise the "new key" flag, mimicking the
+            # keyboard scan the real ROM/NextZXOS interrupt service routine does.
+            if self.instr_count % self.interrupt_interval == 0:
+                self.service_frame_interrupt()
+
             # Fetch opcode
             pc_before = self.cpu.PC
             opcode = self.cpu.fetch_byte()
@@ -688,106 +722,41 @@ class VForthEmulator:
             ext_opcode = self.cpu.fetch_byte()
             if ext_opcode in EXTENDED_MAP:
                 EXTENDED_MAP[ext_opcode](self.cpu)
-            elif ext_opcode == 0xB0:  # LDIR/LDDR - skip for now
-                pass
             else:
                 if self.instr_count < 10:  # Only warn on early instructions
                     print(f"Unimplemented extended instruction: 0xED 0x{ext_opcode:02X}")
 
-        elif opcode == 0xDD:
-            # IX instruction
-            ix_opcode = self.cpu.fetch_byte()
-            if ix_opcode in IX_INSTRUCTION_MAP:
-                IX_INSTRUCTION_MAP[ix_opcode](self.cpu)
-            else:
-                if self.instr_count < 10:
-                    print(f"Unimplemented IX instruction: 0xDD 0x{ix_opcode:02X}")
+        elif opcode == 0xDD:  # IX prefix
+            z80.execute_index(self.cpu, 'IX')
 
-        elif opcode == 0x08:  # RST 08 -- NextZXOS call
-            # NextZXOS uses C register to select function
+        elif opcode == 0xFD:  # IY prefix
+            z80.execute_index(self.cpu, 'IY')
+
+        elif opcode == 0xCB:  # bit/rotate/shift prefix
+            z80.execute_cb(self.cpu)
+
+        elif opcode == 0xD7:  # RST 16 -- ZX print routine: emit char in A
+            self.handle_emit()
+
+        elif opcode == 0xCF:  # RST 8 -- NextZXOS / esxDOS call (followed by func byte)
             self.handle_nextzxos_call()
-            return  # Skip normal instruction execution
-
-        elif opcode == 0xCB:
-            # Bit operations - skip for now
-            self.cpu.fetch_byte()
-
-        elif opcode == 0xFD:
-            # IY instruction - skip for now
-            self.cpu.fetch_byte()
 
         elif opcode in INSTRUCTION_MAP:
-            # Special tracing and native implementation for CALL, RET, and JP
-            if opcode == 0xCD:  # CALL nn
-                # Look ahead to find target address (next two bytes are lo,hi)
-                target_lo = self.memory[(self.cpu.PC) & 0xFFFF]
-                target_hi = self.memory[(self.cpu.PC + 1) & 0xFFFF]
-                target = target_lo | (target_hi << 8)
-
-                # Check if this is a CALL to Enter_Ptr (native implementation)
-                if self.Enter_Ptr and target == self.Enter_Ptr:
-                    # Execute Enter_Ptr natively instead of Z80 emulation
-                    if self.instr_count < 10000:
-                        print(f"[{self.instr_count:6d}] CALL Enter_Ptr native: BC=${self.cpu.BC:04X}")
-
-                    # The CALL instruction will push return address (PFA) onto hardware stack (SP)
-                    # We need to execute that CALL first, then implement ENTER logic
-
-                    # Execute the normal CALL (saves PC on SP)
-                    self.cpu.SP = (self.cpu.SP - 2) & 0xFFFF
-                    self.cpu.mem16_le_set(self.cpu.SP, self.cpu.PC + 2)  # PC+2 points after the 2-byte address operand
-
-                    # Now we're at the start of ENTER_Ptr. Execute ENTER logic:
-                    # 1. Save current IP (BC) on vForth return stack (via DE)
-                    self.cpu.DE = (self.cpu.DE - 2) & 0xFFFF
-                    self.cpu.mem16_le_set(self.cpu.DE, self.cpu.BC)
-
-                    # 2. POP BC from hardware stack (SP) - this gets the PFA
-                    pfa = self.cpu.mem16_le(self.cpu.SP)
-                    self.cpu.SP = (self.cpu.SP + 2) & 0xFFFF
-                    self.cpu.BC = pfa
-
-                    # 3. Jump to Next_Ptr
-                    self.cpu.PC = self.cpu.IX
-
-                    return  # Skip normal CALL execution
-
-                # Normal CALL
-                self.call_stack.append(self.cpu.PC - 1)
-                self.call_targets.append(target)
-
-                if len(self.call_stack) > self.max_call_stack_depth:
-                    self.max_call_stack_depth = len(self.call_stack)
-
-                if self.instr_count < 1000 or len(self.call_stack) <= 5:
-                    print(f"[{self.instr_count:6d}] CALL depth {len(self.call_stack):2d}: ${self.cpu.PC-1:04X} -> ${target:04X}")
-
-            elif opcode == 0xC9:  # RET (EXIT from high-level word)
-                # In vForth, RET at end of colon-definition:
-                # 1. Pop IP (BC) from vForth return stack (DE)
-                # 2. Jump to Next_Ptr (IX) to continue interpretation
-
-                if self.instr_count < 100000:
-                    print(f"[{self.instr_count:6d}] RET  (EXIT): BC=${self.cpu.BC:04X}, DE=${self.cpu.DE:04X}")
-
-                # Pop BC from return stack (vForth stack at DE)
-                self.cpu.BC = self.cpu.mem16_le(self.cpu.DE)
-                self.cpu.DE = (self.cpu.DE + 2) & 0xFFFF
-
-                # Jump to Next_Ptr to continue interpretation
-                self.cpu.PC = self.cpu.IX
-
-                return  # Skip normal RET execution
-
-            elif opcode == 0xC3:  # JP nn
-                jp_lo = self.memory[(self.cpu.PC) & 0xFFFF]
-                jp_hi = self.memory[(self.cpu.PC + 1) & 0xFFFF]
-                jp_addr = jp_lo | (jp_hi << 8)
-                if self.instr_count < 100:
-                    print(f"[{self.instr_count:6d}] JP    ${self.cpu.PC-1:04X} -> ${jp_addr:04X}")
-
-            elif opcode == 0xE9:  # JP (HL)
-                if self.instr_count < 200 and self.instr_count % 100 == 0:
+            # All opcodes execute with canonical Z80 semantics. CALL/RET operate on
+            # the hardware stack (SP); the vForth `call Enter_Ptr` mechanism and the
+            # Forth EXIT/EXECUTE words emerge naturally from running the real binary
+            # code -- no Forth-specific special-casing here.
+            if self.trace_enabled:
+                if opcode == 0xCD:  # CALL nn
+                    target = self.memory[self.cpu.PC] | (self.memory[(self.cpu.PC + 1) & 0xFFFF] << 8)
+                    print(f"[{self.instr_count:6d}] CALL ${self.cpu.PC-1:04X} -> ${target:04X}")
+                elif opcode == 0xC9:  # RET
+                    ret_to = self.cpu.mem16_le(self.cpu.SP)
+                    print(f"[{self.instr_count:6d}] RET  -> ${ret_to:04X}")
+                elif opcode == 0xC3:  # JP nn
+                    target = self.memory[self.cpu.PC] | (self.memory[(self.cpu.PC + 1) & 0xFFFF] << 8)
+                    print(f"[{self.instr_count:6d}] JP   ${self.cpu.PC-1:04X} -> ${target:04X}")
+                elif opcode == 0xE9:  # JP (HL)
                     print(f"[{self.instr_count:6d}] JP (HL) = ${self.cpu.HL:04X}")
 
             INSTRUCTION_MAP[opcode](self.cpu)
