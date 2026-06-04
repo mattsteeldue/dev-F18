@@ -83,8 +83,21 @@ unit vForth allocates internally in `!Blocks.txt`. Two consecutive Blocks form o
 | Screen# | BLOCKs | Contents |
 |---------|--------|----------|
 | 0 | 0-1 | Unused -- loading Screen# 0 crashes the system (see Known Bugs) |
+| 0.5 | 1 | System metadata (copyright, block usage); **F_INCLUDE internal buffer** |
 | 4-7 | 8-15 | Standard error messages -- read by `?ERROR` -> `ERROR` -> `MESSAGE` |
 | 10 | 20-21 | Previously held `include src/f18e.f`; now free for end-user use |
+
+**Note on BLOCK 1 and F_INCLUDE:** The first 512 bytes of BLOCK 1 (`!Blocks.txt` byte 512-1023) 
+contain system metadata and copyright information. The remaining 512 bytes serve as the 
+**temporary line buffer** for the `F_INCLUDE` primitive (defined in `project/vForth18_DOES/source/L3.asm` line 224). 
+
+During file inclusion, each source line is read from the open file into this BLOCK 1 buffer 
+via `F_GETLINE`, providing a maximum line length of **~511 bytes**. The `BLK` variable is set 
+to 1 to signal active include mode, and `INTERPRET` processes the line. This enables 
+file-based source inclusion without allocating extra heap memory.
+
+**Convention:** While BLOCK 1 permits lines up to 511 bytes, vForth source style maintains 
+lines at **80 bytes or fewer** for readability and adherence to Forth conventions.
 
 The error-message Screens (4-7) are a space-saving heritage from classic block-based Forth:
 error text lives in the block file rather than being compiled inline into each definition.

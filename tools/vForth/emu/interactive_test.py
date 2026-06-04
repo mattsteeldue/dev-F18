@@ -5,28 +5,47 @@ Type Forth words and see results
 """
 
 import sys
-import threading
 import time
 from emulator import VForthEmulator
 
-def run_emulator_thread(emu):
-    """Run emulator in background thread"""
+def run_emulator_with_timeout(emu, timeout=5):
+    """Run emulator for up to timeout seconds or until it halts"""
+    start_time = time.time()
+    max_instr_before = emu.instr_count
+
     try:
-        emu.execute(verbose=False)
+        while not emu.cpu.halted and emu.instr_count < emu.max_instructions:
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
+                print(f"\n[TIMEOUT] Execution took >{timeout}s, stopping")
+                break
+
+            emu.instr_count += 1
+
+            # Fetch and execute
+            pc_before = emu.cpu.PC
+            opcode = emu.cpu.fetch_byte()
+
+            try:
+                emu.dispatch(opcode)
+            except StopIteration:
+                break
+            except Exception as e:
+                print(f"\n[ERROR] PC ${pc_before:04X}: {e}")
+                break
     except KeyboardInterrupt:
         pass
-    except Exception as e:
-        print(f"\n[ERROR] {e}")
 
 def interactive_repl():
     """Run interactive Forth REPL"""
-    print("=== vForth Interactive Emulator ===")
+    print("=== vForth Interactive Emulator (Phase B) ===")
     print("Loading binaries...\n")
 
     # Create and initialize emulator
     emu = VForthEmulator()
     emu.max_instructions = 500000
     emu.trace_enabled = False
+    emu.input_echo = True
 
     try:
         emu.load_binary("project/vForth18_DOES/output/forth18e.bin", 0x6366)
@@ -39,13 +58,10 @@ def interactive_repl():
     # Initialize cold start
     emu.initialize_cold_start()
     print(f"Cold start initialized at PC=${emu.cpu.PC:04X}\n")
-    print("Type 'quit' to exit, 'help' for info\n")
+    print("Type Forth words and press Enter")
+    print("Commands: 'quit' to exit, 'reset' to reinit, 'status' for CPU state\n")
 
-    # Start emulator in background thread
-    emu_thread = threading.Thread(target=run_emulator_thread, args=(emu,), daemon=True)
-    emu_thread.start()
-
-    # Interactive loop
+    # Main REPL loop
     while True:
         try:
             cmd = input("forth> ").strip()
@@ -54,22 +70,28 @@ def interactive_repl():
                 print("Exiting...")
                 break
 
-            if cmd.lower() == 'help':
-                print("""
-Interactive vForth REPL Emulator
-  Type Forth words and press Enter
-  Type 'quit' to exit
-  Type 'status' to see CPU state
-  Type 'trace N' to show next N instructions
-  Type 'memory ADDR LEN' to dump memory
-  Type 'stack' to show stack contents
-                """)
+            if cmd.lower() == 'reset':
+                print("Reinitializing emulator...")
+                emu.initialize_cold_start()
                 continue
 
             if cmd.lower() == 'status':
                 print(f"PC=${emu.cpu.PC:04X}  BC=${emu.cpu.BC:04X}  DE=${emu.cpu.DE:04X}  HL=${emu.cpu.HL:04X}")
                 print(f"SP=${emu.cpu.SP:04X}  IX=${emu.cpu.IX:04X}  A=${emu.cpu.A:02X}")
                 print(f"Instructions executed: {emu.instr_count}")
+                continue
+
+            if cmd.lower() == 'help':
+                print("""
+Interactive vForth REPL Emulator (Phase B)
+Commands:
+  <forth-word> ... -- Execute Forth words
+  'reset'          -- Reinitialize emulator
+  'status'         -- Show CPU state
+  'memory ADDR N'  -- Dump N bytes at address (hex)
+  'stack'          -- Show data stack
+  'quit'           -- Exit emulator
+                """)
                 continue
 
             if cmd.lower().startswith('memory'):
@@ -84,11 +106,10 @@ Interactive vForth REPL Emulator
                             ascii_str = ''.join(chr(emu.memory[addr+i+j]) if 32 <= emu.memory[addr+i+j] < 127 else '.' for j in range(min(16, length-i)))
                             print(f"  ${addr+i:04X}  {bytes_hex:47s} | {ascii_str}")
                     except:
-                        print("Usage: memory ADDR LEN (hex)")
+                        print("Usage: memory ADDR LEN (both hex)")
                 continue
 
             if cmd.lower() == 'stack':
-                # Forth data stack is at SP
                 sp = emu.cpu.SP
                 print(f"Data stack (SP=${sp:04X}):")
                 for i in range(16):
@@ -102,9 +123,11 @@ Interactive vForth REPL Emulator
             if not cmd:
                 continue
 
-            # For now, just show that input was received
-            print(f"[INPUT] {cmd} (emulator running...)")
-            print("(Note: Interactive input not yet connected to emulator)")
+            # Execute Forth command
+            print(f"Executing: {cmd}")
+            emu.queue_input(cmd)
+            run_emulator_with_timeout(emu, timeout=5)
+            print()  # Blank line for readability
 
         except KeyboardInterrupt:
             print("\nInterrupted")

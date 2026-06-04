@@ -6,6 +6,7 @@ Z80/Z80N emulator for forth18e.bin on headless Python
 
 import sys
 import struct
+import time
 from z80_instructions import INSTRUCTION_MAP, EXTENDED_MAP, IX_INSTRUCTION_MAP
 
 
@@ -137,6 +138,20 @@ class VForthEmulator:
         self.file_handles = {}  # Map file handle -> file object
         self.next_file_handle = 1  # Next available file handle
 
+        # Interactive input buffer (Phase B)
+        self.input_queue = []  # Queue of characters to be read by KEY
+        self.input_echo = True  # Echo input to stdout
+
+        # Session recording (Phase C)
+        self.transcript_file = None  # File handle for transcript
+        self.transcript_enabled = False
+        self.session_start_time = None  # For timestamps
+
+        # Performance benchmarking (Phase D)
+        self.benchmark_mode = False  # Disable detailed logging for speed
+        self.execution_start_time = None
+        self.execution_wall_time = 0  # Wall clock time for execution
+
     def load_binary(self, filename, address):
         """Load binary file into memory at given address"""
         with open(filename, "rb") as f:
@@ -233,15 +248,73 @@ class VForthEmulator:
                 print(f"[{self.instr_count:6d}] NextZXOS call func=${ func:02X} (unimplemented)")
 
     def handle_key(self):
-        """KEY: read character from stdin, return in A register"""
+        """KEY: read character from input queue, or stdin if queue empty"""
+        # Try input queue first (for interactive REPL)
+        if self.input_queue:
+            char = self.input_queue.pop(0)
+            self.cpu.A = ord(char) & 0xFF if isinstance(char, str) else char & 0xFF
+            if self.input_echo:
+                sys.stdout.write(char if isinstance(char, str) else chr(char))
+                sys.stdout.flush()
+            self.log_transcript("INPUT", char if isinstance(char, str) else chr(char))
+            return
+
+        # Fall back to stdin
         try:
             char = input()  # Read line from stdin
             if char:
                 self.cpu.A = ord(char[0]) & 0xFF
             else:
                 self.cpu.A = 0x0D  # CR if empty line
+            self.log_transcript("INPUT", char if char else '\r')
         except EOFError:
             raise StopIteration()  # Exit emulator on EOF
+
+    def queue_input(self, text):
+        """Queue text input for KEY to read character-by-character"""
+        for char in text:
+            self.input_queue.append(char)
+        # Add CR at end
+        self.input_queue.append('\r')
+
+    def start_session_recording(self, filename):
+        """Start recording input/output to a transcript file"""
+        try:
+            self.transcript_file = open(filename, 'w', encoding='ascii')
+            self.transcript_enabled = True
+            self.session_start_time = time.time()
+            self.transcript_file.write(f"=== vForth Session Transcript ===\n")
+            self.transcript_file.write(f"Started: {self.session_start_time}\n\n")
+            self.transcript_file.flush()
+            print(f"[OK] Session recording started: {filename}")
+        except Exception as e:
+            print(f"[ERROR] Failed to start recording: {e}")
+
+    def stop_session_recording(self):
+        """Stop recording and close transcript file"""
+        if self.transcript_file:
+            try:
+                self.transcript_file.write(f"\n=== Session ended after {self.instr_count} instructions ===\n")
+                self.transcript_file.close()
+                print(f"[OK] Session recording stopped")
+            except Exception as e:
+                print(f"[ERROR] Failed to stop recording: {e}")
+            finally:
+                self.transcript_file = None
+                self.transcript_enabled = False
+
+    def log_transcript(self, source, text):
+        """Log input or output to transcript"""
+        if self.transcript_enabled and self.transcript_file:
+            try:
+                # source is "input" or "output"
+                elapsed = time.time() - self.session_start_time if self.session_start_time else 0
+                # Escape special chars for display
+                display_text = repr(text) if len(text) == 1 else text
+                self.transcript_file.write(f"[{elapsed:8.2f}] {source:6s}: {display_text}\n")
+                self.transcript_file.flush()
+            except:
+                pass  # Silently fail if transcript writing fails
 
     def handle_emit(self):
         """EMIT / EMITC: write character in A register to stdout"""
@@ -250,6 +323,7 @@ class VForthEmulator:
         char = chr(self.cpu.A & 0x7F) if self.cpu.A < 128 else chr(self.cpu.A)
         sys.stdout.write(char)
         sys.stdout.flush()
+        self.log_transcript("OUTPUT", char)
 
     def handle_cls(self):
         """CLS: clear screen (stub as no-op)"""
@@ -490,12 +564,34 @@ class VForthEmulator:
         else:
             self.cpu.HL = 0xFFFF  # error (not a directory handle)
 
+    def start_benchmark(self):
+        """Start performance measurement"""
+        self.benchmark_mode = True
+        self.execution_start_time = time.time()
+        print("[BENCHMARK] Mode enabled - detailed logging disabled for accuracy")
+
+    def stop_benchmark(self):
+        """Stop performance measurement and calculate metrics"""
+        self.benchmark_mode = False
+        if self.execution_start_time:
+            self.execution_wall_time = time.time() - self.execution_start_time
+        return self.execution_wall_time
+
     def print_trace_report(self):
         """Print execution trace report"""
         print("\n=== Trace Report ===")
 
+        # Performance metrics (Phase D)
+        if self.execution_wall_time > 0:
+            instr_per_sec = self.instr_count / self.execution_wall_time
+            print(f"\n--- Performance (Phase D) ---")
+            print(f"Total instructions: {self.instr_count}")
+            print(f"Wall-clock time: {self.execution_wall_time:.3f} seconds")
+            print(f"Speed: {instr_per_sec:,.0f} instructions/second")
+            print(f"Avg time per instruction: {1000*self.execution_wall_time/self.instr_count:.3f} ms")
+
         # Top executing addresses
-        print("\nTop 20 most-executed addresses:")
+        print("\n--- Top 20 Hottest Addresses ---")
         sorted_pcs = sorted(self.pc_histogram.items(), key=lambda x: x[1], reverse=True)
         for pc, count in sorted_pcs[:20]:
             pct = 100.0 * count / self.instr_count

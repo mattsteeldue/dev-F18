@@ -1,0 +1,5 @@
+=== vForth Session Transcript ===
+Started: 1780601665.401738
+
+
+=== Session ended after 10000 instructions ===
