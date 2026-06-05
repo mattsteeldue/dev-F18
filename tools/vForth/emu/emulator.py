@@ -198,7 +198,25 @@ class VForthEmulator:
         self.cpu.IY = 0x5C3A
         self.Enter_Ptr = None  # no longer needed (canonical CALL runs real Enter_Ptr)
 
+        self.install_rom_stubs()
+
         print(f"Cold start: PC=${self.cpu.PC:04X} (entry runs ColdRoutine self-init)")
+
+    # ZX Spectrum ROM routines the vForth core `call`s directly. We do not load
+    # the real ROM, so these addresses hold zeros (NOP) and a CALL would derail
+    # the PC into an endless sweep of low memory. Headless, their hardware effect
+    # (channel selection, ULA screen clear) is irrelevant -- we emit everything to
+    # stdout regardless -- so we stub each with a single RET ($C9): the CALL pushes
+    # its return address and returns immediately.
+    ROM_STUBS = {
+        0x1601: "CHAN-OPEN (select I/O channel; used by SELECT)",
+        0x0DAF: "CL-ALL / ULA clear-screen (used by the layer-0 path of (CLS))",
+    }
+
+    def install_rom_stubs(self):
+        """Place a RET at each known ROM entry point the core calls."""
+        for addr in self.ROM_STUBS:
+            self.memory[addr] = 0xC9  # RET
 
     def find_next_ptr(self):
         """Scan binary for Next_Ptr pattern (inner interpreter)"""
@@ -250,6 +268,18 @@ class VForthEmulator:
         else:
             if self.instr_count < 100000:
                 print(f"[{self.instr_count:6d}] NextZXOS call func=${ func:02X} (unimplemented)")
+
+        # --- NextZXOS file API: success/failure is returned in the CARRY flag ---
+        # (Fc=0 success, Fc=1 failure -- see NextZXOS_and_esxDOS_APIs). The Forth
+        # syscall wrappers reveal it with `sbc hl,hl` (HL := 0 if Fc=0, -1 if Fc=1),
+        # so the CARRY bit must be set, not just HL. Our file handlers encode the
+        # outcome in HL (0 = ok, 0xFFFF = error); translate that into carry here for
+        # every file function. The terminal func ($94: KEY/EMIT/CLS) is left alone.
+        if func in (0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F, 0xA0, 0xA3, 0xA4):
+            if self.cpu.HL == 0xFFFF:
+                self.cpu.F |= 0x01       # Fc = 1  -> error
+            else:
+                self.cpu.F &= 0xFE       # Fc = 0  -> success
 
     # ZX system variables used by the KEY word
     LASTK = 0x5C08   # last key pressed (decoded by the ISR)
@@ -354,8 +384,21 @@ class VForthEmulator:
         self.log_transcript("OUTPUT", char)
 
     def handle_cls(self):
-        """CLS: clear screen (stub as no-op)"""
-        pass
+        """(CLS) layer query: rst $08 / db $94 with C=7, A=0 on entry.
+
+        The Forth (CLS) primitive ($65AD) uses this call to ask which screen
+        layer is active. On entry A=0; the result in A then selects the path:
+
+            and a / ld a,$0E / jr nz,CLS_No_Layer_0
+              call $0DAF            ; A==0 -> layer 0 (ULA): ROM clear routine
+            CLS_No_Layer_0: rst $10 ; A!=0 -> emit $0E (clear) via the channel
+
+        Headless we have no ULA and do not emulate ROM $0DAF, so we report a
+        NON-zero (non-layer-0) status. (CLS) then takes the portable path:
+        it emits the $0E clear-screen control via `rst $10` (-> handle_emit)
+        and returns cleanly through `next`, instead of derailing into ROM.
+        """
+        self.cpu.A = 0x01
 
     def handle_f_open(self):
         """F_OPEN: open file
@@ -664,11 +707,9 @@ class VForthEmulator:
         while not self.cpu.halted and self.instr_count < self.max_instructions:
             self.instr_count += 1
 
-            # Simulate the 50Hz ZX frame interrupt: periodically deliver a
-            # queued key into LASTK and raise the "new key" flag, mimicking the
-            # keyboard scan the real ROM/NextZXOS interrupt service routine does.
-            if self.instr_count % self.interrupt_interval == 0:
-                self.service_frame_interrupt()
+            # Keyboard input is delivered on HALT (see dispatch): the vForth
+            # key-wait loops frame-wait via `ei halt`, mirroring the 50Hz ISR.
+            # Delivering only then keeps queued keys from being consumed early.
 
             # Fetch opcode
             pc_before = self.cpu.PC
@@ -740,6 +781,16 @@ class VForthEmulator:
 
         elif opcode == 0xCF:  # RST 8 -- NextZXOS / esxDOS call (followed by func byte)
             self.handle_nextzxos_call()
+
+        elif opcode == 0x76:  # HALT -- `ei halt` frame wait
+            # On the real machine the 50Hz keyboard ISR fires while the program
+            # is frame-waiting. The vForth key-wait loops (CURS / ONE-FRAME) HALT
+            # each frame until a key appears, so this is exactly when a queued
+            # keystroke should be delivered. Tying delivery to HALT (rather than a
+            # fixed instruction interval) prevents keys from being consumed early
+            # during banner/printing -- the bug that made ASK-Y/N read CR.
+            INSTRUCTION_MAP[0x76](self.cpu)
+            self.service_frame_interrupt()
 
         elif opcode in INSTRUCTION_MAP:
             # All opcodes execute with canonical Z80 semantics. CALL/RET operate on

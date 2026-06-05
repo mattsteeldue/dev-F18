@@ -118,6 +118,74 @@ Each word entry:
 
 There is a one-to-one correspondence between `project/vForth18_DOES/list/main.lst` and the composite contribution of `forth18e.bin` (the main memory) and `ram8.bin` (the heap): These three files are the source of truth of the working core of this Forth system.
 
+## Boot Sequence (COLD / WARM / BLK-INIT / ABORT / AUTOEXEC)
+
+Understanding the startup chain is essential for the emulator and for debugging a
+cold start. The flow, with the `vForth18_DOES` code addresses (from `list/main.lst`):
+
+```
+entry $6366  -> ColdRoutine self-init -> COLD
+COLD  $7616  -> init block buffers (EMPTY-BUFFERS, NMODE, FIRST/PREV/USE...) -> falls into WARM
+WARM  $760D  -> BLK-INIT  then  ABORT
+BLK-INIT $78D2 -> close any open block handle (BLK-FH), then F_OPEN the block file
+ABORT $75EA  -> init data/return stacks (S0/SP!, R0/RP!), then call AUTOEXEC (first time only)
+AUTOEXEC $8003 -> 11 LOAD  (Screen 11, user-configurable)
+SPLASH $7FDF -> banner (called by the default Screen 11 / lib/autoexec.f)
+```
+
+Key points:
+
+1. **BLK-INIT** opens the persistent block file `!Blocks-64.bin` (16 MB; name string in
+   `BLK-FNAME` at $785F) via `F_OPEN`. If the open **fails**, vForth still returns to the
+   `Ok` prompt but is left in an **inconsistent state** -- the boot must be allowed to
+   continue to `ABORT` regardless.
+
+2. **ABORT** is the word after BLK-INIT inside WARM. It (re)initialises both stacks and
+   then invokes **AUTOEXEC** -- but only on the **first** execution: AUTOEXEC rewrites its
+   own call site inside ABORT to a `NOOP` at run time, so every subsequent COLD/WARM/ABORT
+   skips AUTOEXEC. (In the listing the slot is `dw AUTOEXEC // autoexec, patched to noop`.)
+
+3. **AUTOEXEC** performs `11 LOAD` -- Screen 11 is user-configurable. By default Screen 11
+   runs `INCLUDE lib/autoexec.f`, and that script normally calls **SPLASH** to print the
+   banner (and may load utilities via `NEEDS`).
+
+4. After AUTOEXEC (or once it is patched out), control reaches the `QUIT` loop ->
+   `QUERY` / `ACCEPT` -> the interactive REPL prompt (`ok`).
+
+**Emulator status (2026-06-05):** the headless emulator boots the full chain
+COLD->WARM->BLK-INIT->ABORT->AUTOEXEC->`11 LOAD`->`INCLUDE lib/autoexec.f`->`SPLASH`
+and **prints the complete banner** (version, CPU speed, dictionary/heap free, free space),
+reaching `ASK-Y/N` and the utility-loading path. Three fixes were required, all in the
+NextZXOS/ROM interface the headless build cannot run natively:
+
+1. **`F_FGETPOS` (and all file syscalls) must return status in the CARRY flag**
+   (`Fc=0` ok / `Fc=1` error) -- the Forth wrappers reveal it with `sbc hl,hl`.
+   The handlers only set `HL`; `handle_nextzxos_call` now also translates HL->carry.
+   This fixed the "F_GETLINE pos error" that aborted the autoexec include.
+2. **`(CLS)` queries the active screen layer via `rst $08/$94`**; `handle_cls` now
+   returns a non-zero (non-layer-0) status so (CLS) takes the portable `rst $10`
+   emit-`$0E` path instead of calling ROM `$0DAF`.
+3. **ROM-routine stubs**: the core `call`s real ZX ROM routines (`$1601` CHAN-OPEN via
+   `SELECT`, `$0DAF` CL-ALL). These are stubbed with a `RET` (`install_rom_stubs`) so
+   the CALL returns cleanly instead of derailing the PC into low memory.
+
+A fourth fix made the **interactive REPL fully work** (boot -> banner -> `ASK-Y/N` ->
+`ok` prompt -> evaluate input -> print results):
+
+4. **Keyboard input is delivered on HALT, not on a fixed instruction interval.**
+   The vForth key-wait loops (`CURS` / `ONE-FRAME`) `ei halt` each frame until a key
+   appears, mirroring the 50Hz keyboard ISR. Delivering a queued key on any HALT (see
+   `dispatch`) -- instead of every N instructions -- stops keys being consumed early
+   during banner printing. Before this, `ASK-Y/N` read a stale CR and always took the
+   "load utilities" branch; now `n` correctly makes it `QUIT` to the prompt, and
+   `1 2 + .` prints `3`.
+
+The `emu/trace_words.py` tool traces Forth words (gated on entering a chosen word,
+default AUTOEXEC) and spies on `KEY` (LASTK/FLAGS/queue) -- built to diagnose the above.
+
+Remaining: utility loading via `NEEDS` (REMOUNT/WHERE/.S/EDIT/...) is heavy and exercises
+the heap/MMU7 paging beyond page $20 -- the next area to validate.
+
 ## Directory Structure
 
 > **General development principle -- root directories are canonical.**

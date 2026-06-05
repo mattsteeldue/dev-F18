@@ -853,6 +853,21 @@ def inst_jr_n(cpu):
     cpu.PC = (cpu.PC + disp) & 0xFFFF
 
 
+def inst_djnz(cpu):
+    """0x10 d: DJNZ d - decrement B; jump relative if B != 0. Flags unaffected.
+
+    Used by inc/ms.f (the millisecond delay loop: `10 C, FD C,` = DJNZ -3).
+    The displacement is measured from the byte after the operand, exactly as
+    JR -- so it is added to PC once the operand has been fetched.
+    """
+    disp = cpu.fetch_byte()
+    if disp & 0x80:
+        disp -= 0x100
+    cpu.B = (cpu.B - 1) & 0xFF
+    if cpu.B != 0:
+        cpu.PC = (cpu.PC + disp) & 0xFFFF
+
+
 def inst_ld_hl_nnm(cpu):
     """0x2A nn: LD HL,(nn) - load HL from memory at nn"""
     lo = cpu.fetch_byte()
@@ -862,7 +877,8 @@ def inst_ld_hl_nnm(cpu):
 
 
 def inst_ld_bc_nnm(cpu):
-    """0x0A nn: LD BC,(nn) - load BC from memory at nn"""
+    """0xED 0x4B nn: LD BC,(nn) - load BC from memory at nn.
+    (Duplicate of _ld_bc_nn_mem, which is the one registered at ED 4B.)"""
     lo = cpu.fetch_byte()
     hi = cpu.fetch_byte()
     addr = lo | (hi << 8)
@@ -878,7 +894,8 @@ def inst_ld_nnm_hl(cpu):
 
 
 def inst_ld_nnm_bc(cpu):
-    """0x03 nn: LD (nn),BC - store BC into memory at nn"""
+    """0xED 0x43 nn: LD (nn),BC - store BC into memory at nn.
+    (Duplicate of _ld_nn_bc, which is the one registered at ED 43.)"""
     lo = cpu.fetch_byte()
     hi = cpu.fetch_byte()
     addr = lo | (hi << 8)
@@ -1224,17 +1241,29 @@ def inst_cp_a_l(cpu):
 # Extended instructions (prefix 0xED)
 
 
+def _mmu7_warn_once(cpu, page):
+    """Warn at most once per distinct unsupported MMU7 page (avoid flooding).
+
+    The emulator uses a flat 64K memory, so only the heap base page ($20) is
+    modelled; other pages are tracked but not actually swapped in. Page $FF is
+    the NextZXOS "restore default slot" sentinel and is harmless headless.
+    """
+    if page in (0x20, 0xFF):
+        return
+    seen = getattr(cpu, '_mmu7_warned', None)
+    if seen is None:
+        seen = cpu._mmu7_warned = set()
+    if page not in seen:
+        seen.add(page)
+        print(f"Warning: MMU7 page ${page:02X} not yet modelled (flat memory; only $20)")
+
+
 def inst_nextreg_a(cpu):
     """0xED 0x92 n: NEXTREG n,A - write A to Next register n"""
     reg = cpu.fetch_byte()
     if reg == 87:  # MMU register for slot 7
-        # Page switch
-        if cpu.A != cpu.mmu7_page:
-            # In full emulator: swap pages
-            # For Phase 1: only page $20 is allowed
-            if cpu.A != 0x20:
-                print(f"Warning: MMU7 page ${cpu.A:02X} not yet supported (only $20)")
-            cpu.mmu7_page = cpu.A & 0xFF
+        _mmu7_warn_once(cpu, cpu.A & 0xFF)
+        cpu.mmu7_page = cpu.A & 0xFF
 
 
 def inst_nextreg_nn(cpu):
@@ -1242,8 +1271,7 @@ def inst_nextreg_nn(cpu):
     reg = cpu.fetch_byte()
     val = cpu.fetch_byte()
     if reg == 87:
-        if val != 0x20:
-            print(f"Warning: MMU7 page ${val:02X} not yet supported (only $20)")
+        _mmu7_warn_once(cpu, val & 0xFF)
         cpu.mmu7_page = val & 0xFF
 
 
@@ -1770,6 +1798,78 @@ def _make_rst(vector):
     return f
 
 
+# --- Conditional JP/CALL/RET on parity (PO/PE) and sign (P/M) ---
+# PO = parity odd  -> P/V clear; PE = parity even -> P/V set.
+# P  = sign plus   -> S   clear; M  = sign minus  -> S   set.
+# Used by inc/draw.f: `jpf po|` skips the EI when interrupts were disabled.
+
+def _cond_po(cpu): return not (cpu.F & FLAG_PV)
+def _cond_pe(cpu): return bool(cpu.F & FLAG_PV)
+def _cond_p(cpu):  return not (cpu.F & FLAG_S)
+def _cond_m(cpu):  return bool(cpu.F & FLAG_S)
+
+
+def _make_jp_cc(cond):
+    def f(cpu):
+        lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+        if cond(cpu):
+            cpu.PC = lo | (hi << 8)
+    return f
+
+
+def _make_call_cc(cond):
+    def f(cpu):
+        lo = cpu.fetch_byte(); hi = cpu.fetch_byte()
+        if cond(cpu):
+            cpu.push(cpu.PC)
+            cpu.PC = lo | (hi << 8)
+    return f
+
+
+def _make_ret_cc(cond):
+    def f(cpu):
+        if cond(cpu):
+            cpu.PC = cpu.pop()
+    return f
+
+
+# --- Immediate-port I/O: IN A,(n) / OUT (n),A ---
+# No hardware device is modelled by default. A host may install
+# cpu.io_read(port)->int and/or cpu.io_write(port, val) to model real
+# devices; absent those, reads see an idle bus (0xFF) and writes are dropped.
+
+def _port_in(cpu, port):
+    """Read an I/O port. Default 0xFF -- e.g. ULA port 0xFE then reports
+    'no key pressed', which is what inc/^escape.f expects when [EDIT] is up."""
+    hook = getattr(cpu, 'io_read', None)
+    return (hook(port) & 0xFF) if hook is not None else 0xFF
+
+
+def _port_out(cpu, port, val):
+    """Write an I/O port. Discarded unless cpu.io_write(port, val) is set."""
+    hook = getattr(cpu, 'io_write', None)
+    if hook is not None:
+        hook(port, val & 0xFF)
+
+
+def inst_in_a_n(cpu):
+    """0xDB n: IN A,(n) - A := port[(A<<8)|n]. Flags unaffected.
+
+    Used by inc/^escape.f, which scans the ZX keyboard via ULA port 0xFE
+    (e.g. `3E FE / DB FE` = LD A,$FE / IN A,($FE)).
+    """
+    n = cpu.fetch_byte()
+    port = (cpu.A << 8) | n
+    cpu.A = _port_in(cpu, port) & 0xFF
+
+
+def inst_out_n_a(cpu):
+    """0xD3 n: OUT (n),A - write A to port[(A<<8)|n]. Flags unaffected."""
+    n = cpu.fetch_byte()
+    port = (cpu.A << 8) | n
+    _port_out(cpu, port, cpu.A)
+
+
 def _register_misc():
     INSTRUCTION_MAP[0x07] = _rlca
     INSTRUCTION_MAP[0x0F] = _rrca
@@ -1780,6 +1880,23 @@ def _register_misc():
     INSTRUCTION_MAP[0x37] = _scf
     INSTRUCTION_MAP[0x3F] = _ccf
     INSTRUCTION_MAP[0x08] = _ex_af
+    INSTRUCTION_MAP[0x10] = inst_djnz  # DJNZ d (used by inc/ms.f)
+    # Conditional JP/CALL/RET on parity (PO/PE) and sign (P/M).
+    # JP PO is used by inc/draw.f.
+    INSTRUCTION_MAP[0xE0] = _make_ret_cc(_cond_po)   # RET PO
+    INSTRUCTION_MAP[0xE2] = _make_jp_cc(_cond_po)    # JP PO,nn
+    INSTRUCTION_MAP[0xE4] = _make_call_cc(_cond_po)  # CALL PO,nn
+    INSTRUCTION_MAP[0xE8] = _make_ret_cc(_cond_pe)   # RET PE
+    INSTRUCTION_MAP[0xEA] = _make_jp_cc(_cond_pe)    # JP PE,nn
+    INSTRUCTION_MAP[0xEC] = _make_call_cc(_cond_pe)  # CALL PE,nn
+    INSTRUCTION_MAP[0xF0] = _make_ret_cc(_cond_p)    # RET P
+    INSTRUCTION_MAP[0xF2] = _make_jp_cc(_cond_p)     # JP P,nn
+    INSTRUCTION_MAP[0xF4] = _make_call_cc(_cond_p)   # CALL P,nn
+    INSTRUCTION_MAP[0xF8] = _make_ret_cc(_cond_m)    # RET M
+    INSTRUCTION_MAP[0xFA] = _make_jp_cc(_cond_m)     # JP M,nn
+    INSTRUCTION_MAP[0xFC] = _make_call_cc(_cond_m)   # CALL M,nn
+    INSTRUCTION_MAP[0xD3] = inst_out_n_a  # OUT (n),A
+    INSTRUCTION_MAP[0xDB] = inst_in_a_n   # IN A,(n)  (used by inc/^escape.f)
     INSTRUCTION_MAP[0xF3] = _nop  # DI (interrupts not modelled)
     INSTRUCTION_MAP[0xFB] = _nop  # EI
     INSTRUCTION_MAP[0xF9] = lambda cpu: setattr(cpu, 'SP', cpu.HL)  # LD SP,HL
@@ -2050,7 +2167,461 @@ def _ld_nn_de(cpu):
     cpu.mem16_le_set(lo | (hi << 8), cpu.DE)
 
 
+# =====================================================================
+# Z80N extensions that were previously missing (vs the official
+# https://wiki.specnext.dev/Extended_Z80_instruction_set table).
+# All Z80N ALU/shift extensions leave the flags UNAFFECTED, except
+# TEST which sets flags exactly as "AND n" (A itself stays unchanged).
+# =====================================================================
+
+def inst_swapnib(cpu):
+    """0xED 0x23: SWAPNIB - swap the two nibbles of A. Flags unaffected."""
+    a = cpu.A & 0xFF
+    cpu.A = ((a << 4) | (a >> 4)) & 0xFF
+
+
+def inst_mirror_a(cpu):
+    """0xED 0x24: MIRROR A - reverse the bit order of A (bit0<->bit7...)."""
+    a = cpu.A & 0xFF
+    r = 0
+    for _ in range(8):
+        r = (r << 1) | (a & 1)
+        a >>= 1
+    cpu.A = r & 0xFF
+
+
+def inst_test_n(cpu):
+    """0xED 0x27 n: TEST n - set flags as for AND n, but A is unchanged."""
+    n = cpu.fetch_byte()
+    _logic8(cpu, cpu.A & n, True)  # sets cpu.F (H=1,C=0,N=0,PV=parity); A untouched
+
+
+def inst_bsra_de_b(cpu):
+    """0xED 0x29: BSRA DE,B - barrel arithmetic shift right (sign-preserving)."""
+    n = cpu.B & 0x1F
+    de = cpu.DE
+    sign = de & 0x8000
+    if n >= 16:
+        cpu.DE = 0xFFFF if sign else 0
+    else:
+        res = de >> n
+        if sign:
+            res |= (0xFFFF << (16 - n)) & 0xFFFF
+        cpu.DE = res & 0xFFFF
+
+
+def inst_bsrf_de_b(cpu):
+    """0xED 0x2B: BSRF DE,B - barrel shift right filling vacated bits with 1s."""
+    n = cpu.B & 0x1F
+    de = cpu.DE
+    if n >= 16:
+        cpu.DE = 0xFFFF
+    else:
+        cpu.DE = ((de >> n) | ((0xFFFF << (16 - n)) & 0xFFFF)) & 0xFFFF
+
+
+def inst_brlc_de_b(cpu):
+    """0xED 0x2C: BRLC DE,B - barrel rotate left DE by (B & 0x0F) bits."""
+    n = cpu.B & 0x0F
+    de = cpu.DE
+    cpu.DE = ((de << n) | (de >> (16 - n))) & 0xFFFF if n else de
+
+
+def inst_outinb(cpu):
+    """0xED 0x90: OUTINB - like OUTI but B is NOT decremented.
+
+    OUT (BC),(HL); HL++. No I/O device modelled, so the write is discarded.
+    """
+    cpu.HL = (cpu.HL + 1) & 0xFFFF
+
+
+def inst_pixeldn(cpu):
+    """0xED 0x93: PIXELDN - advance HL (a ULA pixel address) one scan-line down."""
+    hl = cpu.HL
+    if (hl & 0x0700) != 0x0700:
+        hl = (hl + 0x0100) & 0xFFFF
+    else:
+        hl &= 0xF8FF
+        if (hl & 0x00E0) != 0x00E0:
+            hl = (hl + 0x0020) & 0xFFFF
+        else:
+            hl &= 0xFF1F
+            hl = (hl + 0x0800) & 0xFFFF
+    cpu.HL = hl
+
+
+def inst_pixelad(cpu):
+    """0xED 0x94: PIXELAD - HL := ULA pixel byte address for Y=D, X=E."""
+    y = cpu.D & 0xFF
+    x = cpu.E & 0xFF
+    cpu.HL = (0x4000
+              | ((y & 0xC0) << 5)
+              | ((y & 0x07) << 8)
+              | ((y & 0x38) << 2)
+              | (x >> 3)) & 0xFFFF
+
+
+def inst_setae(cpu):
+    """0xED 0x95: SETAE - A := the one-bit pixel mask within a byte for X=E."""
+    cpu.A = (0x80 >> (cpu.E & 7)) & 0xFF
+
+
+def inst_jp_c_port(cpu):
+    """0xED 0x98: JP (C) - IN (C), then jump within the current 64-byte block.
+
+    With no I/O device modelled, IN (C) yields 0xFF, so the low 6 bits of PC
+    become 0x3F. Documented behaviour; effectively inert without real I/O.
+    """
+    read = 0xFF  # IN (C) with no device
+    cpu.PC = (cpu.PC & 0xFFC0) | (read & 0x3F)
+
+
+# --- Z80N extended block-copy with A-transparency ---
+
+def inst_ldix(cpu):
+    """0xED 0xA4: LDIX - LDI variant; byte equal to A is treated as transparent.
+
+    temp=(HL); if temp!=A: (DE)=temp; DE++; HL++; BC--.
+    """
+    temp = cpu.mem[cpu.HL]
+    if temp != (cpu.A & 0xFF):
+        cpu.mem[cpu.DE] = temp
+    cpu.DE = (cpu.DE + 1) & 0xFFFF
+    cpu.HL = (cpu.HL + 1) & 0xFFFF
+    cpu.BC = (cpu.BC - 1) & 0xFFFF
+
+
+def inst_lddx(cpu):
+    """0xED 0xAC: LDDX - like LDIX but HL decrements (DE still increments)."""
+    temp = cpu.mem[cpu.HL]
+    if temp != (cpu.A & 0xFF):
+        cpu.mem[cpu.DE] = temp
+    cpu.DE = (cpu.DE + 1) & 0xFFFF
+    cpu.HL = (cpu.HL - 1) & 0xFFFF
+    cpu.BC = (cpu.BC - 1) & 0xFFFF
+
+
+def inst_ldirx(cpu):
+    """0xED 0xB4: LDIRX - repeat LDIX until BC == 0."""
+    a = cpu.A & 0xFF
+    while True:
+        temp = cpu.mem[cpu.HL]
+        if temp != a:
+            cpu.mem[cpu.DE] = temp
+        cpu.DE = (cpu.DE + 1) & 0xFFFF
+        cpu.HL = (cpu.HL + 1) & 0xFFFF
+        cpu.BC = (cpu.BC - 1) & 0xFFFF
+        if cpu.BC == 0:
+            break
+
+
+def inst_lddrx(cpu):
+    """0xED 0xBC: LDDRX - repeat LDDX (HL descending) until BC == 0."""
+    a = cpu.A & 0xFF
+    while True:
+        temp = cpu.mem[cpu.HL]
+        if temp != a:
+            cpu.mem[cpu.DE] = temp
+        cpu.DE = (cpu.DE + 1) & 0xFFFF
+        cpu.HL = (cpu.HL - 1) & 0xFFFF
+        cpu.BC = (cpu.BC - 1) & 0xFFFF
+        if cpu.BC == 0:
+            break
+
+
+def inst_ldpirx(cpu):
+    """0xED 0xB7: LDPIRX - pattern fill from an 8-byte table based at HL&0xFFF8.
+
+    Each step the source byte is at (HL & 0xFFF8) | (E & 7); HL stays fixed.
+    Byte equal to A is transparent. DE++, BC-- until BC == 0.
+    """
+    a = cpu.A & 0xFF
+    while True:
+        src = (cpu.HL & 0xFFF8) | (cpu.E & 0x07)
+        temp = cpu.mem[src]
+        if temp != a:
+            cpu.mem[cpu.DE] = temp
+        cpu.DE = (cpu.DE + 1) & 0xFFFF
+        cpu.BC = (cpu.BC - 1) & 0xFFFF
+        if cpu.BC == 0:
+            break
+
+
+def inst_ldws(cpu):
+    """0xED 0xA5: LDWS - (DE)=(HL); INC L (no carry to H); INC D (sets flags)."""
+    cpu.mem[cpu.DE] = cpu.mem[cpu.HL]
+    cpu.L = (cpu.L + 1) & 0xFF
+    cpu.D = _inc8(cpu, cpu.D)
+
+
+def _register_z80n_ext():
+    EXTENDED_MAP[0x23] = inst_swapnib
+    EXTENDED_MAP[0x24] = inst_mirror_a
+    EXTENDED_MAP[0x27] = inst_test_n
+    EXTENDED_MAP[0x29] = inst_bsra_de_b
+    EXTENDED_MAP[0x2B] = inst_bsrf_de_b
+    EXTENDED_MAP[0x2C] = inst_brlc_de_b
+    EXTENDED_MAP[0x90] = inst_outinb
+    EXTENDED_MAP[0x93] = inst_pixeldn
+    EXTENDED_MAP[0x94] = inst_pixelad
+    EXTENDED_MAP[0x95] = inst_setae
+    EXTENDED_MAP[0x98] = inst_jp_c_port
+    EXTENDED_MAP[0xA4] = inst_ldix
+    EXTENDED_MAP[0xA5] = inst_ldws
+    EXTENDED_MAP[0xAC] = inst_lddx
+    EXTENDED_MAP[0xB4] = inst_ldirx
+    EXTENDED_MAP[0xB7] = inst_ldpirx
+    EXTENDED_MAP[0xBC] = inst_lddrx
+
+
+# =====================================================================
+# Standard Z80 ED-prefixed instructions that were previously missing.
+# =====================================================================
+
+def inst_ldd(cpu):
+    """0xED 0xA8: LDD - (DE)=(HL); HL--; DE--; BC--. H=0,N=0; PV=(BC!=0)."""
+    val = cpu.mem[cpu.HL]
+    cpu.mem[cpu.DE] = val
+    cpu.HL = (cpu.HL - 1) & 0xFFFF
+    cpu.DE = (cpu.DE - 1) & 0xFFFF
+    cpu.BC = (cpu.BC - 1) & 0xFFFF
+    f = cpu.F & (FLAG_S | FLAG_Z | FLAG_C)
+    if cpu.BC != 0:
+        f |= FLAG_PV
+    n = (cpu.A + val) & 0xFF
+    f |= n & FLAG_3
+    f |= (n << 4) & FLAG_5  # bit 1 of (A+val) -> F5
+    cpu.F = f
+
+
+def _cp_block(cpu, val):
+    """Common CPI/CPD flag computation (result of A - val, not stored)."""
+    carry = cpu.F & FLAG_C
+    res = (cpu.A - val) & 0xFF
+    half = FLAG_H if ((cpu.A & 0x0F) - (val & 0x0F)) & 0x10 else 0
+    f = FLAG_N | carry | half
+    if res & 0x80:
+        f |= FLAG_S
+    if res == 0:
+        f |= FLAG_Z
+    if cpu.BC != 0:
+        f |= FLAG_PV
+    n = (res - (1 if half else 0)) & 0xFF
+    f |= n & FLAG_3
+    f |= (n << 4) & FLAG_5  # bit 1 of n -> F5
+    cpu.F = f
+
+
+def inst_cpi(cpu):
+    """0xED 0xA1: CPI - compare A with (HL); HL++; BC--."""
+    val = cpu.mem[cpu.HL]
+    cpu.HL = (cpu.HL + 1) & 0xFFFF
+    cpu.BC = (cpu.BC - 1) & 0xFFFF
+    _cp_block(cpu, val)
+
+
+def inst_cpd(cpu):
+    """0xED 0xA9: CPD - compare A with (HL); HL--; BC--."""
+    val = cpu.mem[cpu.HL]
+    cpu.HL = (cpu.HL - 1) & 0xFFFF
+    cpu.BC = (cpu.BC - 1) & 0xFFFF
+    _cp_block(cpu, val)
+
+
+def inst_cpir(cpu):
+    """0xED 0xB1: CPIR - repeat CPI until BC==0 or a match (Z set)."""
+    while True:
+        inst_cpi(cpu)
+        if cpu.BC == 0 or (cpu.F & FLAG_Z):
+            break
+
+
+def inst_cpdr(cpu):
+    """0xED 0xB9: CPDR - repeat CPD until BC==0 or a match (Z set)."""
+    while True:
+        inst_cpd(cpu)
+        if cpu.BC == 0 or (cpu.F & FLAG_Z):
+            break
+
+
+def _rrd_rld_flags(cpu):
+    """S,Z,PV(parity),F3,F5 from A; H=0,N=0; C preserved."""
+    a = cpu.A & 0xFF
+    f = cpu.F & FLAG_C
+    if a & 0x80:
+        f |= FLAG_S
+    if a == 0:
+        f |= FLAG_Z
+    f |= a & (FLAG_5 | FLAG_3)
+    if _parity_even(a):
+        f |= FLAG_PV
+    cpu.F = f
+
+
+def inst_rrd(cpu):
+    """0xED 0x67: RRD - rotate nibbles right between A and (HL)."""
+    val = cpu.mem[cpu.HL]
+    cpu.mem[cpu.HL] = (((cpu.A & 0x0F) << 4) | (val >> 4)) & 0xFF
+    cpu.A = (cpu.A & 0xF0) | (val & 0x0F)
+    _rrd_rld_flags(cpu)
+
+
+def inst_rld(cpu):
+    """0xED 0x6F: RLD - rotate nibbles left between A and (HL)."""
+    val = cpu.mem[cpu.HL]
+    cpu.mem[cpu.HL] = (((val << 4) | (cpu.A & 0x0F))) & 0xFF
+    cpu.A = (cpu.A & 0xF0) | (val >> 4)
+    _rrd_rld_flags(cpu)
+
+
+def inst_ld_a_i(cpu):
+    """0xED 0x57: LD A,I - A=I; S,Z from I; H=0,N=0; PV=IFF2; C preserved."""
+    i = getattr(cpu, 'I', 0) & 0xFF
+    cpu.A = i
+    f = cpu.F & FLAG_C
+    if i & 0x80:
+        f |= FLAG_S
+    if i == 0:
+        f |= FLAG_Z
+    f |= i & (FLAG_5 | FLAG_3)
+    if getattr(cpu, 'IFF2', 0):
+        f |= FLAG_PV
+    cpu.F = f
+
+
+def inst_ld_a_r(cpu):
+    """0xED 0x5F: LD A,R - A=R; flags as LD A,I (PV=IFF2)."""
+    r = getattr(cpu, 'R', 0) & 0xFF
+    cpu.A = r
+    f = cpu.F & FLAG_C
+    if r & 0x80:
+        f |= FLAG_S
+    if r == 0:
+        f |= FLAG_Z
+    f |= r & (FLAG_5 | FLAG_3)
+    if getattr(cpu, 'IFF2', 0):
+        f |= FLAG_PV
+    cpu.F = f
+
+
+def inst_ld_i_a(cpu):
+    """0xED 0x47: LD I,A - I=A. No flags affected."""
+    cpu.I = cpu.A & 0xFF
+
+
+def inst_ld_r_a(cpu):
+    """0xED 0x4F: LD R,A - R=A. No flags affected."""
+    cpu.R = cpu.A & 0xFF
+
+
+def _make_in_r_c(idx):
+    """IN r,(C): no device modelled -> read 0xFF; set S,Z,P,F3,F5; H=0,N=0."""
+    def f(cpu):
+        val = 0xFF
+        if idx != 6:        # idx 6 = "IN (C)" : flags only, no register write
+            _set_r(cpu, idx, val)
+        flags = cpu.F & FLAG_C
+        if val & 0x80:
+            flags |= FLAG_S
+        if val == 0:
+            flags |= FLAG_Z
+        flags |= val & (FLAG_5 | FLAG_3)
+        if _parity_even(val):
+            flags |= FLAG_PV
+        cpu.F = flags
+    return f
+
+
+def _make_out_c_r(idx):
+    """OUT (C),r: no device modelled -> discard. (idx 6 = OUT (C),0.)"""
+    def f(cpu):
+        pass
+    return f
+
+
+def _make_block_io(name, hl_step, repeat):
+    """INI/IND/INIR/INDR/OUTI/OUTD/OTIR/OTDR -- functional, no real device.
+
+    IN ports read 0xFF; OUT ports discard. B decremented, HL stepped.
+    Flags are approximated: Z set when B reaches 0, N=1.
+    """
+    is_in = name.startswith('IN')
+
+    def step(cpu):
+        if is_in:
+            cpu.mem[cpu.HL] = 0xFF  # IN (C) -> (HL)
+        # else OUT (C),(HL): value discarded
+        cpu.B = (cpu.B - 1) & 0xFF
+        cpu.HL = (cpu.HL + hl_step) & 0xFFFF
+        f = FLAG_N
+        if cpu.B == 0:
+            f |= FLAG_Z
+        if cpu.B & 0x80:
+            f |= FLAG_S
+        cpu.F = (cpu.F & FLAG_C) | f
+
+    if not repeat:
+        return step
+
+    def loop(cpu):
+        while True:
+            step(cpu)
+            if cpu.B == 0:
+                break
+    return loop
+
+
+def inst_reti_retn(cpu):
+    """0xED 0x4D RETI / 0xED 0x45 RETN - return; behaves like RET here."""
+    cpu.PC = cpu.pop()
+
+
+def _im_noop(cpu):
+    """IM 0/1/2 - interrupt mode select; not modelled (no-op)."""
+    pass
+
+
+def _register_ed_standard():
+    EXTENDED_MAP[0xA8] = inst_ldd
+    EXTENDED_MAP[0xA1] = inst_cpi
+    EXTENDED_MAP[0xA9] = inst_cpd
+    EXTENDED_MAP[0xB1] = inst_cpir
+    EXTENDED_MAP[0xB9] = inst_cpdr
+    EXTENDED_MAP[0x67] = inst_rrd
+    EXTENDED_MAP[0x6F] = inst_rld
+    EXTENDED_MAP[0x57] = inst_ld_a_i
+    EXTENDED_MAP[0x5F] = inst_ld_a_r
+    EXTENDED_MAP[0x47] = inst_ld_i_a
+    EXTENDED_MAP[0x4F] = inst_ld_r_a
+    # RETN / RETI (and the undocumented duplicates of RETN)
+    for op in (0x45, 0x4D, 0x55, 0x5D, 0x65, 0x6D, 0x75, 0x7D):
+        EXTENDED_MAP[op] = inst_reti_retn
+    # NEG and its undocumented duplicates
+    for op in (0x44, 0x4C, 0x54, 0x5C, 0x64, 0x6C, 0x74, 0x7C):
+        EXTENDED_MAP[op] = inst_neg
+    # IM 0/1/2 (and undocumented duplicates)
+    for op in (0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E, 0x76, 0x7E):
+        EXTENDED_MAP[op] = _im_noop
+    # IN r,(C) : ED 40/48/50/58/60/68/70(flags only)/78
+    for idx, op in enumerate(range(0x40, 0x79, 8)):
+        EXTENDED_MAP[op] = _make_in_r_c(idx)
+    # OUT (C),r : ED 41/49/51/59/61/69/71(out 0)/79
+    for idx, op in enumerate(range(0x41, 0x7A, 8)):
+        EXTENDED_MAP[op] = _make_out_c_r(idx)
+    # Block I/O
+    EXTENDED_MAP[0xA2] = _make_block_io('INI', +1, False)
+    EXTENDED_MAP[0xAA] = _make_block_io('IND', -1, False)
+    EXTENDED_MAP[0xB2] = _make_block_io('INIR', +1, True)
+    EXTENDED_MAP[0xBA] = _make_block_io('INDR', -1, True)
+    EXTENDED_MAP[0xA3] = _make_block_io('OUTI', +1, False)
+    EXTENDED_MAP[0xAB] = _make_block_io('OUTD', -1, False)
+    EXTENDED_MAP[0xB3] = _make_block_io('OTIR', +1, True)
+    EXTENDED_MAP[0xBB] = _make_block_io('OTDR', -1, True)
+
+
 # Populate the maps with the generated/complete instruction set.
 _gen_base_blocks()
 _register_misc()
 _register_extended()
+_register_z80n_ext()
+_register_ed_standard()
