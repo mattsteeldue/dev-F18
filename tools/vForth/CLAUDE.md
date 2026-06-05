@@ -40,7 +40,7 @@ The project has three codebases in order of priority:
 | VS Code project | `project/vForth18_DOES/` | `project/vForth18_DOT/` | -- |
 | Launcher | `Forth18_loader.bas` + `forth18e.bin` + `ram8.bin` | ZX Spectrum Next dot-command (`.vforth`) | -- |
 | Sync path (nextsync) | `tools/vForth/` | `dot/` | -- |
-| Alignment cadence | -- | Immediate (on each core change) | Not maintained -- historical snapshot |
+| Alignment cadence | -- | Immediate (on each core change) | Maintained by hand! |
 | Bootstrap-verifiable | Yes | No | Possible but not required |
 
 ## Architecture
@@ -51,30 +51,31 @@ vForth uses direct-threaded code (+25% speed vs indirect):
 - Low-level definitions: CFA contains actual Z80 machine code (`jp (hl)` -> executes directly)
 - High-level definitions: CFA contains `call Enter_Ptr` (3 bytes)
 
-### Z80 Register Map
+### Forth Virtual Machine vs Z80 Register Map
 
 ```
 BC  -- Instruction Pointer (preserve during ROM/OS calls)
 DE  -- Return Stack Pointer (preserve during ROM/OS calls)
-HL  -- W register (working; high word for 32-bit ops)
+HL  -- W register (working)
 SP  -- Calculation Stack Pointer
 IX  -- Inner interpreter "next" pointer (jp (ix) is 2T faster than jp addr)
 IY  -- Reserved for ZX System interrupts
-AF'/BC'/DE'/HL' -- Backup/temporary
+BC'/DE'/HL' -- more W's used in complex definition: it's customary using EXX to switch from Forth-Virtual-Machine scope to Machine-Code scope
 ```
 
 ### Memory Layout
 
+- **BASIC RAMTOP** `$61FF` (at $6200 there is the IM-2 interrupt verctor table)
 - **Origin**: `$6366` (binary/tape mode) or `$8080` (DeZog debug mode)
 - **Heap Dictionary**: lives at `$E000-$FFFF` (MMU7 page); name-space and code-space split
 - **S0/TIB/R0/USER**: below `$E000` (computed from `LIMIT_system = $E000`, 6 buffers of
-  516 bytes each)
-- **Blocks/Screens**: 1 KB each, stored in `!Blocks.txt` on SD card
+  512 bytes each + 4 bytes each to keep track of BLOCK number and flags)
+- **Blocks/Screens**: 2 Blocks forms a Screen 512 bytes each, blocks are persistently stored in `!Blocks.txt` on SD card
 
 ### Blocks, Screens, and reserved ranges
 
-A **Screen** is the unit a programmer addresses with `n LOAD`; a **Block** is the 1 KB
-unit vForth allocates internally in `!Blocks.txt`. Two consecutive Blocks form one Screen:
+A **Screen** is the unit a programmer addresses with `n LOAD`; a **Block** is the half KB
+unit vForth allocates internally in `!Blocks.txt`. Two consecutive Blocks form one 1KB Screen:
 
     Screen# N  =  BLOCK 2*N  and  BLOCK 2*N+1
 
@@ -82,24 +83,27 @@ unit vForth allocates internally in `!Blocks.txt`. Two consecutive Blocks form o
 
 | Screen# | BLOCKs | Contents |
 |---------|--------|----------|
-| 0 | 0-1 | Unused -- loading Screen# 0 crashes the system (see Known Bugs) |
+| 0 | 0 | Unused |
 | 0.5 | 1 | System metadata (copyright, block usage); **F_INCLUDE internal buffer** |
 | 4-7 | 8-15 | Standard error messages -- read by `?ERROR` -> `ERROR` -> `MESSAGE` |
 | 10 | 20-21 | Previously held `include src/f18e.f`; now free for end-user use |
 
-**Note on BLOCK 1 and F_INCLUDE:** The first 512 bytes of BLOCK 1 (`!Blocks.txt` byte 512-1023) 
-contain system metadata and copyright information. The remaining 512 bytes serve as the 
-**temporary line buffer** for the `F_INCLUDE` primitive (defined in `project/vForth18_DOES/source/L3.asm` line 224). 
+**Note on BLOCK 1 and F_INCLUDE:** The first 512 bytes of `!Blocks.txt` are BLOCK 1 and
+contain system metadata and copyright information. Because it can never be modified by EDIT is used as
+**temporary line buffer** for the `F_INCLUDE` primitive written in Forth 
+(defined in `project/vForth18_DOES/source/L3.asm` line 224
+or `src/F18e.asm` line 5521). 
 
 During file inclusion, each source line is read from the open file into this BLOCK 1 buffer 
 via `F_GETLINE`, providing a maximum line length of **~511 bytes**. The `BLK` variable is set 
 to 1 to signal active include mode, and `INTERPRET` processes the line. This enables 
-file-based source inclusion without allocating extra heap memory.
+file-based source inclusion without allocating extra heap memory and reusing the old fashion
+`LOAD` technique.
 
 **Convention:** While BLOCK 1 permits lines up to 511 bytes, vForth source style maintains 
 lines at **80 bytes or fewer** for readability and adherence to Forth conventions.
 
-The error-message Screens (4-7) are a space-saving heritage from classic block-based Forth:
+The error-message Screens (4-7) or Blocks (8-14) are a space-saving heritage from classic block-based Forth:
 error text lives in the block file rather than being compiled inline into each definition.
 `f n ?ERROR` checks `f`; if true it calls `ERROR n`, which calls `MESSAGE n` to display
 the text from the appropriate block.
@@ -111,6 +115,8 @@ Each word entry:
 [Heap @ $E000+HP]  length|END_BIT, name bytes (last byte|END_BIT), link-ptr, xt-ptr
 [Dict @ origin]    mirror-ptr, [runcode CALL if HLL], actual Z80 code
 ```
+
+There is a one-to-one correspondence between `project/vForth18_DOES/list/main.lst` and the composite contribution of `forth18e.bin` (the main memory) and `ram8.bin` (the heap): These three files are the source of truth of the working core of this Forth system.
 
 ## Directory Structure
 
@@ -162,12 +168,12 @@ symbol** and may appear in Forth source that targets the machine's display direc
 
 **EMIT vs EMITC:**
 - `EMIT ( c -- )` may mask to 7-bit ASCII range (0-127).
-- `EMITC ( c -- )` emits the full character code (0-255) without masking -- use for UDG
-  codes and extended ZX Spectrum characters (128-255).
+- `EMITC ( c -- )` emits the full character code (0-255) without masking -- use for UDG or   codes and extended ZX Spectrum characters (128-255). Control characters (0-31) that target the real hardware have each a peculiar meaning.
+
 
 ## FAT Filename Character Mapping
 
-Because Forth names use characters illegal in FAT filenames, NEEDS maps them automatically.
+Because Forth names use characters illegal in FAT filenames, NEEDS and INCLUDE maps them automatically.
 When working with word names (help files, NEEDS lines, documentation), always use the
 **real Forth name** -- never the FAT-mapped filename form.
 
@@ -195,7 +201,7 @@ NEEDS GRAPHICS  \ loads lib/GRAPHICS.f only if GRAPHICS is not yet in the dictio
 the file load is skipped. If neither file exists (or exists but does not define the word),
 `NEEDS` emits the word name followed by message 43 ("File not found").
 
-`NEEDS` is interpreter-only -- never call it inside a colon-definition.
+`NEEDS` is interpreter-only -- there is no point to call it inside a colon-definition.
 
 ## Breaking Changes Since v1.2
 
@@ -219,7 +225,7 @@ at the lowest current stack address -- the most recently pushed item. DOES> push
 last, making it TOS at the moment the DOES> body begins executing.
 
 The PFA holds all compile-time data stored by `,` `C,` or `ALLOT` during the CREATE
-phase. The DOES> body uses PFA to access that data; caller arguments sit below PFA and
+phase. The DOES> body uses PFA to access that data; caller arguments sit below TOS and
 are accessed via stack manipulation.
 
 Canonical example from `inc/2constant.f`:
@@ -237,8 +243,7 @@ Canonical example from `inc/2constant.f`:
 ### `INCLUDE` / `NEEDS`
 
 The system crashes -- typically displaying a vertical grid pattern on screen -- if the
-last line of the loaded file ends with one or more trailing spaces before the newline.
-The crash occurs regardless of what non-space content precedes the trailing spaces.
+last line of the loaded file is formed by one or more spaces before the newline.
 `NEEDS` is affected by the same bug because it uses `INCLUDE` internally.
 
 **Workaround:** ensure the last line of every `.f` file has no trailing spaces.
@@ -246,11 +251,10 @@ The crash occurs regardless of what non-space content precedes the trailing spac
 ### `LOAD` (block/screen interpreter)
 
 - **Structure spanning BLOCK boundaries.** Long structured definitions (e.g. `ENUMERATED`)
-  cannot straddle the boundary between the first and second 1 KB block of the same screen.
-  The definition must fit entirely within one block.
+  cannot straddle the boundary between the first and second half KB block of the same Screen.
+  The definition must fit entirely within one Block.
 - **NUL character (`0x00`) in a screen.** A NUL byte inside a screen silently stops
   interpretation mid-load with no error message. Use `EDIT` to locate it.
-- **Screen #0.** Loading from Screen #0 (`0 LOAD`) crashes the system.
 
 ### `OPEN<`
 
