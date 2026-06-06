@@ -8,7 +8,7 @@
 \ write its registers using the standard I/O ports $FFFD (register
 \ select) and $BFFD (data write).
 \
-\ Reference: sec.7.4
+\ Reference: sec.3.13
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
@@ -24,6 +24,8 @@ CR
 .(     Type NEWTASK to unload.                ) CR
 
 NEEDS AY
+NEEDS ms
+
 
 \ ===========================================================================
 \ 1. Hardware overview
@@ -131,8 +133,6 @@ NEEDS AY
 \ 6. Demo: play tone on channel A
 \ ===========================================================================
 
-NEEDS ms
-
 : AY-BEEP  ( period -- )
     AYSETUP                   \ silence and setup all chips
     0 AYSELECT                \ select AY1
@@ -187,7 +187,22 @@ NEEDS ms
 ;
 
 \ ===========================================================================
-\ 9. Simple tests (requires NEEDS TESTING)
+\ 9. Cumulative demo
+\ ===========================================================================
+
+: DEMO
+    DEMO-AY-TONE
+    AY-CHORD
+    AY-NOISE
+    AY-SILENCE
+;
+
+CR
+.( Try: DEMO ) CR
+
+
+\ ===========================================================================
+\ 10. Simple tests (requires NEEDS TESTING)
 \ ===========================================================================
 \
 \ AY words have hardware side effects.  Only the period calculation

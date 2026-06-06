@@ -9,7 +9,7 @@
 \ afterward.  The lower-level words BLEEP, BLEEP-CALC, and BEEP-PITCH
 \ give full control over the raw hardware parameters.
 \
-\ Reference: sec.7.4
+\ Reference: sec.3.12
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
@@ -25,6 +25,7 @@ CR
 .(     Type NEWTASK to unload.          ) CR
 
 NEEDS BLEEP
+
 
 \ ===========================================================================
 \ 1. Word overview
@@ -169,8 +170,24 @@ NEEDS BLEEP
     R> SPEED!
 ;
 
+
 \ ===========================================================================
-\ 10. Simple tests (requires NEEDS TESTING)
+\ 10. Cumulative demo
+\ ===========================================================================
+
+: DEMO
+    PLAY-SCALE 
+    ALARM      
+    PLAY-A5    
+;
+
+CR
+.( Try: DEMO ) CR
+
+
+
+\ ===========================================================================
+\ 11. Simple tests (requires NEEDS TESTING)
 \ ===========================================================================
 \
 \ BEEP produces audio side-effects; it cannot be verified automatically.

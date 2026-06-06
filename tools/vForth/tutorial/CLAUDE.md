@@ -216,3 +216,53 @@ to be misparsed as floating-point.
 
 Include a clear warning in the narrative or as an inline comment so readers internalize
 the trap before they encounter it in practice.
+
+
+## 13. Display Modes in Graphic Tutorials
+
+vForth's default text display is **LAYER12**: the Timex HiRes mode giving 64 columns of
+text. The interactive prompt expects this mode with a blue background.
+
+Tutorials 030, 031, and 032 demonstrate the **original Spectrum ULA**, called **Layer 0**
+(256x192 pixels, 8 colors, 32x24 attribute grid), activated with `LAYER0`. Any tutorial
+whose `DEMO` switches the graphic mode must restore the default text mode afterwards.
+
+### Prefer the lightweight `inc/` LAYER words, not GRAPHICS
+
+The `LAYER` words exist in **two** places, and `NEEDS` resolves to the right one
+because it searches `inc/` before `lib/`:
+
+- **`inc/layer0.f`, `inc/layer12.f`, ...** -- standalone, lightweight. Each just
+  sets the hardware display mode via `IDE_MODE!` (plus `WIDECHAR`/`PAUSEOFF` for
+  LAYER12). No graphic primitives are installed.
+- **`lib/GRAPHICS.f`** -- once loaded, defines *all* `LAYERx` words **and** the full
+  set of vectored graphic primitives (PLOT, POINT, DRAW-LINE, ...). This is heavy.
+
+A tutorial that only needs to flip display mode (e.g. to show ULA attributes, cursor
+positioning, or timing) must pull in the **standalone** words:
+```forth
+NEEDS LAYER0
+NEEDS LAYER12
+```
+Do **not** write `NEEDS GRAPHICS` just to switch layers -- that drags in the entire
+graphics library when no plotting is used. Reserve `NEEDS GRAPHICS` for tutorials that
+actually draw (036 and later). (`inc/layers.f` loads every `LAYERx` at once but is
+likewise unnecessary for a single-mode demo.)
+
+### DEMO pattern: switch in, restore out
+
+- Open the demo by selecting the graphic mode and clearing the screen:
+```forth
+: DEMO
+    LAYER0 CLS
+    ...
+```
+- Close the demo by returning to the default text mode with a blue background
+  (`.PAPER` color 1 = blue):
+```forth
+    LAYER12 1 .PAPER
+;
+```
+
+This applies to whatever graphic mode the tutorial selects: always return to
+`LAYER12 1 .PAPER` so the reader is left at the normal 64-column blue-background prompt.

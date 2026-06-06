@@ -8,7 +8,7 @@
 \ these modes enable visual effects without changing the display buffer
 \ contents directly.
 \
-\ Reference: sec.7.1
+\ Reference: sec.3.2
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
@@ -30,6 +30,9 @@ NEEDS .INK
 NEEDS .PAPER
 NEEDS J
 NEEDS ms
+NEEDS LAYER0
+NEEDS LAYER12    
+NEEDS WAIT-KEY
 
 
 \ ===========================================================================
@@ -123,13 +126,12 @@ DECIMAL
 \ each row uses a different paper color, ink stays at 7 (white).
 
 : COLOR-GRID  ( -- )
-    CLS
     24 0 DO
         32 0 DO
             7                   \ ink
-            I 3 RSHIFT 7 AND    \ paper: 0-7 cycling every 8 rows
+            I 7 AND             \ paper: 0-7 cycling every 8 rows
             0 0 ATTR-BYTE       \ bright=0 flash=0
-            I J >ATTRIB C!      \ write directly to attribute memory
+            J I CELL-ATTR!      \ write directly to attribute memory
         LOOP
     LOOP
 ;
@@ -139,7 +141,6 @@ DECIMAL
 \ ===========================================================================
 
 : INVERSE-DEMO  ( -- )
-    CLS
     5 4 .AT  7 .INK  0 .PAPER
     ." This line is normal.  "
     6 4 .AT
@@ -155,7 +156,7 @@ DECIMAL
 \ ===========================================================================
 
 : OVER-DEMO  ( -- )
-    CLS
+    CR
     ." Background text on the screen." CR
     1 .OVER
     5 0 DO
@@ -166,6 +167,18 @@ DECIMAL
     LOOP
     0 .OVER
 ;
+
+: DEMO
+    LAYER0 CLS
+    INVERSE-DEMO    WAIT-KEY
+    OVER-DEMO       
+    COLOR-GRID      WAIT-KEY
+    LAYER12 1 .PAPER
+;
+
+CR
+.( Try: DEMO ) CR
+
 
 \ ===========================================================================
 \ 8. Simple tests (requires NEEDS TESTING)

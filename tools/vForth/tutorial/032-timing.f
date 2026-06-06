@@ -9,7 +9,7 @@
 \ ms CODE word reads the CPU speed register automatically so it gives
 \ correct delays at any clock rate (3.5-28 MHz).
 \
-\ Reference: sec.7.5
+\ Reference: sec.3.4
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
@@ -26,6 +26,14 @@ CR
 
 NEEDS ms
 NEEDS .BORDER
+NEEDS .PAPER
+NEEDS .AT
+NEEDS LAYER0
+NEEDS LAYER12
+NEEDS WAIT-KEY
+NEEDS VALUE
+NEEDS TO
+
 
 \ ===========================================================================
 \ 1. ms -- millisecond delay
@@ -57,7 +65,7 @@ NEEDS .BORDER
 \ 60 Hz (NTSC) -- one interrupt per video frame.
 \
 \ One PAL frame  = 20 ms
-\ One NTSC frame = approximately 17 ms
+\ One NTSC frame = approximately 16.7 ms
 \
 \ ISR-SYNC is a CODE word (from lib/INTERRUPTS.f) that executes a
 \ Z80 HALT instruction.  HALT suspends the CPU until the next
@@ -69,8 +77,8 @@ NEEDS .BORDER
 \   CODE ISR-SYNC $76 C, $DD C, $E9 C, SMUDGE 
 \
 \   BEGIN
-\       \ ... update display ...
 \       ISR-SYNC    \ wait for next vertical blank
+\       \ ... update display ...
 \   ?TERMINAL UNTIL
 \
 \ Alternatively, use 20 ms for an approximate PAL frame delay:
@@ -87,10 +95,7 @@ NEEDS .BORDER
 \ 3. Demo: simple counting animation using ms
 \ ===========================================================================
 
-NEEDS .AT
-
 : COUNT-DEMO  ( -- )
-    CLS
     0 0 .AT  ." Press BREAK to stop." CR
     0
     BEGIN
@@ -104,20 +109,59 @@ NEEDS .AT
 ;
 
 \ ===========================================================================
-\ 4. Demo: stopwatch -- count elapsed seconds
+\ 4. Demo: stopwatch -- count elapsed seconds via the FRAMES counter
 \ ===========================================================================
+\
+\ The naive way to count seconds is "1000 ms" inside the loop, but ms
+\ *blocks* the CPU for a whole second: while it spins, the loop cannot
+\ poll the keyboard, so BREAK only responds once per second and the
+\ count drifts by however long the printing takes.
+\
+\ A far better timing source when interactivity matters is the ZX
+\ system variable FRAMES at $5C78 (decimal 23672).  It is a 3-byte
+\ counter that the 50 Hz (PAL) / 60 Hz (NTSC) interrupt increments on
+\ every video frame -- a free running real-time tick.  Reading it with
+\ @ returns the low 16 bits, which is all we need to measure a delta
+\ (it wraps only every ~21 minutes at 50 Hz).
+\
+\ The loop below never blocks: it spins reading FRAMES and polling
+\ ?TERMINAL every iteration (so BREAK reacts instantly), and bumps the
+\ seconds counter only once /SEC ticks have elapsed.  Advancing the
+\ baseline by exactly /SEC each time keeps it phase-locked to the
+\ interrupt -- no cumulative drift from the time spent printing.
+
+$5C78 CONSTANT FRAMES   \ ZX system tick at 23672: 3-byte counter,
+                        \ +1 on every 50 Hz (PAL) / 60 Hz (NTSC) interrupt
+
+\ /SEC is the number of frames in one second.  Rather than hard-code it,
+\ read the live video timing from Next register $05 (Peripheral 1):
+\ bit 2 = 0 -> 50 Hz (PAL), bit 2 = 1 -> 60 Hz (NTSC).  Because the
+\ machine can switch modes at run time, /SEC is a VALUE, refreshed by
+\ ?VIDEO-HZ (call it again after changing the video mode).
+50 VALUE /SEC           \ frames per second; set for real just below
+
+: ?VIDEO-HZ  ( -- )     \ refresh /SEC from the current 50/60 Hz timing
+    $05 REG@  $04 AND   \ isolate bit 2 of Peripheral 1 register
+    IF  60  ELSE  50  THEN  TO /SEC
+;
 
 : STOPWATCH  ( -- )
-    CLS
+    ?VIDEO-HZ           \ auto-detect once at load time
     0 0 .AT  ." Stopwatch (BREAK to stop)" CR
-    0
+    0                   ( secs )         \ elapsed seconds
+    FRAMES @            ( secs base )    \ tick at the last whole second
     BEGIN
-        1+
-        1 0 .AT  DUP .  ."  seconds"
-        1000 ms
-        ?TERMINAL
-    UNTIL
-    DROP CR
+        ?TERMINAL 0=    ( secs base f )  \ run until BREAK is pressed
+    WHILE               ( secs base )
+        FRAMES @ OVER - ( secs base d )  \ d = ticks since base
+        /SEC U< 0= IF   ( secs base )    \ a full second elapsed?
+            /SEC +      ( secs base' )   \ advance base by one second's ticks
+            SWAP 1+     ( base' secs+1 ) \ bump the seconds counter
+            DUP 1 0 .AT  .  ."  seconds"
+            SWAP        ( secs base' )   \ restore loop order
+        THEN
+    REPEAT              ( secs base )
+    2DROP CR
 ;
 
 \ ===========================================================================
@@ -132,14 +176,14 @@ CODE ISR-SYNC  ( -- )
     SMUDGE
 
 : FRAME-FLASH  ( -- )
-    CLS
-    0 0 .AT  ." Frame-sync flash demo.  BREAK=stop." CR
+    ." Frame-sync flash demo." CR
+    ." BREAK to stop." CR
     0
     BEGIN
         1+
         DUP 25 MOD 12 < IF  7  ELSE  0  THEN
-        .BORDER
         ISR-SYNC        \ wait for vertical blank
+        .BORDER
         ?TERMINAL
     UNTIL
     DROP
@@ -148,12 +192,20 @@ CODE ISR-SYNC  ( -- )
 ;
 
 \ ===========================================================================
-\ 6. Demo: longer delay using a loop
+\ 6. Cumulative demo
 \ ===========================================================================
 
-: WAIT-SECONDS  ( n -- )
-    0 DO  1000 ms  LOOP
+: DEMO
+    LAYER0 CLS
+    FRAME-FLASH     WAIT-KEY 
+    COUNT-DEMO      WAIT-KEY
+    STOPWATCH       WAIT-KEY
+    LAYER12 1 .PAPER
 ;
+
+CR
+.( Try: DEMO ) CR
+
 
 \ ===========================================================================
 \ 7. Simple tests (requires NEEDS TESTING)
