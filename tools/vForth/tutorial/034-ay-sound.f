@@ -70,7 +70,8 @@ NEEDS ms
 \ 3. Key words from lib/AY.f
 \ ===========================================================================
 \
-\   AYSELECT ( n -- )   select chip n: 0=AY1, 1=AY2, 2=AY3
+\   AYSELECT ( n -- )   select chip n: 1=AY1, 2=AY2, 3=AY3
+\                       (1-based; 0 is a no-op, see lib/AY.f)
 \                       stores selection in variable AY
 \
 \   AY!  ( b ayreg -- )  write byte b to AY register ayreg
@@ -91,7 +92,7 @@ NEEDS ms
 \
 \ To play a tone on channel A of AY1:
 \
-\   1. Select chip:       0 AYSELECT     \ AY1
+\   1. Select chip:       1 AYSELECT     \ AY1
 \   2. Set volume:        15 8 AY!        \ ch A max volume
 \   3. Set tone period:   248 0 AY!!      \ ~440 Hz tone period
 \   4. Enable tone only:  %00111110 7 AY! \ enable ch A tone only
@@ -135,14 +136,14 @@ NEEDS ms
 
 : AY-BEEP  ( period -- )
     AYSETUP                   \ silence and setup all chips
-    0 AYSELECT                \ select AY1
+    1 AYSELECT                \ select AY1
     15 8 AY!                  \ channel A: max volume
     0 AY!!                    \ write tone period (TOS=period)
     %00111110 7 AY!           \ mixer: only channel A tone active
 ;
 
 : AY-SILENCE  ( -- )
-    0 AYSELECT  SHH
+    1 AYSELECT  SHH
 ;
 
 : DEMO-AY-TONE  ( -- )
@@ -159,7 +160,7 @@ NEEDS ms
 
 : AY-CHORD  ( -- )
     AYSETUP
-    0 AYSELECT
+    1 AYSELECT
     \ channel A: C4 (~262 Hz, period ~418)
     12 8 AY!      418 0 AY!!
     \ channel B: E4 (~330 Hz, period ~331)
@@ -178,10 +179,10 @@ NEEDS ms
 
 : AY-NOISE  ( -- )
     AYSETUP
-    0 AYSELECT
+    1 AYSELECT
     12 8 AY!           \ channel A: volume 12
     16 6 AY!           \ noise period 16
-    %00101111 7 AY!    \ mixer: enable ch A noise, disable tones
+    %00110111 7 AY!    \ mixer: enable ch A noise, disable tones
     500 ms
     SHH
 ;

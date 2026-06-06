@@ -4,6 +4,19 @@ Guided, self-contained tutorials introducing vForth features progressively.
 This file supersedes `tutorial-conventions.md` and is the authoritative reference.
 
 
+## 0. Reference Documents
+
+Hardware tutorials (display, sound, sprites, timing) must cite the ZX Spectrum Next
+hardware behaviour from the authoritative source, not from memory:
+
+- **ZX Spectrum Next - Developer's Guide & Reference Manual (rev. 2)**
+  `C:\Zx\Next\zx-next-dev-guide-r2.pdf`
+  Section numbers in tutorial headers (`Reference: sec.N.NN`) refer to *this* document.
+
+When the PDF's prose/examples disagree with its register tables, the **register table is
+authoritative** (the manual contains known example typos -- see section 14 below).
+
+
 ## 1. Language
 
 - Interaction with the author: Italian.
@@ -266,3 +279,67 @@ likewise unnecessary for a single-mode demo.)
 
 This applies to whatever graphic mode the tutorial selects: always return to
 `LAYER12 1 .PAPER` so the reader is left at the normal 64-column blue-background prompt.
+
+
+## 14. AY Sound: chip-select on port $FFFD (tutorial 034)
+
+Authoritative source: dev guide section 3.10.4, "Turbo Sound Next Control $FFFD"
+(register table, printed page 113). When bit 7 = 1 the port selects the active chip:
+
+| Bit | Meaning                                            |
+|-----|----------------------------------------------------|
+| 7   | 1 (chip-select mode)                               |
+| 6   | 1 = enable left audio                              |
+| 5   | 1 = enable right audio                             |
+| 4-2 | must be 1                                          |
+| 1-0 | active chip: `11`=AY1, `10`=AY2, `01`=AY3, `00`=unused |
+
+So the byte to write with both audio channels enabled is:
+
+| Chip | bits 1-0 | byte  | binary       |
+|------|----------|-------|--------------|
+| AY1  | `11`     | `$FF` | `%11111111`  |
+| AY2  | `10`     | `$FE` | `%11111110`  |
+| AY3  | `01`     | `$FD` | `%11111101`  |
+
+General rule: to select AY chip number `k` (k = 1,2,3) write `(-k) AND $FF` to `$FFFD`,
+i.e. `$FF`/`$FE`/`$FD` (equivalently `$FF - (k-1)`). The negation `-k` is exactly the
+trick `lib/AY.f AYSELECT` uses.
+
+**The PDF uses two chip numberings.** The prose / Peripheral 4 Register $09 (printed
+page 101) names the chips `AY0/AY1/AY2` (0-based), while the authoritative $FFFD table
+(page 113) names the same three chips `AY1/AY2/AY3` (1-based). They map one-to-one:
+AY0(prose)=AY1(table)=`$FF`, AY1(prose)=AY2(table)=`$FE`, AY2(prose)=AY3(table)=`$FD`.
+**vForth follows the 1-based table** (`lib/AY.f`).
+
+**Known PDF typo:** the example on printed page 112 writes `%11111101` and comments
+"select AY1", but `%11111101` = `$FD` is the *third* chip in either naming (table AY3 /
+prose AY2), not the first. Trust the register table, not the example.
+
+**`AYSELECT` argument is 1-based:** `1 AYSELECT`=AY1, `2`=AY2, `3`=AY3. The arithmetic
+only works for `k = 1,2,3`: `0 AYSELECT` writes nothing to the port (silent no-op that
+leaves the previously selected chip). `AYSETUP` itself calls `1/2/3 AYSELECT`. Tutorial
+code must use `1 AYSELECT` to select AY1 -- never `0 AYSELECT`. The same 1-based
+convention holds for the separate `AYSELECT` in `lib/afxplay.f`, whose `1- CELLS` table
+indexing bakes the 1-based assumption in.
+
+### Mixer register 7: 0 = enabled (active low)
+
+AY register 7 (the mixer) is **active low**: a `0` bit *enables* a source, a `1` bit
+*disables* it. This is why `SHH` writes `$FF` (all ones) to silence everything. The bit
+layout (dev guide page 114) is:
+
+| Bit | 7 | 6 | 5       | 4       | 3       | 2      | 1      | 0      |
+|-----|---|---|---------|---------|---------|--------|--------|--------|
+|     | 0 | 0 | noise C | noise B | noise A | tone C | tone B | tone A |
+
+So "enable tone A only" = `%00111110` (bit 0 = 0, all others 1); "enable noise A only"
+= `%00110111` (bit 3 = 0, all others 1).
+
+**Bug found and fixed in tutorial 034 `AY-NOISE` (2026-06-06):** the mixer was written
+`%00101111`, which clears **bit 4 (noise B)** instead of bit 3 (noise A). It therefore
+enabled noise on channel B while the volume was set only on channel A (reg 8) -- so no
+sound was audible, despite the comment "enable ch A noise". Corrected to `%00110111`.
+Lesson for authors: when targeting "channel A", double-check you are clearing the bit in
+*column A* of the table above -- it is easy to be one bit position off, and because the
+register is active-low the mistake is silent (wrong channel plays, or nothing does).

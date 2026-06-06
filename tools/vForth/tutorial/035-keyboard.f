@@ -1,12 +1,12 @@
 \
 \ 035-keyboard.f
-\ Keyboard input: KEY, WAIT-KEY, ^escape and a simple menu demo.
+\ Keyboard input: KEY, WAIT-KEY, ?ESCAPE and a simple menu demo.
 \
 \ KEY is a core Forth word that waits for a keypress and returns its
 \ ASCII code.  WAIT-KEY (NEEDS WAIT-KEY) polls the hardware port
 \ directly, first waiting for any key to be released, then for one
-\ to be pressed.  ?ESCAPE (NEEDS ^escape) checks whether the user
-\ is holding CAPS SHIFT + SPACE (the BREAK combination) without
+\ to be pressed.  ?ESCAPE (NEEDS ?ESCAPE) checks whether the user
+\ is holding CAPS SHIFT + 1 (the [EDIT] combination) without
 \ blocking.  These three words cover most keyboard interaction needs.
 \
 \ Note: ASK (NEEDS ASK) is a high-level word that sends text to a
@@ -46,22 +46,21 @@ NEEDS CASE
 \   SPACE          -> $20
 \
 \ Example:
-\   KEY .   \ wait for key and print its code
+\   KEY .    \ wait for key and print its code
 \   KEY EMIT \ wait for key and display it
 
 \ ===========================================================================
 \ 2. WAIT-KEY -- hardware-level keypress detection
 \ ===========================================================================
 \
-\   WAIT-KEY ( -- c )   NEEDS WAIT-KEY
+\   WAIT-KEY ( -- )   NEEDS WAIT-KEY
 \
 \ WAIT-KEY polls port $FE directly.  It does not use the Spectrum
 \ ROM or the Forth input stream.  The sequence is:
 \   1. Wait until all keys are released  (port $FE bits 0-4 all 1)
 \   2. Wait until any key is pressed     (some bit goes 0)
 \
-\ WAIT-KEY does NOT return an ASCII code -- it returns a raw port
-\ value that indicates which key-row is active.  For ASCII, use KEY.
+\ WAIT-KEY does NOT modify the Stack
 \
 \ WAIT-KEY is useful when you want guaranteed no-bounce detection
 \ without going through the ROM keyboard scanner.
@@ -70,11 +69,11 @@ NEEDS CASE
 \ 3. ?ESCAPE -- non-blocking BREAK check
 \ ===========================================================================
 \
-\   ?ESCAPE ( -- f )   NEEDS ^escape
+\   ?ESCAPE ( -- f )   NEEDS ?ESCAPE
 \
 \ ?ESCAPE checks whether both CAPS SHIFT (port $FE, high nibble $FE)
-\ and SPACE (port $FE, high nibble $F7) are pressed simultaneously.
-\ Returns a non-zero flag if the BREAK combination is detected.
+\ and [1] (port $FE, high nibble $F7) are pressed simultaneously.
+\ Returns a non-zero flag if the [EDIT] combination is detected.
 \
 \ Use this to provide a clean exit from long-running loops:
 \
@@ -83,7 +82,7 @@ NEEDS CASE
 \       ?ESCAPE
 \   UNTIL
 \
-\ ?TERMINAL is the core equivalent that also detects BREAK and is
+\ ?TERMINAL is the core equivalent that detects BREAK instead and is
 \ used internally by drawing primitives.
 
 \ ===========================================================================
