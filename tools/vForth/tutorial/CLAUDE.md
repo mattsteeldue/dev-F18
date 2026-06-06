@@ -6,15 +6,20 @@ This file supersedes `tutorial-conventions.md` and is the authoritative referenc
 
 ## 0. Reference Documents
 
-Hardware tutorials (display, sound, sprites, timing) must cite the ZX Spectrum Next
-hardware behaviour from the authoritative source, not from memory:
+Two distinct documents are involved -- do not confuse them:
 
-- **ZX Spectrum Next - Developer's Guide & Reference Manual (rev. 2)**
-  `C:\Zx\Next\zx-next-dev-guide-r2.pdf`
-  Section numbers in tutorial headers (`Reference: sec.N.NN`) refer to *this* document.
+- **vForth manual** -- `doc/vForth1.8-core-en-<date>.odt` (the project's own manual).
+  The `Reference: sec.N.NN` line in every tutorial header points to **this** document
+  (e.g. sec.2.12.x = core words, sec.3.x / 7.x = hardware, sec.9 = communications).
+  Its chapter numbering is being reorganised, so a stale `sec.7.x` may need updating to
+  the new `sec.3.x` -- check against the current manual when revising a tutorial.
 
-When the PDF's prose/examples disagree with its register tables, the **register table is
-authoritative** (the manual contains known example typos -- see section 14 below).
+- **ZX Spectrum Next - Developer's Guide & Reference Manual (rev. 2)** --
+  `C:\Zx\Next\zx-next-dev-guide-r2.pdf` (the hardware bible). This is the authoritative
+  source for register/port behaviour. Cite it (with printed page numbers) when a tutorial
+  touches the hardware directly -- see section 14 (AY $FFFD) for an example. When its
+  prose/examples disagree with its register tables, the **register table wins** (the guide
+  contains known example typos).
 
 
 ## 1. Language
