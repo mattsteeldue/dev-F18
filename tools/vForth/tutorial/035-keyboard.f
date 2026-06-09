@@ -12,7 +12,11 @@
 \ Note: ASK (NEEDS ASK) is a high-level word that sends text to a
 \ connected Raspberry Pi Zero and is not a general keyboard reader.
 \
-\ Reference: sec.7.3
+\ See also tutorial 051 (keyboard matrix): direct port $FE scanning
+\ for non-blocking polling, several keys held at once, and
+\ redefinable game controls.
+\
+\ Reference: sec.3.14
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL

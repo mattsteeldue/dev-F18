@@ -37,17 +37,16 @@
 \      UP-PORT @ UP-MASK @ KEY-PRESSED?  IF  ( move up )  THEN
 \
 .( KEYBOARD )
-\
-
-#255 CONSTANT NO-KEY            \ KEY-SCAN result when nothing is pressed
 
 \ Half-row select bytes (the namesake table loaded by NEEDS KEYBOARD).
 CREATE KEYBOARD  ( -- a )
     $FE C,  $FD C,  $FB C,  $F7 C,  $EF C,  $DF C,  $BF C,  $7F C,
+\
+#255 CONSTANT NO-KEY            \ KEY-SCAN result when nothing is pressed
 
 \ index -> 16-bit port that selects its half-row ( e.g. 12 -> $FBFE )
 : KEY#>PORT  ( n -- port )
-    #5 /  KEYBOARD +  C@  $100 *  $FE + ;
+    #5 /  KEYBOARD +  C@  8 LSHIFT  $FE + ;
 
 \ index -> single-bit column mask ( column 0..4 -> $01..$10 )
 : KEY#>MASK  ( n -- mask )
@@ -105,5 +104,4 @@ CREATE KEY-NAMES  ( -- a )
     DUP $0D =  IF  DROP  ." ENTER"  EXIT  THEN
     DUP $20 =  IF  DROP  ." SPACE"  EXIT  THEN
     EMIT ;
-
 
