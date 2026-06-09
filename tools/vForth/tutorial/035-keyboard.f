@@ -28,7 +28,7 @@ CR
 .(     Type NEWTASK to unload.          ) CR
 
 NEEDS WAIT-KEY
-NEEDS ^escape
+NEEDS ?ESCAPE
 NEEDS CASE
 
 \ ===========================================================================
@@ -66,24 +66,26 @@ NEEDS CASE
 \ without going through the ROM keyboard scanner.
 
 \ ===========================================================================
-\ 3. ?ESCAPE -- non-blocking BREAK check
+\ 3. ?ESCAPE -- non-blocking [EDIT] check
 \ ===========================================================================
 \
 \   ?ESCAPE ( -- f )   NEEDS ?ESCAPE
 \
-\ ?ESCAPE checks whether both CAPS SHIFT (port $FE, high nibble $FE)
-\ and [1] (port $FE, high nibble $F7) are pressed simultaneously.
-\ Returns a non-zero flag if the [EDIT] combination is detected.
+\ ?ESCAPE is a non-blocking poll of the keyboard.  It reads port $FE
+\ twice; the high byte of the address bus selects a keyboard half-row
+\ ($FE selects the row containing CAPS SHIFT, $F7 the row containing
+\ [1]).  It returns a non-zero flag when both CAPS SHIFT and [1] -- the
+\ [EDIT] combination -- are held at the same time.
 \
-\ Use this to provide a clean exit from long-running loops:
+\ ?ESCAPE does not wait for a key: it tests the current state and
+\ returns immediately.  Its typical use is to pause or abort a long
+\ scrolling listing (see lib/DIR.f), e.g.:
 \
-\   BEGIN
-\       \ ... do work ...
-\       ?ESCAPE
-\   UNTIL
+\   BEGIN  ?ESCAPE NOT  UNTIL     \ wait here until [EDIT] is pressed
 \
-\ ?TERMINAL is the core equivalent that detects BREAK instead and is
-\ used internally by drawing primitives.
+\ For a real "stop now" signal, use the core word ?TERMINAL, which
+\ returns true when [BREAK] (CAPS SHIFT + SPACE) is pressed.  ?TERMINAL
+\ needs no NEEDS and is what the drawing primitives use internally.
 
 \ ===========================================================================
 \ 4. Key codes reference
@@ -116,7 +118,7 @@ NEEDS CASE
         SPACE
         DUP .
         CR
-        ?ESCAPE
+        ?TERMINAL
     UNTIL
     CR ." Done." CR
 ;
@@ -138,17 +140,17 @@ NEEDS CASE
 : DO-MENU  ( -- )
     BEGIN
         SHOW-MENU
-        KEY
+        KEY UPPER              ( c )   \ fold the key to uppercase
+        DUP                    ( c c ) \ keep a copy for the exit test
         CASE
             [CHAR] 1 OF  CR ." You chose option one."   ENDOF
             [CHAR] 2 OF  CR ." You chose option two."   ENDOF
             [CHAR] 3 OF  CR ." You chose option three." ENDOF
             [CHAR] Q OF  CR ." Goodbye!"                ENDOF
-            [CHAR] q OF  CR ." Goodbye!"                ENDOF
             CR ." Unknown key."
         ENDCASE
         CR
-        [CHAR] Q = SWAP [CHAR] q = OR
+        [CHAR] Q =             ( f )   \ ENDCASE consumed one copy; exit on Q
     UNTIL
 ;
 
@@ -169,14 +171,14 @@ NEEDS CASE
 \ ===========================================================================
 
 : YES-OR-NO  ( -- f )
-    \ Returns true if Y or y, false if N or n.
+    \ Returns true for Y, false for N (case-insensitive).
     ." (Y/N)? "
     BEGIN
-        KEY
-        DUP [CHAR] Y =  OVER [CHAR] y =  OR
-        OVER [CHAR] N =  OVER [CHAR] n =  OR  OR
-    UNTIL
-    [CHAR] Y =  SWAP [CHAR] y =  OR
+        KEY UPPER              ( c )   \ fold the key to uppercase
+        DUP [CHAR] Y =         ( c f )
+        OVER [CHAR] N = OR     ( c f ) \ loop until Y or N is pressed
+    UNTIL                      ( c )
+    [CHAR] Y =                 ( f )   \ true iff the key was Y
 ;
 
 \ ===========================================================================
