@@ -1,0 +1,3 @@
+# Python bytecode (emulator tooling)
+__pycache__/
+*.pyc
