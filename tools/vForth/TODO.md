@@ -29,6 +29,9 @@ Removed from tutorial/018-vocabularies.f until fixed.
 I just discovered this definition has to be put on a new line to work *always*.
 Tutorial 021 shows that if written on the same line of some complex evaluating 
 strings it does not work well.
+**2026-06-11** Root cause found and fix proposed (verified in the headless
+emulator): see doc/EVALUATE-bug-analysis.md, repro in test/evaluate-bug-repro.f,
+candidate fix in test/evaluate-bug-fix.f. inc/evaluate.f not yet modified.
 
 
 # F>D in FLOATING library has bug

@@ -4,6 +4,7 @@ vForth Minimal Emulator - Phase 1
 Z80/Z80N emulator for forth18e.bin on headless Python
 """
 
+import os
 import sys
 import struct
 import time
@@ -400,6 +401,26 @@ class VForthEmulator:
         """
         self.cpu.A = 0x01
 
+    def resolve_fat_name(self, filename):
+        """FAT on the real SD card is case-insensitive; the host filesystem may
+        not be. Resolve each path component ignoring case (e.g. vForth asks for
+        INC/EVALUATE.F and the repo holds inc/evaluate.f). Returns the resolved
+        path, or the original name unchanged if no match exists (new files)."""
+        path = filename.replace('\\', '/')
+        if os.path.exists(path):
+            return path
+        resolved = ''
+        for part in path.split('/'):
+            base = resolved if resolved else '.'
+            candidate = os.path.join(resolved, part)
+            if not os.path.exists(candidate) and os.path.isdir(base):
+                for entry in os.listdir(base):
+                    if entry.lower() == part.lower():
+                        candidate = os.path.join(resolved, entry)
+                        break
+            resolved = candidate
+        return resolved
+
     def handle_f_open(self):
         """F_OPEN: open file
         Input: A=mode, B=*, DE=buffer addr, IX=filename (null-terminated)
@@ -416,6 +437,7 @@ class VForthEmulator:
             filename_addr = (filename_addr + 1) & 0xFFFF
 
         filename = ''.join(chr(b) for b in filename_bytes if 32 <= b < 127)
+        filename = self.resolve_fat_name(filename)
 
         # Parse mode byte (C register contains the mode)
         mode = self.cpu.C
