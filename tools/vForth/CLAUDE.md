@@ -180,11 +180,21 @@ A fourth fix made the **interactive REPL fully work** (boot -> banner -> `ASK-Y/
    "load utilities" branch; now `n` correctly makes it `QUIT` to the prompt, and
    `1 2 + .` prints `3`.
 
+A fifth fix (2026-06-12) made the **MMU7 paging real**: `Z80CPU.mmu7_page` is now a
+property that swaps the $E000-$FFFF window content per 8K page, and the NextReg
+read-back ports $243B/$253B are modelled (`_bc_port_in`/`_bc_port_out` in
+`z80_instructions.py` -- note `_register_ed_standard()` re-registers ED 78/79, so the
+model lives in the generic `_make_in_r_c`/`_make_out_c_r`). This fixed the previously
+fragile area (definitions inside INCLUDEd files derailing `(FIND)`) and was required by
+the `(EMITC)` MMU7 save/restore fix, which reads the current page on every emitted
+character. `emu/test_words_stream.py` covers the `13 SELECT WORDS` scenario by
+simulating the +3DOS banking clobber after every `rst $10`.
+
 The `emu/trace_words.py` tool traces Forth words (gated on entering a chosen word,
 default AUTOEXEC) and spies on `KEY` (LASTK/FLAGS/queue) -- built to diagnose the above.
 
-Remaining: utility loading via `NEEDS` (REMOUNT/WHERE/.S/EDIT/...) is heavy and exercises
-the heap/MMU7 paging beyond page $20 -- the next area to validate.
+Remaining: utility loading via `NEEDS` (REMOUNT/WHERE/.S/EDIT/...) is heavy -- the next
+area to validate.
 
 ## Directory Structure
 

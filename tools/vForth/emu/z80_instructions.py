@@ -1241,28 +1241,13 @@ def inst_cp_a_l(cpu):
 # Extended instructions (prefix 0xED)
 
 
-def _mmu7_warn_once(cpu, page):
-    """Warn at most once per distinct unsupported MMU7 page (avoid flooding).
-
-    The emulator uses a flat 64K memory, so only the heap base page ($20) is
-    modelled; other pages are tracked but not actually swapped in. Page $FF is
-    the NextZXOS "restore default slot" sentinel and is harmless headless.
-    """
-    if page in (0x20, 0xFF):
-        return
-    seen = getattr(cpu, '_mmu7_warned', None)
-    if seen is None:
-        seen = cpu._mmu7_warned = set()
-    if page not in seen:
-        seen.add(page)
-        print(f"Warning: MMU7 page ${page:02X} not yet modelled (flat memory; only $20)")
-
-
 def inst_nextreg_a(cpu):
-    """0xED 0x92 n: NEXTREG n,A - write A to Next register n"""
+    """0xED 0x92 n: NEXTREG n,A - write A to Next register n.
+
+    Register 87 (MMU slot 7) is fully modelled: assigning cpu.mmu7_page
+    swaps the $E000-$FFFF window content (see Z80CPU.mmu7_page)."""
     reg = cpu.fetch_byte()
     if reg == 87:  # MMU register for slot 7
-        _mmu7_warn_once(cpu, cpu.A & 0xFF)
         cpu.mmu7_page = cpu.A & 0xFF
 
 
@@ -1271,7 +1256,6 @@ def inst_nextreg_nn(cpu):
     reg = cpu.fetch_byte()
     val = cpu.fetch_byte()
     if reg == 87:
-        _mmu7_warn_once(cpu, val & 0xFF)
         cpu.mmu7_page = val & 0xFF
 
 
@@ -2129,13 +2113,17 @@ def inst_ldi(cpu):
 
 
 def inst_in_a_c(cpu):
-    """0xED 0x78: IN A,(C) - no I/O device modelled; read 0xFF."""
-    cpu.A = 0xFF
+    """0xED 0x78: IN A,(C) - reads via _bc_port_in (NextReg read-back
+    modelled). Note: _register_ed_standard() later remaps ED 78 to the
+    flag-setting _make_in_r_c(7); both go through the same port model."""
+    cpu.A = _bc_port_in(cpu)
 
 
 def inst_out_c_a(cpu):
-    """0xED 0x79: OUT (C),A - no device modelled; ignore."""
-    pass
+    """0xED 0x79: OUT (C),A - writes via _bc_port_out (NextReg select
+    modelled). Also remapped by _register_ed_standard() to
+    _make_out_c_r(7); both go through the same port model."""
+    _bc_port_out(cpu, cpu.A)
 
 
 def _register_extended():
@@ -2514,10 +2502,29 @@ def inst_ld_r_a(cpu):
     cpu.R = cpu.A & 0xFF
 
 
+def _bc_port_in(cpu):
+    """Read the 16-bit port in BC. The only device modelled is the NextReg
+    read-back pair $243B/$253B: the core's MMU7_read selects register 87 on
+    $243B and reads its value back on $253B. Since the (EMITC) fix it runs
+    on every emitted character, so it must see the real tracked MMU7 page
+    (a dummy $FF would then be written back through `nextreg 87,a` and swap
+    garbage into $E000-$FFFF). Anything else reads an idle bus (0xFF)."""
+    if cpu.BC == 0x253B and getattr(cpu, 'nextreg_selected', None) == 87:
+        return cpu.mmu7_page & 0xFF
+    return 0xFF
+
+
+def _bc_port_out(cpu, val):
+    """Write the 16-bit port in BC; models the NextReg select port $243B."""
+    if cpu.BC == 0x243B:
+        cpu.nextreg_selected = val & 0xFF
+
+
 def _make_in_r_c(idx):
-    """IN r,(C): no device modelled -> read 0xFF; set S,Z,P,F3,F5; H=0,N=0."""
+    """IN r,(C): reads via _bc_port_in (NextReg read-back modelled);
+    set S,Z,P,F3,F5; H=0,N=0."""
     def f(cpu):
-        val = 0xFF
+        val = _bc_port_in(cpu)
         if idx != 6:        # idx 6 = "IN (C)" : flags only, no register write
             _set_r(cpu, idx, val)
         flags = cpu.F & FLAG_C
@@ -2533,9 +2540,10 @@ def _make_in_r_c(idx):
 
 
 def _make_out_c_r(idx):
-    """OUT (C),r: no device modelled -> discard. (idx 6 = OUT (C),0.)"""
+    """OUT (C),r: writes via _bc_port_out (NextReg select modelled);
+    other ports discard. (idx 6 = OUT (C),0.)"""
     def f(cpu):
-        pass
+        _bc_port_out(cpu, 0 if idx == 6 else _get_r(cpu, idx))
     return f
 
 

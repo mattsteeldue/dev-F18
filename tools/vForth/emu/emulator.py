@@ -44,8 +44,27 @@ class Z80CPU:
         self.halted = False
         self.cycle_count = 0
 
-        # MMU state
-        self.mmu7_page = 0x20  # Current heap page (initially page 32)
+        # MMU state: slot 7 ($E000-$FFFF) is really banked. Page contents
+        # are kept per page number and swapped through the flat 64K window
+        # whenever NextReg 87 changes (see the mmu7_page property below).
+        self.mmu7_pages = {}
+        self._mmu7_page = 0x20  # Current heap page (initially page 32)
+
+    # MMU7 banking: writing a new page number swaps the $E000-$FFFF window.
+    # Pages never seen before read as zero-filled RAM (uninitialised on the
+    # real machine); page 1 is the OS bank-0 default left by +3DOS calls.
+    @property
+    def mmu7_page(self):
+        return self._mmu7_page
+
+    @mmu7_page.setter
+    def mmu7_page(self, v):
+        v &= 0xFF
+        if v == self._mmu7_page:
+            return
+        self.mmu7_pages[self._mmu7_page] = bytes(self.mem[0xE000:0x10000])
+        self.mem[0xE000:0x10000] = self.mmu7_pages.get(v, bytes(0x2000))
+        self._mmu7_page = v
 
     # Register access (8-bit)
     @property
