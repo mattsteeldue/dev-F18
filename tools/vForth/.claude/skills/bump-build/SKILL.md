@@ -60,6 +60,13 @@ data dentro commenti/codice commentato (vecchio SPLASH): non sono canoniche,
 ma aggiornarle non guasta. Le copie sotto `project/*/source/version/`,
 `version/`, `util/*_YYYYMMDD.txt` e `doc/` sono ARCHIVI STORICI: non toccarle.
 
+**NON aggiornare i sorgenti `.f` sotto `inc/` e `lib/`.** Alcuni di essi
+riportano un numero di build nei commenti: e' la data in cui QUEL sorgente
+e' stato scritto o modificato l'ultima volta, non il build corrente del
+core. Toccarli in massa produrrebbe solo un flood di modifiche inutili
+verso git. La data in quei file si aggiorna soltanto quando si modifica
+davvero il contenuto del singolo file, contestualmente alla modifica.
+
 ## 3. Ricompilare entrambe le varianti
 
 Sul Pi sjasmplus e' in `~/.local/bin/sjasmplus` (su Windows: task VS Code

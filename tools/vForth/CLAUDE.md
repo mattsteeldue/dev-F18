@@ -33,6 +33,9 @@ version" line and in the first 512-byte block of `!Blocks-64.bin`;
 (`.claude/skills/bump-build/SKILL.md`) updates every canonical location and
 rebuilds both variants; historical copies under `version/`,
 `project/*/source/version/`, `util/` and `doc/` must never be touched.
+Build dates found in `.f` sources under `inc/` and `lib/` are the last-edit
+date of that single file, NOT the core build number: never mass-update them
+(it would only flood git) -- they change only when that file's content does.
 
 ## The Three Codebases and Their Roles
 
