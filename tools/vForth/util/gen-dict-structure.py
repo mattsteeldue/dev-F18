@@ -166,8 +166,19 @@ def main():
     def transcript(cmd):
         out = drv.send(cmd).strip("\n")
         out = re.sub(r" ?ok\s*$", "", out)      # drop the trailing prompt
+        lines = [ln for ln in out.splitlines() if ln.strip()]
+        if cmd.startswith("SEE"):
+            # normalise to the manual's format (SEE itself is sloppy here):
+            # - drop the stray leading line with the bare length byte
+            lines = [ln for ln in lines
+                     if not re.fullmatch(r"\s*[0-9A-F]{1,2}\s*", ln)]
+            # - zero-pad the 16-bit heap-pointer in the Lfa: line
+            lines = [re.sub(r"^(\s*Lfa: [0-9A-F]{4} )([0-9A-F]{1,3})\b",
+                            lambda m: m.group(1) + m.group(2).zfill(4),
+                            ln)
+                     for ln in lines]
         return "        " + cmd + "\n" + "\n".join(
-            "        " + ln for ln in out.splitlines() if ln.strip())
+            "        " + ln for ln in lines)
 
     ver_a = "\n".join([transcript("SEE " + WORD_A)] +
                       [transcript(c) for c in dump_cmds_a])

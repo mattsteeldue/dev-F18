@@ -69,6 +69,9 @@ resta MANUALE.
 
 - Lo script dipende da `emu/repl.py` e dai moduli in `emu/`; il transcript
   e' output REALE del core (compresa la colonna ASCII dei DUMP), quindi e'
-  fedele a cio' che l'utente vedrebbe sull'hardware.
+  fedele a cio' che l'utente vedrebbe sull'hardware -- con due sole
+  normalizzazioni al formato del manuale che compensano la sciatteria di
+  SEE: la riga iniziale col solo length-byte viene soppressa e gli
+  heap-pointer nella riga `Lfa:` sono zero-padded a 4 cifre.
 - Se servono parole diverse da SWAP/DUP (il manuale usa quelle), modificare
   `WORD_A`/`WORD_B` in testa a `util/gen-dict-structure.py`.
