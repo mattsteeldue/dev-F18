@@ -37,6 +37,17 @@ Build dates found in `.f` sources under `inc/` and `lib/` are the last-edit
 date of that single file, NOT the core build number: never mass-update them
 (it would only flood git) -- they change only when that file's content does.
 
+### Reference manual (.odt/.pdf)
+
+The manual `doc/vForth1.8-core-en-YYYYMMDD.odt` (and its exported `.pdf`)
+must **never be edited automatically**. Its "Dictionary memory structure"
+section contains build-specific hex addresses and SEE/DUMP transcripts for
+the SWAP/DUP example: after a core rebuild, the **`/regen-doc-dict-structure`
+skill** (`.claude/skills/regen-doc-dict-structure/SKILL.md`) runs
+`util/gen-dict-structure.py` to regenerate that text from the current
+binaries via the headless emulator; the author then pastes it into the .odt
+by hand and re-exports the .pdf.
+
 ## The Three Codebases and Their Roles
 
 The project has three codebases in order of priority:
