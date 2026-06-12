@@ -115,6 +115,90 @@ register specifier, operand commaer) is a **separate Forth word**. The full refe
 Forward pointers in F18e.f (e.g. `HERE TO next^`, `HERE TO loop^`) mark addresses that
 are then referenced by labels in the .asm (e.g. `Next_Ptr:`, `Loop_Ptr:`).
 
+## Intentional Divergences Between vForth18_DOES and vForth18_DOT
+
+The DOT variant has critical differences from the classic DOES variant to accommodate the
+dot-command environment (banking, interrupts, exit strategy). These divergences are
+**intentional and must be preserved** during maintenance.
+
+### ROM Call Strategy (Interrupt Handling)
+
+**vForth18_DOES:** Calls ROM routines directly via `call` or `rst $08`.
+
+**vForth18_DOT:** Wraps ROM calls with `di`/`ei` (disable/enable interrupts) and uses
+`rst $18` with a pointer, because the dot-command environment may be interrupted by the
+OS and needs to protect its state. Examples:
+
+| Location | vForth18_DOES | vForth18_DOT |
+|---|---|---|
+| `L0.asm:904` — (EMITC) / C_Emit_Bel | `call $03B6` | `di` / `rst $18` / `defw $03B6` / `ei` |
+| `L0.asm:1147` — SELECT | `call $1601` | `di` / `rst $18` / `dw $1601` / `ei` + uses TSTACK |
+| `L0.asm:777-780` — (EMITC) / CLS_No_Layer_0 | `rst $10` | `di` / `rst $10` / `ei` |
+
+### Stack and Memory Setup
+
+**SELECT (L0.asm:1144):**
+- vForth18_DOES: Uses `ld sp, Cold_origin - 5` to set up the stack for the ROM call
+- vForth18_DOT: Uses `ld sp, TSTACK` (a dedicated stack space allocated during startup)
+
+### AUTOEXEC (L3.asm:780)
+
+**vForth18_DOES:** Loads and executes screen #11 (block-based):
+```asm
+dw      LIT, 11
+dw      LOAD    // Executes the screen via block interpreter
+dw      QUIT
+```
+
+**vForth18_DOT:** Opens and executes a file passed as a parameter from BASIC,
+defaulting to `c:/tools/vforth/lib/autoexec.f`:
+```asm
+dw      LIT, Param_From_Basic
+dw      PAD, ONE
+dw      F_OPEN
+dw      F_INCLUDE         // Executes the file via file-based interpreter
+```
+
+### Error Handling (BLK-INIT in next-opt1.asm:169)
+
+**vForth18_DOES:** Raises a `QERROR` exception which stays within Forth and issues an error message:
+```asm
+dw  LIT, $2C, QERROR
+```
+
+**vForth18_DOT:** On file-open error, patches `Exit_with_error` and returns to BASIC:
+```asm
+dw  ZBRANCH
+dw  Blk_Init_Endif - $
+dw  LIT, $FFCF                  // PATCH op-code RST $08, $FF
+dw  LIT, Exit_with_error
+dw  STORE
+dw  BASIC
+```
+
+### Startup and Shutdown (L2.asm)
+
+The DOT variant performs extensive startup to save OS state and initialize banking:
+- Saves CPU speed, MMU page configuration, and current layer
+- Allocates 12 pages (8 HEAP, 3 MAIN, 1 BACKUP) from the OS
+- Backs up MMU2 to restore on exit to BASIC
+- Changes to `C:/tools/vForth/` directory
+- Loads vocabulary image to `$E000` from persistent heap pages
+
+The DOES variant is simpler: it loads directly from `forth18e.bin` and `ram8.bin` at a
+fixed origin, no banking complexity.
+
+### When Modifying Code Shared Between Variants
+
+1. **Read-only core (no drift expected):** L1.asm, L2.asm (non-startup parts), L3.asm
+2. **Carefully sync these locations** (they diverge):
+   - L0.asm: ROM call patterns (EMITC, SELECT, CLS_No_Layer_0)
+   - next-opt0.asm: File operations (generally share code, but audit carefully)
+   - next-opt1.asm: BLK-INIT error path
+
+After core changes, run the `/check-sync` skill to audit drift and `/sd-sync` to deploy
+updated files to the SD card test image.
+
 ## Utilities
 
 ### asm2hex.py -- ASSEMBLER to hex converter
