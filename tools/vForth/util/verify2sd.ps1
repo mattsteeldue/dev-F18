@@ -84,19 +84,19 @@ $hashProblems = 0
 foreach ($f in $srcFiles) {
     $rel = $f.FullName.Substring($Source.Length).TrimStart('\')
     $destFile = Join-Path $Dest $rel
-    if (-not (Test-Path $destFile)) {
+    if (-not (Test-Path -LiteralPath $destFile)) {
         Write-Host "  MANCANTE: $rel" -ForegroundColor Yellow
         $hashProblems++
         continue
     }
-    $df = Get-Item $destFile
+    $df = Get-Item -LiteralPath $destFile
     if ($df.Length -ne $f.Length) {
         Write-Host "  DIMENSIONE: $rel" -ForegroundColor Yellow
         $hashProblems++
         continue
     }
-    $h1 = (Get-FileHash $f.FullName -Algorithm MD5).Hash
-    $h2 = (Get-FileHash $destFile -Algorithm MD5).Hash
+    $h1 = (Get-FileHash -LiteralPath $f.FullName -Algorithm MD5).Hash
+    $h2 = (Get-FileHash -LiteralPath $destFile -Algorithm MD5).Hash
     if ($h1 -ne $h2) {
         Write-Host "  MD5 DIVERSO: $rel" -ForegroundColor Yellow
         $hashProblems++
@@ -108,30 +108,59 @@ if ($hashProblems -gt 0) { $problems++ }
 # 3. Hash-based verify per file in radice.
 Write-Host ""
 Write-Host "Fase 3: hash-based (file in radice)" -ForegroundColor Cyan
-$srcRootFiles = Get-ChildItem $Source -MaxDepth 1 -File -Force |
+$srcRootFiles = Get-ChildItem $Source -File -Force |
     Where-Object { -not (Test-Excluded $_ $Source) }
 $hashProblems = 0
 foreach ($f in $srcRootFiles) {
     $destFile = Join-Path $Dest $f.Name
-    if (-not (Test-Path $destFile)) {
+    if (-not (Test-Path -LiteralPath $destFile)) {
         Write-Host "  MANCANTE: $($f.Name)" -ForegroundColor Yellow
         $hashProblems++
         continue
     }
-    $df = Get-Item $destFile
+    $df = Get-Item -LiteralPath $destFile
     if ($df.Length -ne $f.Length) {
         Write-Host "  DIMENSIONE: $($f.Name)" -ForegroundColor Yellow
         $hashProblems++
         continue
     }
-    $h1 = (Get-FileHash $f.FullName -Algorithm MD5).Hash
-    $h2 = (Get-FileHash $destFile -Algorithm MD5).Hash
+    $h1 = (Get-FileHash -LiteralPath $f.FullName -Algorithm MD5).Hash
+    $h2 = (Get-FileHash -LiteralPath $destFile -Algorithm MD5).Hash
     if ($h1 -ne $h2) {
         Write-Host "  MD5 DIVERSO: $($f.Name)" -ForegroundColor Yellow
         $hashProblems++
     }
 }
 Write-Host "  Confrontati: $($srcRootFiles.Count), problemi: $hashProblems"
+if ($hashProblems -gt 0) { $problems++ }
+
+# 4. Hash-based verify dei dot-command: dot/ <-> W:\dot (radice del disco).
+Write-Host ""
+Write-Host "Fase 4: hash-based (dot-command <-> $SyncDotDest)" -ForegroundColor Cyan
+$srcDotFiles = Get-ChildItem $SyncDotSource -File -Force |
+    Where-Object { -not (Test-Excluded $_ $SyncDotSource) }
+$hashProblems = 0
+foreach ($f in $srcDotFiles) {
+    $destFile = Join-Path $SyncDotDest $f.Name
+    if (-not (Test-Path -LiteralPath $destFile)) {
+        Write-Host "  MANCANTE: $($f.Name)" -ForegroundColor Yellow
+        $hashProblems++
+        continue
+    }
+    $df = Get-Item -LiteralPath $destFile
+    if ($df.Length -ne $f.Length) {
+        Write-Host "  DIMENSIONE: $($f.Name)" -ForegroundColor Yellow
+        $hashProblems++
+        continue
+    }
+    $h1 = (Get-FileHash -LiteralPath $f.FullName -Algorithm MD5).Hash
+    $h2 = (Get-FileHash -LiteralPath $destFile -Algorithm MD5).Hash
+    if ($h1 -ne $h2) {
+        Write-Host "  MD5 DIVERSO: $($f.Name)" -ForegroundColor Yellow
+        $hashProblems++
+    }
+}
+Write-Host "  Confrontati: $($srcDotFiles.Count), problemi: $hashProblems"
 if ($hashProblems -gt 0) { $problems++ }
 
 if ($problems -eq 0) {

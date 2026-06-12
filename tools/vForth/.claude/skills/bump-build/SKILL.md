@@ -36,6 +36,8 @@ compatta vecchia (es. `20260531`).
 | `src/F18e.f` | riga 3 di testata `\ v-Forth 1.8 ... - build YYYY-MM-DD` | con trattini |
 | `CLAUDE.md` | `**Current version**: 1.8 (build YYYY-MM-DD)` | con trattini |
 | `!Blocks-64.bin` | primo blocco (512 byte): `build YYYY-MM-DD` | con trattini |
+| `Forth18.bas` | corpo BASIC, REM prima riga: `Build YYYYMMDD` | compatta |
+| `Forth18_loader.bas` | corpo BASIC, REM prima riga: `build YYYYMMDD` | compatta |
 
 Per i file di testo usare sostituzioni esatte della sola data. Per
 `!Blocks-64.bin` sostituire in-place SOLO nei primi 512 byte (la dimensione
@@ -54,6 +56,15 @@ with open("!Blocks-64.bin", "r+b") as f:
     f.seek(0); f.write(head)
 EOF
 ```
+
+I due `.bas` sono file ZX BASIC in formato +3DOS salvati da macchina
+reale/emulatore: intestazione di 128 byte (`PLUS3DOS`, checksum al byte 127
+= somma dei byte 0-126 mod 256), corpo BASIC tokenizzato a seguire. La data
+sta nel corpo (REM della prima riga) in forma compatta a larghezza fissa:
+sostituirla in-place byte a byte SENZA cambiare la lunghezza del file. Il
+checksum copre solo l'intestazione, quindi con una sostituzione a parita'
+di lunghezza non cambia: ricalcolarlo comunque come verifica (byte 127 ==
+somma 0-126 mod 256) prima di riscrivere il file.
 
 Nota: in `src/F18e.f` e nei due `L3.asm` esistono anche occorrenze della
 data dentro commenti/codice commentato (vecchio SPLASH): non sono canoniche,

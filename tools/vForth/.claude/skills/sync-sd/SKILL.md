@@ -68,8 +68,9 @@ poi rilancialo.
    ```powershell
    & C:\zx\forth\F18\tools\vForth\util\mountw.ps1 -Dismount
    ```
-   Se lo smount fallisce per file aperti, suggerisci `imdisk -D -m w:` ma non
-   eseguirlo senza conferma.
+   Se il detach gentile (`imdisk -d`) fallisce per file aperti (es. Explorer),
+   lo script forza da solo con `imdisk -D` (stesso flusso di
+   `C:\Zx\CSpect\umounty.bat`): nessun intervento manuale richiesto.
 
 7. **Riepilogo finale**: quanti file copiati, esito verifica, stato di W:
    (montata/smontata). Se W: e' rimasta montata, ricorda che va smontata

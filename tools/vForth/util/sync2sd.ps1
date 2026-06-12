@@ -35,24 +35,42 @@ if ($cspect) {
 }
 
 # Confronta due file per hash MD5 e copia se diversi.
+# -LiteralPath ovunque: i nomi Forth FAT-mappati possono contenere '[' (es. ['].f).
 function Sync-FileByHash([System.IO.FileInfo]$srcFile, [string]$destPath, [bool]$dryRun) {
-    if (-not (Test-Path $destPath)) {
+    if (-not (Test-Path -LiteralPath $destPath)) {
         Write-Host "    Hash-copy: NUOVO  $($srcFile.Name)"
-        if (-not $dryRun) { Copy-Item -Path $srcFile.FullName -Destination $destPath -Force }
+        if (-not $dryRun) { Copy-Item -LiteralPath $srcFile.FullName -Destination $destPath -Force }
         return $true
     }
-    $destFile = Get-Item $destPath
+    $destFile = Get-Item -LiteralPath $destPath
     if ($srcFile.Length -ne $destFile.Length) {
         Write-Host "    Hash-copy: DIVERSO (size) $($srcFile.Name)"
-        if (-not $dryRun) { Copy-Item -Path $srcFile.FullName -Destination $destPath -Force }
+        if (-not $dryRun) { Copy-Item -LiteralPath $srcFile.FullName -Destination $destPath -Force }
         return $true
     }
-    $h1 = (Get-FileHash $srcFile.FullName -Algorithm MD5).Hash
-    $h2 = (Get-FileHash $destPath -Algorithm MD5).Hash
+    $h1 = (Get-FileHash -LiteralPath $srcFile.FullName -Algorithm MD5).Hash
+    $h2 = (Get-FileHash -LiteralPath $destPath -Algorithm MD5).Hash
     if ($h1 -ne $h2) {
         Write-Host "    Hash-copy: DIVERSO (MD5) $($srcFile.Name)"
-        if (-not $dryRun) { Copy-Item -Path $srcFile.FullName -Destination $destPath -Force }
+        if (-not $dryRun) { Copy-Item -LiteralPath $srcFile.FullName -Destination $destPath -Force }
         return $true
+    }
+    return $false
+}
+
+# True se il file (FileInfo) e' escluso dalla sincronizzazione.
+# (Stessa logica di verify2sd.ps1; usa $excludeFiles definito piu' sotto.)
+function Test-Excluded([System.IO.FileInfo]$f, [string]$root) {
+    $rel = $f.FullName.Substring($root.Length).TrimStart('\')
+    $parts = $rel.Split('\')
+    if ($parts.Count -gt 1) {
+        if ($SyncExcludeTopDirs -contains $parts[0]) { return $true }
+        foreach ($p in $parts[0..($parts.Count - 2)]) {
+            if ($SyncExcludeDirNames -contains $p) { return $true }
+        }
+    }
+    foreach ($pat in $excludeFiles) {
+        if ($f.Name -like $pat) { return $true }
     }
     return $false
 }
@@ -78,8 +96,10 @@ $xd = @()
 foreach ($d in $SyncExcludeTopDirs)  { $xd += (Join-Path $Source $d) }
 foreach ($d in $SyncExcludeDirNames) { $xd += $d }
 
-$xf = @() + $SyncExcludeFiles
-if (-not $WithBlocks) { $xf += $SyncBlocksFile }
+$excludeFiles = @() + $SyncExcludeFiles
+if (-not $WithBlocks) { $excludeFiles += $SyncBlocksFile }
+
+$xf = @() + $excludeFiles
 
 # Esclusioni aggiuntive: file .f (li copieremo per hash) e file in radice (idem).
 $xf += '*.f'
@@ -123,7 +143,7 @@ foreach ($f in $fFiles) {
     $rel = $f.FullName.Substring($Source.Length).TrimStart('\')
     $destFile = Join-Path $Dest $rel
     $dir = [System.IO.Path]::GetDirectoryName($destFile)
-    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     if (Sync-FileByHash $f $destFile $DryRun) { $copied++ }
 }
 Write-Host "  $copied file .f allineati"
@@ -131,7 +151,7 @@ Write-Host "  $copied file .f allineati"
 # 3. Hash-based sync per file in radice (binari, launcher).
 Write-Host ""
 Write-Host "Fase 3: hash-based (file in radice)" -ForegroundColor Cyan
-$rootFiles = Get-ChildItem $Source -MaxDepth 1 -File -Force |
+$rootFiles = Get-ChildItem $Source -File -Force |
     Where-Object { -not (Test-Excluded $_ $Source) }
 $copied = 0
 foreach ($f in $rootFiles) {
@@ -139,6 +159,22 @@ foreach ($f in $rootFiles) {
     if (Sync-FileByHash $f $destFile $DryRun) { $copied++ }
 }
 Write-Host "  $copied file in radice allineati"
+
+# 4. Hash-based sync dei dot-command: dot/ -> W:\dot (radice del disco).
+#    Mai mirror qui: W:\dot contiene anche i dot-command della distribuzione.
+Write-Host ""
+Write-Host "Fase 4: hash-based (dot-command -> $SyncDotDest)" -ForegroundColor Cyan
+$dotFiles = Get-ChildItem $SyncDotSource -File -Force |
+    Where-Object { -not (Test-Excluded $_ $SyncDotSource) }
+$copied = 0
+foreach ($f in $dotFiles) {
+    if (-not (Test-Path -LiteralPath $SyncDotDest)) {
+        New-Item -ItemType Directory -Path $SyncDotDest -Force | Out-Null
+    }
+    $destFile = Join-Path $SyncDotDest $f.Name
+    if (Sync-FileByHash $f $destFile $DryRun) { $copied++ }
+}
+Write-Host "  $copied dot-command allineati"
 
 if ($DryRun) {
     Write-Host ""

@@ -45,10 +45,22 @@ if ($Dismount) {
     $t = 0
     while ((Test-Path 'W:\') -and ($t -lt 15)) { Start-Sleep -Seconds 1; $t++ }
     if (Test-Path 'W:\') {
-        Write-Host "ERRORE: W: risulta ancora montata." -ForegroundColor Red
-        Write-Host "Probabili file aperti sul volume (Explorer?). Forza con:"
-        Write-Host "  imdisk -D -m w:"
-        exit 1
+        # Smontaggio gentile fallito (file aperti sul volume, es. Explorer):
+        # forza il detach come fa umounty.bat (imdisk -D).
+        Write-Host "W: ancora montata: forzo lo smontaggio (conferma il popup UAC)..." -ForegroundColor Yellow
+        try {
+            Start-Process imdisk -Verb RunAs -Wait -ArgumentList '-D -m w:'
+        } catch {
+            Write-Host "ERRORE: elevazione negata o imdisk fallito." -ForegroundColor Red
+            exit 1
+        }
+        $t = 0
+        while ((Test-Path 'W:\') -and ($t -lt 15)) { Start-Sleep -Seconds 1; $t++ }
+        if (Test-Path 'W:\') {
+            Write-Host "ERRORE: W: risulta ancora montata anche dopo il force." -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "W: smontata (forzato)." -ForegroundColor Yellow
     }
     Write-Host "W: smontata. L'immagine e' pronta per CSpect." -ForegroundColor Green
     exit 0

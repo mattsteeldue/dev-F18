@@ -51,3 +51,10 @@ $SyncExcludeFiles = @(
 # Il file dei Block (16 MB) si copia solo con lo switch -WithBlocks:
 # sovrascriverlo distrugge gli Screen eventualmente editati dentro CSpect.
 $SyncBlocksFile = '!Blocks-64.bin'
+
+# I dot-command locali (dot/) si deployano nella radice del disco W:,
+# non sotto tools\vForth: e' la directory \dot standard di NextZXOS.
+# Solo copia/aggiornamento dei file presenti in sorgente: W:\dot contiene
+# anche i dot-command della distribuzione, che non vanno toccati.
+$SyncDotSource = Join-Path $SyncSource 'dot'
+$SyncDotDest   = 'W:\dot'
