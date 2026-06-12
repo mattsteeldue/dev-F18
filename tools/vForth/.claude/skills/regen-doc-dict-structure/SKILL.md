@@ -1,21 +1,33 @@
 ---
 name: regen-doc-dict-structure
-description: Rigenera il testo dei due paragrafi del manuale .odt (sezione "Dictionary memory structure") che mostrano la struttura interna delle definizioni nel name-space/dizionario con indirizzi hex e dump, interrogando l'emulatore sui binari correnti. Usare dopo un rebuild del core, quando il manuale va riallineato, o quando l'utente chiede /regen-doc-dict-structure. NON modifica mai i file .odt/.pdf.
+description: Rigenera il testo dei paragrafi dinamici del manuale .odt (par. 3.20 "Dictionary memory structure" e par. 3.6.1 "Debugger Utility") che mostrano indirizzi hex, dump e transcript SEE legati al build corrente, interrogando l'emulatore sui binari correnti; ogni blocco di output e' etichettato col paragrafo di appartenenza. Usare dopo un rebuild del core, quando il manuale va riallineato, o quando l'utente chiede /regen-doc-dict-structure. NON modifica mai i file .odt/.pdf.
 ---
 
-# regen-doc-dict-structure: rigenera i paragrafi della struttura del dizionario
+# regen-doc-dict-structure: rigenera i paragrafi dinamici del manuale
 
 Il manuale `doc/vForth1.8-core-en-YYYYMMDD.odt` (e il .pdf che ne deriva)
-contiene una sezione "Dictionary memory structure" con due paragrafi pieni di
-indirizzi hex legati al build corrente:
+contiene brani pieni di indirizzi hex legati al build corrente, in DUE
+paragrafi; l'output dello script etichetta ogni blocco col paragrafo di
+appartenenza (`[par. 3.20 ...]` / `[par. 3.6.1 ...]`):
 
+**par. 3.20 "Dictionary memory structure"**
 1. l'esempio di memoria delle definizioni contigue `SWAP` e `DUP`
    (tabelle "Heap memory:" NFA/LFA/CFA e "Main memory:" Mirror/xt);
 2. il transcript "You can verify yourself..." con l'output reale di
    `SEE SWAP`, `SEE DUP` e dei relativi `DUMP`.
 
+**par. 3.6.1 "Debugger Utility"** (in misura minore)
+3. i tre transcript d'esempio `SEE TYPE` (colon-definition), `SEE NIP`
+   (CODE word) e `SEE IF` (IMMEDIATE), catturati in DECIMAL come nello
+   stile di quel paragrafo (letterali come `12` e `-8`; gli indirizzi
+   stampati da SEE restano hex a prescindere dalla BASE);
+4. i dati per la nota in prosa dopo `SEE NIP`: i byte che seguono il
+   `jp (ix)` (Mirror della definizione successiva), il NOME REALE di
+   quella definizione e il comando `$hhhh FAR 8 DUMP` per ispezionarne
+   la NFA in heap.
+
 A ogni rebuild del core gli xt e i mirror cambiano (gli heap-pointer di
-solito no, se SWAP/DUP non si spostano) e la correzione a mano e' error
+solito no, se le parole non si spostano) e la correzione a mano e' error
 prone. Questo skill produce il testo aggiornato; l'inserimento nel .odt
 resta MANUALE.
 
@@ -47,7 +59,12 @@ resta MANUALE.
    - gli `xt` e i `Mirror` cambiano quasi a ogni build: e' il motivo per
      cui si rigenera;
    - la data di build mostrata nella frase introduttiva deve coincidere con
-     quella dello SPLASH corrente.
+     quella dello SPLASH corrente;
+   - par. 3.6.1: i letterali della decompilazione devono essere decimali
+     (`12`, `-8`); nella nota su NIP controllare che il nome della
+     definizione successiva sia quello reale -- la prosa storica del
+     manuale citava SWAP, ma la parola adiacente puo' cambiare tra build
+     (es. oggi e' TUCK).
 
 3. Confronto con la versione attuale del manuale (solo lettura!):
 

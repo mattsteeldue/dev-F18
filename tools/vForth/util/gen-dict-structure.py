@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 """
-gen-dict-structure.py -- regenerate the dynamic text of the manual section
-"Dictionary memory structure" (vForth1.8-core-en .odt, ~4.6).
+gen-dict-structure.py -- regenerate the dynamic text of the manual
+(vForth1.8-core-en .odt) sections that contain build-specific addresses:
 
-The section shows, for the two contiguous definitions SWAP and DUP:
-  1. the "Heap memory / Main memory" layout tables (NFA/LFA/CFA, mirror, xt)
-  2. the "You can verify yourself" transcript (SEE + DUMP output)
+  par. 3.20 "Dictionary memory structure": for the two contiguous
+  definitions SWAP and DUP,
+    1. the "Heap memory / Main memory" layout tables (NFA/LFA/CFA,
+       mirror, xt)
+    2. the "You can verify yourself" transcript (SEE + DUMP output)
 
-Both are full of build-specific hex addresses that go stale on every core
-rebuild. This script boots the headless emulator with the CURRENT binaries,
-reads the real bytes and captures the real SEE/DUMP output, then prints the
-two paragraphs ready to be pasted by hand into the .odt (which must NEVER
-be edited automatically).
+  par. 3.6.1 "Debugger Utility": the three SEE example transcripts
+  (TYPE: colon-definition, NIP: CODE word, IF: IMMEDIATE), plus the
+  data for the prose note about the bytes following NIP's jp (ix).
+
+All of these go stale on every core rebuild. This script boots the
+headless emulator with the CURRENT binaries, reads the real bytes and
+captures the real SEE/DUMP output, then prints the paragraphs ready to
+be pasted by hand into the .odt (which must NEVER be edited
+automatically). Every block of output is labelled with the manual
+paragraph it belongs to.
 
 Usage (from tools/vForth, takes ~2 minutes for the boot):
 
@@ -27,7 +34,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "emu"))
 os.chdir(ROOT)
 
-WORD_A, WORD_B = "SWAP", "DUP"
+WORD_A, WORD_B = "SWAP", "DUP"          # par. 3.20
+DEBUGGER_WORDS = ["TYPE", "NIP", "IF"]  # par. 3.6.1
 
 # minimal Z80 disassembler, enough for the tiny xt bodies shown in the doc
 ONE_BYTE = {
@@ -93,6 +101,12 @@ def hp_of(addr):
     """heap window address $Exxx -> heap-pointer (page $20 only, the case
     of the core words shown here)."""
     return addr - 0xE000
+
+
+def heap_name(drv, nfa_addr):
+    """Read a definition name from its NFA in the heap window."""
+    nlen = drv.mem(nfa_addr, 1)[0] & 0x1F
+    return "".join(chr(b & 0x7F) for b in drv.mem(nfa_addr + 1, nlen))
 
 
 def hx(v, w=4):
@@ -163,20 +177,27 @@ def main():
     dump_cmds_b = ["$%s %X DUMP" % (hx(db["nfa"]), len_b + 5),
                    "$%s 2 DUMP" % hx(db["xt"] - 2)]
 
-    def transcript(cmd):
-        out = drv.send(cmd).strip("\n")
-        out = re.sub(r" ?ok\s*$", "", out)      # drop the trailing prompt
+    def transcript(cmd, pad_lfa=True, raw=None):
+        out = raw if raw is not None else drv.send(cmd)
+        out = re.sub(r" ?ok\s*$", "", out.strip("\n"))  # drop trailing prompt
+        # keep printable ASCII only (SEE may emit attribute control codes
+        # for the inverse-video literals)
+        out = "".join(c for c in out if 32 <= ord(c) < 127 or c == "\n")
         lines = [ln for ln in out.splitlines() if ln.strip()]
         if cmd.startswith("SEE"):
-            # normalise to the manual's format (SEE itself is sloppy here):
+            # normalise (SEE itself is sloppy here):
             # - drop the stray leading line with the bare length byte
+            #   (2 hex digits in HEX base, up to 3 digits in DECIMAL)
             lines = [ln for ln in lines
-                     if not re.fullmatch(r"\s*[0-9A-F]{1,2}\s*", ln)]
-            # - zero-pad the 16-bit heap-pointer in the Lfa: line
-            lines = [re.sub(r"^(\s*Lfa: [0-9A-F]{4} )([0-9A-F]{1,3})\b",
-                            lambda m: m.group(1) + m.group(2).zfill(4),
-                            ln)
-                     for ln in lines]
+                     if not re.fullmatch(r"\s*[0-9A-F]{1,3}\s*", ln)]
+            # - zero-pad the 16-bit heap-pointer in the Lfa: line; the
+            #   manual does this in par. 3.20 but keeps SEE's raw output
+            #   in par. 3.6.1
+            if pad_lfa:
+                lines = [re.sub(r"^(\s*Lfa: [0-9A-F]{4} )([0-9A-F]{1,3})\b",
+                                lambda m: m.group(1) + m.group(2).zfill(4),
+                                ln)
+                         for ln in lines]
         return "        " + cmd + "\n" + "\n".join(
             "        " + ln for ln in lines)
 
@@ -185,10 +206,34 @@ def main():
     ver_b = "\n".join([transcript("SEE " + WORD_B)] +
                       [transcript(c) for c in dump_cmds_b])
 
+    # --- par. 3.6.1 Debugger Utility: SEE example transcripts -----------
+    # The manual shows these in DECIMAL (e.g. the literal 12 in TYPE's
+    # body); SEE prints addresses in hex regardless of BASE.
+    drv.send("DECIMAL")
+    dbg = {}
+    for w in DEBUGGER_WORDS:
+        dbg[w] = drv.send("SEE " + w)
+    drv.send("HEX")
+
+    # data for the prose note after SEE NIP: the bytes that follow
+    # jp (ix) are the Mirror of the subsequent definition
+    dnip = parse_see(dbg["NIP"])
+    nip_code = drv.mem(dnip["xt"], 16)
+    nip_end = nip_code.find(b"\xDD\xE9") + 2
+    trail = nip_code[nip_end:nip_end + 4]
+    next_cfa_hp = trail[0] | (trail[1] << 8)
+    next_nfa = dnip["lfa"] + 4          # heap entries are contiguous
+    next_name = heap_name(drv, next_nfa)
+
     print("=" * 72)
-    print("Section 'Dictionary memory structure' -- dynamic part,")
-    print("regenerated from build %s. Paste by hand into the .odt." % date)
+    print("Manual dynamic parts regenerated from build %s." % date)
+    print("Paste by hand into the .odt; every block is labelled with the")
+    print("manual paragraph it belongs to.")
     print("=" * 72)
+    print()
+    print("-" * 72)
+    print("[par. 3.20 -- Dictionary memory structure]")
+    print("-" * 72)
     print()
     print("For example the two contiguous definitions %s and %s appears in"
           % (WORD_A, WORD_B))
@@ -205,6 +250,23 @@ def main():
     print(ver_a)
     print()
     print(ver_b)
+    print()
+    print("-" * 72)
+    print("[par. 3.6.1 -- Debugger Utility]")
+    print("-" * 72)
+    for w in DEBUGGER_WORDS:
+        print()
+        print("[par. 3.6.1 -- transcript: SEE %s]" % w)
+        print()
+        print(transcript("SEE " + w, pad_lfa=False, raw=dbg[w]))
+    print()
+    print("[par. 3.6.1 -- data for the prose note after SEE NIP]")
+    print()
+    print("  bytes following NIP's jp (ix): %s" % pairs(trail))
+    print("  i.e. the Mirror of the subsequent definition %s" % next_name)
+    print("  (heap-pointer %s to its CFA slot); its NFA is at" % hx(next_cfa_hp))
+    print("  heap-pointer $%s -- the inspect command for the manual is:" % hx(hp_of(next_nfa)))
+    print("      $%s FAR 8 DUMP" % hx(hp_of(next_nfa)))
 
 
 if __name__ == "__main__":
