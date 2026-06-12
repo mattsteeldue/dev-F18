@@ -18,9 +18,21 @@ this repository.
 computer. It includes a complete Forth compiler (self-bootstrapping), Z80/Z80N assembly
 support, and multiple library modules for graphics, sound, file I/O, and hardware control.
 
-**Current version**: 1.8 (build 2026-05-31)  
+**Current version**: 1.8 (build 2026-06-12)  
 **License**: MIT  
 **Author**: Matteo Vitturi
+
+### Build number convention
+
+Whenever the core binary changes (forth18e.bin / ram8.bin / the DOT
+dot-command), the deliverable gets a new build number = the current date.
+It appears in two encodings -- `YYYY-MM-DD` in the SPLASH banner strings
+(DOES and DOT `L0.asm`), in `src/F18e.f`'s header, in this file's "Current
+version" line and in the first 512-byte block of `!Blocks-64.bin`;
+`YYYYMMDD` in the `main.asm` header comments. The **`/bump-build` skill**
+(`.claude/skills/bump-build/SKILL.md`) updates every canonical location and
+rebuilds both variants; historical copies under `version/`,
+`project/*/source/version/`, `util/` and `doc/` must never be touched.
 
 ## The Three Codebases and Their Roles
 
