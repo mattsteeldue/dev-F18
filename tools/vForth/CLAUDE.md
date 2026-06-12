@@ -131,7 +131,7 @@ lines at **80 bytes or fewer** for readability and adherence to Forth convention
 
 The error-message Screens (4-7) or Blocks (8-14) are a space-saving heritage from classic block-based Forth:
 error text lives in the block file rather than being compiled inline into each definition.
-`f n ?ERROR` checks `f`; if true it calls `ERROR n`, which calls `MESSAGE n` to display
+`f n ?ERROR` checks `f`; if true it calls `n ERROR`, which calls `n MESSAGE` to display
 the text from the appropriate block.
 
 ### Dictionary Structure (New_Def macro)
