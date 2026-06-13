@@ -50,6 +50,8 @@ $SyncExcludeFiles = @(
 
 # Il file dei Block (16 MB) si copia solo con lo switch -WithBlocks:
 # sovrascriverlo distrugge gli Screen eventualmente editati dentro CSpect.
+# Anche con -WithBlocks vale la guardia generale Test-CSpectEdited (vedi sotto):
+# se la copia su W: ha ts 1980 non viene sovrascritta.
 $SyncBlocksFile = '!Blocks-64.bin'
 
 # I dot-command locali (dot/) si deployano nella radice del disco W:,
@@ -58,3 +60,46 @@ $SyncBlocksFile = '!Blocks-64.bin'
 # anche i dot-command della distribuzione, che non vanno toccati.
 $SyncDotSource = Join-Path $SyncSource 'dot'
 $SyncDotDest   = 'W:\dot'
+
+# --- Guardia "timestamp azzerato da CSpect" ----------------------------------
+# Quando si editano i BLOCK (o altri file) da dentro CSpect, l'emulatore riscrive
+# il file sull'immagine SD ma ne AZZERA il timestamp FAT, che diventa 1980-01-01.
+# Un file di destinazione (W:) con quel timestamp contiene quindi la versione PIU'
+# RECENTE -- quella editata nell'emulatore -- e NON deve mai essere sovrascritto
+# dalla sorgente PC. La regola e' generale: vale per qualunque file, non solo
+# !Blocks-64.bin.
+$SyncCSpectZeroYear = 1980
+
+# True se $destPath esiste e ha il timestamp azzerato da CSpect (anno 1980):
+# in tal caso il file va lasciato com'e' sull'immagine SD.
+function Test-CSpectEdited([string]$destPath) {
+    if (-not (Test-Path -LiteralPath $destPath)) { return $false }
+    return ((Get-Item -LiteralPath $destPath).LastWriteTime.Year -eq $SyncCSpectZeroYear)
+}
+
+# Elenco dei path SORGENTE corrispondenti a file di destinazione protetti
+# (timestamp azzerato) sotto $destRoot: da passare a robocopy /XF perche' la
+# copia per timestamp (Fase 1) non li sovrascriva. Vuoto se $destRoot non esiste.
+function Get-CSpectProtectedSourcePaths([string]$destRoot, [string]$srcRoot) {
+    if (-not (Test-Path -LiteralPath $destRoot)) { return @() }
+    Get-ChildItem -LiteralPath $destRoot -Recurse -File -Force -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTime.Year -eq $SyncCSpectZeroYear } |
+        ForEach-Object { $srcRoot + $_.FullName.Substring($destRoot.Length) }
+}
+
+# --- Guardia "sfasamento HDFMonkey" (2 ore) ----------------------------------
+# Copiando un file sull'immagine SD con HDFMonkey, il tool sfasa il timestamp di
+# ESATTAMENTE 2 ore (suo comportamento bizzarro). Se il contenuto e' identico
+# (stesso MD5) ma il timestamp e' sfasato di 2h, NON e' una differenza reale: la
+# versione PC e quella su SD sono lo stesso file. In tal caso e' corretto allineare
+# (= "sovrascrivere") il timestamp su W: a quello della sorgente.
+$SyncHdfMonkeyOffsetSeconds = 2 * 3600   # sfasamento tipico di HDFMonkey
+$SyncFatToleranceSeconds    = 2          # granularita' FAT (timestamp a passi di 2 s)
+
+# True se la differenza (in valore assoluto, in entrambe le direzioni) tra i due
+# timestamp e' lo sfasamento di 2 ore di HDFMonkey, entro la tolleranza FAT.
+# Il chiamante deve aver GIA' verificato che il contenuto (MD5) e' identico.
+function Test-HdfMonkeyShift([datetime]$srcTime, [datetime]$destTime) {
+    $delta = [Math]::Abs(($srcTime - $destTime).TotalSeconds)
+    return ([Math]::Abs($delta - $SyncHdfMonkeyOffsetSeconds) -le $SyncFatToleranceSeconds)
+}

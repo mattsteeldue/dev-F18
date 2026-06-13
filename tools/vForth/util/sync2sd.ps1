@@ -37,6 +37,12 @@ if ($cspect) {
 # Confronta due file per hash MD5 e copia se diversi.
 # -LiteralPath ovunque: i nomi Forth FAT-mappati possono contenere '[' (es. ['].f).
 function Sync-FileByHash([System.IO.FileInfo]$srcFile, [string]$destPath, [bool]$dryRun) {
+    # Guardia: se la copia su W: ha il timestamp azzerato da CSpect (1980), e' la
+    # versione piu' recente (editata nell'emulatore) -- non sovrascriverla mai.
+    if (Test-CSpectEdited $destPath) {
+        Write-Host "    PROTETTO (editato in CSpect, ts 1980): $($srcFile.Name) -- non sovrascritto" -ForegroundColor Yellow
+        return $false
+    }
     if (-not (Test-Path -LiteralPath $destPath)) {
         Write-Host "    Hash-copy: NUOVO  $($srcFile.Name)"
         if (-not $dryRun) { Copy-Item -LiteralPath $srcFile.FullName -Destination $destPath -Force }
@@ -53,6 +59,13 @@ function Sync-FileByHash([System.IO.FileInfo]$srcFile, [string]$destPath, [bool]
     if ($h1 -ne $h2) {
         Write-Host "    Hash-copy: DIVERSO (MD5) $($srcFile.Name)"
         if (-not $dryRun) { Copy-Item -LiteralPath $srcFile.FullName -Destination $destPath -Force }
+        return $true
+    }
+    # Contenuto identico: se il timestamp e' sfasato di esattamente 2h (HDFMonkey),
+    # non e' una differenza reale -- correggi solo il timestamp su W:, niente ricopia.
+    if (Test-HdfMonkeyShift $srcFile.LastWriteTime $destFile.LastWriteTime) {
+        Write-Host "    TS-FIX (HDFMonkey 2h, contenuto identico): $($srcFile.Name)" -ForegroundColor DarkYellow
+        if (-not $dryRun) { $destFile.LastWriteTime = $srcFile.LastWriteTime }
         return $true
     }
     return $false
@@ -103,6 +116,15 @@ $xf = @() + $excludeFiles
 
 # Esclusioni aggiuntive: file .f (li copieremo per hash) e file in radice (idem).
 $xf += '*.f'
+
+# Non sovrascrivere per timestamp i file gia' editati in CSpect (destinazione con
+# ts azzerato 1980): vanno esclusi anche dal robocopy di Fase 1. (Le fasi hash
+# 2-4 sono gia' protette dalla guardia in Sync-FileByHash.)
+$protectedXf = @(Get-CSpectProtectedSourcePaths $Dest $Source)
+if ($protectedXf.Count -gt 0) {
+    Write-Host "Protetti (editati in CSpect, ts 1980, non sovrascritti): $($protectedXf.Count) file" -ForegroundColor Yellow
+    $xf += $protectedXf
+}
 
 if ($DryRun) {
     Write-Host "--- DRY RUN: nessun file verra' copiato ---" -ForegroundColor Yellow

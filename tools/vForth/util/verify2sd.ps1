@@ -63,6 +63,14 @@ foreach ($d in $SyncExcludeDirNames) { $xd += $d }
 $xf = @() + $excludeFiles
 $xf += '*.f'
 
+# File gia' editati in CSpect (destinazione con ts azzerato 1980): sono divergenti
+# di proposito (la versione su SD e' la piu' recente) e non vanno segnalati.
+$protectedXf = @(Get-CSpectProtectedSourcePaths $Dest $Source)
+if ($protectedXf.Count -gt 0) {
+    Write-Host "  Protetti (editati in CSpect, ts 1980): $($protectedXf.Count) file -- ignorati" -ForegroundColor Cyan
+    $xf += $protectedXf
+}
+
 $args = @($Source, $Dest, '/E', '/L', '/FFT', '/DST', '/NP', '/NDL', '/NJH')
 $args += '/XD'; $args += $xd
 $args += '/XF'; $args += $xf
@@ -84,6 +92,10 @@ $hashProblems = 0
 foreach ($f in $srcFiles) {
     $rel = $f.FullName.Substring($Source.Length).TrimStart('\')
     $destFile = Join-Path $Dest $rel
+    if (Test-CSpectEdited $destFile) {
+        Write-Host "  PROTETTO: $rel (editato in CSpect, ts 1980)" -ForegroundColor Cyan
+        continue
+    }
     if (-not (Test-Path -LiteralPath $destFile)) {
         Write-Host "  MANCANTE: $rel" -ForegroundColor Yellow
         $hashProblems++
@@ -113,6 +125,10 @@ $srcRootFiles = Get-ChildItem $Source -File -Force |
 $hashProblems = 0
 foreach ($f in $srcRootFiles) {
     $destFile = Join-Path $Dest $f.Name
+    if (Test-CSpectEdited $destFile) {
+        Write-Host "  PROTETTO: $($f.Name) (editato in CSpect, ts 1980)" -ForegroundColor Cyan
+        continue
+    }
     if (-not (Test-Path -LiteralPath $destFile)) {
         Write-Host "  MANCANTE: $($f.Name)" -ForegroundColor Yellow
         $hashProblems++
@@ -142,6 +158,10 @@ $srcDotFiles = Get-ChildItem $SyncDotSource -File -Force |
 $hashProblems = 0
 foreach ($f in $srcDotFiles) {
     $destFile = Join-Path $SyncDotDest $f.Name
+    if (Test-CSpectEdited $destFile) {
+        Write-Host "  PROTETTO: $($f.Name) (editato in CSpect, ts 1980)" -ForegroundColor Cyan
+        continue
+    }
     if (-not (Test-Path -LiteralPath $destFile)) {
         Write-Host "  MANCANTE: $($f.Name)" -ForegroundColor Yellow
         $hashProblems++

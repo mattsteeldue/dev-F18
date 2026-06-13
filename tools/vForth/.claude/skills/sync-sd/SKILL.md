@@ -23,9 +23,45 @@ poi rilancialo.
 
 - `dry` -- solo anteprima (dry-run), nessuna copia, nessun mount/smount automatico
 - `blocks` -- include anche `!Blocks-64.bin` (di default escluso: sovrascriverlo
-  distrugge gli Screen editati dentro CSpect)
+  distrugge gli Screen editati dentro CSpect). Vale comunque la guardia ts 1980
+  qui sotto.
 - `mirror` -- cancella su W: i file assenti nella sorgente; chiedi conferma esplicita
   all'utente PRIMA di usarlo, mostrando i file che verrebbero eliminati (dry-run)
+
+## ⚠️ Guardia: file editati in CSpect (timestamp 1980-01-01)
+
+Quando si modificano i BLOCK -- o un qualunque file -- da **dentro CSpect**, l'emulatore
+riscrive il file sull'immagine SD ma ne **azzera il timestamp FAT**, che diventa
+`1980-01-01`. Quella e' percio' la versione **piu' recente** (editata nell'emulatore) e
+**non deve MAI essere sovrascritta** dalla sorgente PC.
+
+La regola e' **generale** (non solo `!Blocks-64.bin`) ed e' implementata negli script,
+non a mano: `sd-sync.config.ps1` definisce `Test-CSpectEdited` /
+`Get-CSpectProtectedSourcePaths`, usate da `sync2sd.ps1` (salta la copia) e
+`verify2sd.ps1` (non li conta come differenza). Sia il sync che il verify stampano una
+riga `PROTETTO: <file> (editato in CSpect, ts 1980)` per ciascun file lasciato intatto.
+
+**Conseguenze pratiche da riferire all'utente:**
+- I file `PROTETTO` nell'output sono attesi: la SD e' avanti di proposito.
+- Se vuoi davvero forzare la sorgente PC sopra una versione editata in CSpect, devi prima
+  ripristinare un timestamp valido sul file di destinazione (la guardia scatta solo
+  sull'anno 1980).
+
+## Normalizzazione "sfasamento HDFMonkey" (2 ore)
+
+Copiando un file sull'immagine SD con **HDFMonkey**, il tool sfasa il timestamp di
+**esattamente 2 ore** (suo comportamento bizzarro). Se un file ha **contenuto identico**
+(stesso MD5) ma il timestamp e' sfasato di ~2h (tolleranza FAT ±2s), non e' una differenza
+reale: e' lo stesso file. In tal caso e' corretto **allineare il timestamp** su W: a quello
+della sorgente, **senza ricopiare il contenuto**.
+
+Implementato in `Sync-FileByHash` (fasi hash 2-4: file `.f`, binari di radice, dot-command)
+tramite `Test-HdfMonkeyShift` di `sd-sync.config.ps1`: a parita' di MD5, se lo scarto e'
+quello di HDFMonkey il sync stampa `TS-FIX (HDFMonkey 2h, contenuto identico): <file>` e
+corregge solo il timestamp. La guardia CSpect (ts 1980) ha **precedenza**: un file 1980 non
+viene mai toccato, nemmeno se lo scarto fosse 2h. Per i file **non-`.f`** di sottocartella
+(es. `help/*.txt`) la copia per timestamp di Fase 1 (robocopy) gia' riallinea il timestamp
+sovrascrivendo: il risultato finale e' lo stesso.
 
 ## Procedura
 
