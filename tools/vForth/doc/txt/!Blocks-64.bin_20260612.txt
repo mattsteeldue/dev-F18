@@ -1,9 +1,9 @@
 File: ..\!Blocks-64.bin
-Created: Thu Jan  1 18:27:06 2026
+Created: Fri Jun 12 21:54:59 2026
 
 See index at end of file.
 
-\ v-Forth 1.8 - NextZXOS versione - build 2026-01-01
+\ v-Forth 1.8 - NextZXOS versione - build 2026-06-12
 \ MIT License (c) 1990-2026 Matteo Vitturi
 \ Read LICENSE.md file for MIT License terms agreement or
 \ at prompt type NEEDS VIEW and then VIEW LICENSE.MD
@@ -131,7 +131,7 @@ Scr# 7
   5 Cell number before AND after '->' does not match.
   6 Cell number after '->' below ...}T does not match.
   7 
-  8 
+  8 Real-Time-Clock module not present.
   9 
  10 
  11 
@@ -176,24 +176,6 @@ Scr# 9
  14    forget-this-task abort ;
  15  List-all-errors ...
 
-Scr# 10 
-  0 (
-  1 
-  2 
-  3 
-  4 
-  5 
-  6 
-  7 
-  8 
-  9 
- 10 
- 11 
- 12 
- 13 
- 14 
- 15 
-
 Scr# 11 
   0 .( Autoexec )
   1 \ *** WARNING *** This screen is reserved.
@@ -213,11 +195,11 @@ Scr# 11
  15   INCLUDE  LIB/AUTOEXEC.F
 
 Scr# 20 
-  0 ( test )
-  1 \ needs pad"
-  2 \ pad"   !blocks-64.bin"
-  3   open<  !Blocks-64.bin
-  4 
+  0 ( test floating point )
+  1   needs floating
+  2 \ fixed88
+  3   needs fixed88
+  4   1.0 1.0 f/ .s
   5 
   6 
   7 
@@ -255,7 +237,7 @@ Scr# 99
   2 This vocabulary is imported via NEEDS ASSEMBLER or 100 LOAD
   3 This is a Z80 adaptation of Albert van der Horst's work
   4 available at https://github.com/albertvanderhorst/ciasdis.
-  5 In particular i carefully sudied the two Forth source
+  5 In particular I carefully sudied the two Forth sources
   6 as80.frt and asgen.frt to get some clue to port his work to
   7 be effective within a vintage Sinclair ZX Spectrum system
   8 with Microdrive.
@@ -1530,15 +1512,15 @@ Scr# 169
 Scr# 170 
   0 \ BURP
   1 \ Example
-  2 : BURP
-  3 [ HEX ] 7999 6000
-  4 DO
-  5  I HEX . I DECIMAL . CR
-  6  ?TERMINAL IF QUIT THEN
-  7 [ HEX ] 100
-  8 +LOOP
-  9 ;
- 10 
+  2 \ display a few hex and decimal numbers
+  3 : BURP
+  4  [ HEX ] 7999 6000
+  5  DO
+  6   I HEX . I DECIMAL . CR
+  7   ?TERMINAL IF QUIT THEN
+  8  [ HEX ] 100
+  9  +LOOP
+ 10 ;
  11 
  12 
  13 
@@ -1840,16 +1822,16 @@ Scr# 187
   3 \
   4 \ ##  USE WITH CARE  ##
   5 \
-  6 ' ABORT >BODY 13 CELLS + @
-  7 ' NOOP - 14 ?ERROR
-  8 ' AUTOEXEC
-  9 ' ABORT >BODY 13 CELLS + !
- 10 DECIMAL 14 EMITC
- 11 BYE
- 12 \
- 13 \ and remember Scr# 220
- 14 \ to move up or down LIMIT
- 15 
+  6 DECIMAL
+  7 ' ABORT >BODY 13 CELLS + @
+  8 ' NOOP - 14 ?ERROR
+  9 ' AUTOEXEC
+ 10 ' ABORT >BODY 13 CELLS + !
+ 11 DECIMAL 14 EMITC \ This is CLS
+ 12 BYE \ Quit to basic immediately
+ 13 \
+ 14 \ and remember Scr# 220
+ 15 \ to move up or down LIMIT
 
 Scr# 188 
   0 ( Editor utility           )
@@ -4696,7 +4678,7 @@ Scr# 360
  15 
 
 Scr# 361 
-  0 ( F_FGETPOS  via RST 08 hook code )
+  0 ( F_FGETPOS  via RST 8 hook code )
   1 code F_FGETPOS ( n -- d f ) \ Get current file position.
   2   pop   hl|          ld    a'|   l|
   3   push  ix|          push  de|          push  bc|
@@ -4714,7 +4696,7 @@ Scr# 361
  15 
 
 Scr# 362 
-  0 ( F_SEEK     via RST 08 hook code )
+  0 ( F_SEEK     via RST 8 hook code )
   1 code F_SEEK ( d n -- f ) \ Sek to position in file.
   2   exx
   3   pop   hl|          ld    a'|  l|
@@ -4876,7 +4858,7 @@ Scr# 370
  15 DECIMAL
 
 Scr# 371 
-  0 ( F_GETFREE  via RST 08 hook code test )
+  0 ( F_GETFREE  via RST 8 hook code test )
   1 code f_getfree ( drive -- d ) \ Get free space on drive.
   2   pop   hl|
   3   push  ix|         push  de|          push  bc|
@@ -10480,6 +10462,96 @@ Scr# 881
  12 partial             decision            engineering
  13 
  14 
+ 15 
+
+Scr# 887 
+  0 ( UART Raspberry PI Zero - protocol )
+  1 \ fast read from rpi0
+  2 \ read up to n  non-null bytes to address a
+  3 \
+  4 needs assembler
+  5 needs uart-sys
+  6 \
+  7 code uart-get-block ( a n -- )
+  8   di
+  9   exx
+ 10   pop     de|   \ number of bytes
+ 11   pop     hl|   \ memory address
+ 12   ldx     bc|   uart-rx-port  nn,
+ 13 \
+ 14 -->
+ 15 
+
+Scr# 888 
+  0 ( UART Raspberry PI Zero - protocol )
+  1 here
+  2   in(c)   a'|
+  3   ora      a|
+  4   jrf     z'|   holdplace
+  5     ld   (hl)'|   a|
+  6     incx    hl|
+  7 here disp,
+  8   decx    de|
+  9   ld      a'|   d|
+ 10   ora      e|
+ 11   jrf    nz'|   back,
+ 12   exx
+ 13   ei
+ 14   next
+ 15 c;
+
+Scr# 889 
+  0 ( UART Raspberry PI Zero - protocol )
+  1 sh . go
+  2 test
+  3 
+  4 
+  5 
+  6 
+  7 
+  8 
+  9 
+ 10 
+ 11 
+ 12 
+ 13 
+ 14 
+ 15 
+
+Scr# 890 
+  0 ( UART Raspberry PI Zero - protocol )
+  1 code uart-get-block ( a -- )
+  2 hex f3 c, d9 c,       \ di   exx
+  3     d1 c, e1 c,       \ pop  de    pop  hl
+  4     01 c, 143B ,      \ ld   bc,   uart-rx-port  nn,
+  5     ed c, 78 c,       \ in   a,(c)
+  6     b7 c,             \ or   a
+  7     28 c, 02 c,       \ jr   z,$+2
+  8     77 c, 23 c,       \ ld (hl),a  inc hl
+  9     1b c,             \ dec  de
+ 10     7a c, b3 c,       \ ld   a,d   or e
+ 11     20 c, f4 c,       \ jr   nz,$-12
+ 12     d9 c, fb c,       \ exx  ei
+ 13     dd c, e9 c,       \ jp(ix)
+ 14 smudge decimal
+ 15 
+
+Scr# 891 
+  0 ( UART Raspberry PI Zero - protocol )
+  1 code halt
+  2 hex 76 c,        \ halt
+  3     dd c, e9 c,  \ jp (ix)
+  4 smudge decimal
+  5 \
+  6 : test
+  7   begin
+  8     halt halt
+  9     $4000 #64  erase
+ 10     bl uart-wait-b \ wait for BL to sync
+ 11     $4000 #64  uart-get-block
+ 12     ?terminal
+ 13   until
+ 14 ;
  15 
 
 Scr# 892 
@@ -16261,6 +16333,114 @@ Scr# 4031
  14 xxxxxxxxxxxxx xxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxx xxxxxxxxxxxxxx
  15 xxxxxxxxx xxxxx xxxxxxxxxxx xxxxxxxxxxx xxxxxxxxxxxxxxxxx xxxxxx
 
+Scr# 4400 
+  0 ( python example )
+  1 needs sh
+  2 sh echo "# script to output a fixed text           ">  dummy
+  3 sh echo "fixed_str = \"0123456789ABCDEF\"          ">> dummy
+  4 sh echo "for i in range(16) :                      ">> dummy
+  5 sh echo "  print( fixed_str +fixed_str )           ">> dummy
+  6 
+  7 sh echo "while true; do                            ">  go
+  8 sh echo "  python dummy                            ">> go
+  9 sh echo "  sleep 3                                 ">> go
+ 10 sh echo "  echo .                                  ">> go
+ 11 sh echo "done                                      ">> go
+ 12 sh chmod a+x go
+ 13 sh . go
+ 14 
+ 15 
+
+Scr# 4401 
+  0 ( python example )
+  1 needs sh
+  2 sh echo "# script to output a fixed text           ">  dummy
+  3 sh echo "import time                               ">> dummy
+  4 sh echo "bar = '|' * 61                            ">> dummy
+  5 sh echo "try:                                      ">> dummy
+  6 sh echo " while True:                              ">> dummy
+  7 sh echo "  print int(time.time()%10),bar           ">> dummy
+  8 sh echo "  time.sleep(0.04)                        ">> dummy
+  9 sh echo "except KeyboardInterrupt:                 ">> dummy
+ 10 sh echo "  pass                                    ">> dummy
+ 11 
+ 12 sh echo "python dummy                              ">  go
+ 13 sh chmod a+x go
+ 14 sh . go
+ 15 
+
+Scr# 4402 
+  0 ( python example )
+  1 needs sh
+  2 sh echo "# script to output a fixed text           ">  dummy
+  3 sh echo "import time,sys                           ">> dummy
+  4 sh echo "bar = '|' * 32                            ">> dummy
+  5 sh echo "try:                                      ">> dummy
+  6 sh echo " while True:                              ">> dummy
+  7 sh echo "  byte = sys.stdin.read(1)                ">> dummy
+  8 sh echo "  print int(20*time.time()%10),bar        ">> dummy
+  9 sh echo "except KeyboardInterrupt:                 ">> dummy
+ 10 sh echo "  pass                                    ">> dummy
+ 11 
+ 12 sh echo "python dummy                              ">  go
+ 13 sh chmod a+x go
+ 14 \  . go
+ 15 
+
+Scr# 4403 
+  0 ( python example )
+  1 needs sh
+  2 sh echo "# script to output a fixed text           ">  dummy
+  3 sh echo "import time                               ">> dummy
+  4 sh echo "bar = '|' * 122                           ">> dummy
+  5 sh echo "try:                                      ">> dummy
+  6 sh echo " while True:                              ">> dummy
+  7 sh echo "  t = int(50*time.time()%10)              ">> dummy
+  8 sh echo "  print  t, bar , t                       ">> dummy
+  9 sh echo "  time.sleep(0.02)                        ">> dummy
+ 10 sh echo "except KeyboardInterrupt:                 ">> dummy
+ 11 sh echo "  pass                                    ">> dummy
+ 12 sh echo "python dummy                              ">  go
+ 13 sh chmod a+x go
+ 14 -->
+ 15 
+
+Scr# 4404 
+  0 ( UART Raspberry PI Zero - protocol )
+  1 code halt
+  2 hex 76 c, dd c, e9 c,  \ halt jp (ix)
+  3 smudge decimal
+  4 \
+  5 : test
+  6   begin
+  7     halt
+  8     $4000 #128 uart-rx-burst
+  9     ?terminal
+ 10   until
+ 11   3 uart-tx-byte 3 uart-tx-byte
+ 12   3 uart-tx-byte 3 uart-tx-byte
+ 13 ;
+ 14 -->
+ 15 
+
+Scr# 4405 
+  0 ( UART Raspberry PI Zero - protocol )
+  1 cls sh . go
+  2 test
+  3 
+  4 
+  5 
+  6 
+  7 
+  8 
+  9 
+ 10 
+ 11 
+ 12 
+ 13 
+ 14 
+ 15 
+
 Scr# 4646 
   0 ( reply )
   1 
@@ -20294,22 +20474,22 @@ Scr# 10311
  15 
 
 Scr# 10604 
-  0 ( studio DRAW )
-  1   needs draw
-  2   cls cr cr
-  3 \ 3 1 0 0 draw
-  4   31 32 32 31 draw
-  5 \ 31 31 32 32 draw
-  6 \ 32 32 31 31 draw
+  0 
+  1 
+  2 
+  3 
+  4 
+  5 
+  6 
   7 
-  8 
-  9 
- 10 
- 11 
- 12 
- 13 
- 14 
- 15 
+  8 ( UART Raspberry PI Zero - protocol )
+  9 \ fastest read from rpi0
+ 10 code uart-get-block ( a -- )
+ 11 hex f3 c,        \ di
+ 12     d9 c,        \ exx
+ 13     e1 c,        \ pop  hl
+ 14     11 c, 200 ,  \ ld   de,   #512
+ 15     01 c, 143b , \ ld   bc,   uart-rx-port  nn,
 
 Scr# 15360 
   0 
@@ -20686,7 +20866,7 @@ Scr# 16029
  15 
 
 Scr# 16100 
-  0 7• R¯“ò”¯“   Äâ†ÇË” ‡D
+  0 ïò7¯“ò”¯“   Ä÷è†ÇË” ‡!
   1 
   2 
   3 
@@ -20720,7 +20900,7 @@ Scr# 16101
   4 &à% ÇÔÇΩ$⁄Õè&à%§Ç#'*%à%è%†  Ã #%∑ÅÃ äÇÅ ÙˇªÇΩ$‡Õè&= ~ qÇÔÇΩ$Ê
   5 Õè&ó'Ú%=Ω$ÏÕè&Î&ó'⁄%AÉΩ$ÚÕè& 'ó'⁄%AÉΩ$˘Õè&ó'Ú%=  ó'⁄%ó'Ú%]
   6 =Ω$ Õè&ó'Ú%= ( H(à%Î&m(ç  m%Î&ó'¸%lÉΩ$	Õè&Ï+€"Ω$Õè&™Éà%ƒ(Ω$
-  7 $Õè&µÉ=  ﬂ m%Ω$-ÕÀ& 6ÕÀ& @Õè&‰&”É¸%‰&⁄É¸%Ω$JÕè&”ÉÚ%∑Å⁄ÉÚ
+  7 $Õè&µÉ=  ﬂ m%Ω$-ÕÀ&  6ÕÀ&  @Õè&‰&”É¸%‰&⁄É¸%Ω$JÕè&”ÉÚ%∑Å⁄ÉÚ
   8 %
 %Ω$UÕè&‰&
 %Å%Ú&
@@ -20756,13 +20936,58 @@ Scr# 16102
  Eà@Öâ * =  ÛÅ
  12 ç  †Ñ‰&⁄É¸%â  =  ÛÅç  Fáâ  m%Ω$BÕè&ä=·É	Ö[ÖiÜ%áPÑ”ÉÚ%⁄ÉÚ%
  13 Ñ–%Ñ™É#ç 
- m%‰&Ñà@Öà%'m(ç  «$Ñƒ(“$•àâ  CÑÑm%PÑƒ(‰Ñâ ∂ˇΩ$
- 14 bye                              aØ7	 Øxéçc™•ƒ*dïÒÁˇ„ÉúÇ5’ﬁÑ⁄
- 15 112∏ m¸⁄ád¶UÀ®bWÂ/ZyÜ}+õÜÍŸöq|≥∏¨Ï£ΩhªjÉXém–⁄“~˘U0"V;ı—vÔ≠
+ m%‰&Ñà@Öà%'m(ç  «$Ñƒ(“$•àâ  CÑÑm%PÑƒ(‰Ñâ ∂ˇΩ$N
+ 14 >˛€˛/o>˜€˛/•Ê& oÂ›ÈWÕè&>9«$=  ª(=  ª(Åâç  Î&â   Î&u7'›$7
+ 15 à%ç  Î&u7'*%p,Y,Ê(‚$#å$ç Œˇ=  ª(=  ª(“$]#= * S*Ω$^Õè&§$='Ú
+
+Scr# 16103 
+  0 %m(ç & Ê(§$='Ú%E%∆ Ã Ú%º<#ç  ñ 
+ ‰&E%K ÍˇΩ$kÕÙ0zÕ∏&\äÕ∏&x\
+  1 öÕ∏&j\´Õ∏&;ºÕ∏&;ÕÕ∏&;‚ÕÀ&P√˜ÕÀ&à
+ÕÀ&  Õ∏& ‡/ÕÀ&  D
+  2 ÕÀ&åèZÕÀ&  lÛŸ—bkŸ·›Â’≈Ì[aäz≥('˛ÌxAÌH±0;Ìx0ÊÌxw#∑(Ÿ
+  3 z≥ŸÌµhä ”ŸÌR¡—›·Â˚›ÈsŸ·}¥(;$>ÌyÌxÊ()=˙ Ã ˝+}¥ ıŸ›È|Õ
+  4 ê;†Ç.2.2unÖÕè&=  ƒ(=  ƒ(=  ƒ(=  ƒ(=  ƒ(=  ƒ(Ω$ìÕÙ0‚√ÕÃ
+  5 À∆≈¨«…»°ÕÙ0~|\{}[]ÆÕè&«$Jã9ã=  “$Ë!Ω$¡ÕÙ0 ¿E \ Û~
+  6  ‡ì ∫  ‚ 	 ∞◊Õè&=  Â5=  }$K&K&pã
+%&Ω$ÔÕè&= d 75ïãè%7
+  7 5Ω$Õè&à%=  }$IäA&=  h&= Ä å$IäA&Ω$Õè&≤ã≈ãΩ$,Õè&Wä5&= Ä }$
+  8 =  S*˘&=  ı5= @ WäA&Ëã= 0 = † ı5Ω$>Õè&Pä5&=  }$Ω$OÕè&&åÔ$#
+  9 å$ç ˆˇPäA&Ω$aÕè&=  7åΩ$sÕè&=  7åΩ$ÑÕè&=  7åΩ$ïÕè&= 
+ 7åΩ$
+ 10 ®Õè&•+†  Ã &7åÅ ¯ˇΩ$ΩÕè&Pä5&=  }$Ω$ŒÕè&Iä5&Ω$ﬁÕè&™åd%T(#
+ 11 å$ç Ùˇm%Ω$ÚÕè&=  µå= 
+ µåΩ$Õè&•+†  Ã &µåÅ ¯ˇΩ$ÕÙ0SUP> &
+ 12 Õè&ˆåò+ﬂåΩ$:Õè&‰&Å%#%‰&∆ ôåç  ™åÅ%m%ñ 
+ Î&◊äÅ ÍˇΩ$OÕè&Bä&=
+ 13  }$ç  = _èÅä¸%â 
+ = åèÅä¸%Åä;ä&=  }$ç  #%&ª(=  ª(Ω$aÕè&4
+ 14 ä&à%ç  ‰&4ä&Ω$lÕè&zäÚ%ç ( à%= m T(ç  ‰&zä¸%= K T(ç  ‰&zä¸%
+ 15 â ` à%= 
+ H(ç R à%=  T(ç  €(Ê(à%=  T(ç  €(=  ª(=  ª(à%= 
+
+Scr# 16104 
+  0 T(ç  Î&zä¸%â  à%'m(Ô$ç  à%ƒ(m%Ω${Õè&•+†  Ã &ìçÅ ¯ˇΩ$éÕÀ&
+  1 Ú◊°ÕÀ&ˆ◊¥ÕÀ& «ÕÀ&  ’ÕÀ& „Õè&Î&u7=é¸%Î&u7Dé¸%‰&Ké¸%‰&Ré¸%‰
+  2 &4ä&‰&Bä&=  7åÎ&=  ª(ª(Ω$ÒÕè&=  =  ª(ª(Ω$ˇÕè&RéÚ%ç r à%=
+  3   T(ç  m%‰&Ré¸%‰&ã'¸%Î&Ö'¸%∞1â H à%=  T(ç  =ém(Déç   'Dé⁄%
+  4 'Ké⁄%m%â   DéÚ%&DéÚ%'m(ç  Î&Dé⁄%Î&Ké⁄%â , = # T(YéÚ%}$ç  Î&R
+  5 é¸%‰&Ké¸%Î&u7à%'~-Dé¸%Ω$Õè&`é‰&zä¸%7ç|ç[ã´(ç * à%≤éà%=  T(ç
+  6  7åÎ&)säläèäsäÅ%&éâ  7åôåç  ™å	(&	(Î&&é#ç ∂ˇüéΩ$Õè&=  ¬=
+  7   ÛãΩ$Õè&∏è[åNå[èΩ$bye                              Ö#©{Ω“
+X
+  8 
+  9 
+ 10 
+ 11 
+ 12 
+ 13 
+ 14 
+ 15 
 
 Scr# 16124 
-  0   k v-Forth 1.8 - NextZXOS version  Dot-command - build 2025-08
-  1 -15  MIT License  1990-2025 Matteo Vitturi ÉLI‘  = áEXECUT≈n
+  0   k v-Forth 1.8 - NextZXOS version  Dot-command - build 2026-01
+  1 -01  MIT License  1990-2026 Matteo Vitturi ÉLI‘  = áEXECUT≈n
   2 H á(+LOOP©v K Ü(LOOP©Ç Å ÜBRANC»é â á0BRANC»ô ç á(LEAVE©§ ñ Ö(?D
   3 O©∞ † Ñ(DO©º ∆ Å…∆ Ã ÇIßœ ◊ ÖDIGI‘’ ﬂ ÜCASEOŒ‹ !áCASEOF∆Ê !ÖUP
   4 PE“Ò '!Ü(FIND©˝ L!áENCLOS≈∫!Ö(MAP©Ë!â(COMPARE©"á(EMITC©(
@@ -20861,7 +21086,26 @@ Scr# 16127
 
 Scr# 16128 
   0 DONE√ˆáÖINIT√ˇ%áÉCMƒ	FáÑDEL√EàÑINS√ÑàÖCTRL√$•ààEDIT-DE∆
-  1 ˚&â
+  1 ˚&âá?ESCAP≈7ÅâÑVIE◊DóâÇ.”P¯âàUART-SY”Y/ääUART-LASTÀ`4äãUAR
+  2 T-FRAME”m;äãUART-FLAGS≤|BäåUART-RX-POR‘åIäåUART-TX-POR‘úPäåU
+  3 ART-CT-POR‘≠WäêUART-1ST-TIMEOU‘æ^äêUART-2ND-TIMEOU‘œeäéUART-C
+  4 HUNK-LEŒ‰läâUART-BUF∆˘säíUART-ESCAPE-STATU”zäêUART-CURSOR-FA
+  5 C≈ÅäëUART-CURSOR-PHAS≈1àäçUART-RX-BURS‘FèäÇmÛ\◊äÑREDœnˇäÑB
+  6 ELÃuãâRPI0-TKB±~9ãâRPI0-TKB≤áJãàMAP-KEY¬ï[ãéUART-SYS-CLOCÀ£
+  7 pãëUART-VIDEO-TIMIN«∞ïãìUART-BAUD-PRESCALA“√≤ãíUART-SET-PRESC
+  8 ALA“Ÿ≈ãëUART-SET-BAUDRAT≈ÒËããRPI0-SELEC‘Ûãç?UART-BUSY-Tÿ&å
+  9 åUART-TX-BYT≈.7åçUART-SEND-EO‘@NåçUART-SEND-ETÿQ[ååUART-SEND-
+ 10 C“chååUART-SEND-L∆uuåéUART-SEND-TEX‘ÜÇåê?UART-BYTE-READŸóôåå
+ 11 UART-RX-BYT≈™™åãUART-WAIT-¬øµåèUART-WAIT-CR-L∆–ÃåçUART-WAIT-F
+ 12 O“‡ﬂåàSUP>-ST“ÙˆåêUART-WAIT-PROMP‘çèUART-RX-TIMEOU‘çêUAR
+ 13 T-SHOW-CURSO“(7ççUART-GET-KEY¬<|çÜC-EMI‘QìçäCHUNK-EMI‘c&ééUA
+ 14 RT-FORTH-BU∆n=ééUART-FORTH-PT“}DééUART-FORTH-CN‘êKééUART-FORT
+ 15 H-FL«£RéâUART-MET¡∂YéâTERM-INI‘…`éâTERM-DON≈◊üéâFORTH-CMƒÂ≤
+
+Scr# 16129 
+  0 éÑTERÕÛ[èâRPI0-INI‘∏èÑRPI∞
+…è
+  1 
   2 
   3 
   4 
@@ -20889,9 +21133,8 @@ Index:
     7 ( Error messages    from #49 to #63 )
     8 ( Error messages    from #65 to #79 )
     9 ( Print a complete error list )
-   10 (
    11 .( Autoexec )
-   20 ( test )
+   20 ( test floating point )
    35 
    99 .( Assembler )
   100 .( Assembler. Use NEEDS ASSEMBLER instead )
@@ -21140,8 +21383,8 @@ Index:
   357 ( Matt Davies'  .helloworld )
   358 ( Speed Test - Benchmark - 5.12 sec. )
   360 ( F_STAT     via RST 8 hook code )
-  361 ( F_FGETPOS  via RST 08 hook code )
-  362 ( F_SEEK     via RST 08 hook code )
+  361 ( F_FGETPOS  via RST 8 hook code )
+  362 ( F_SEEK     via RST 8 hook code )
   363 ( F_WRITE    via RST 8 hook code )
   364 ( F_READ     via RST 8 hook code )
   365 ( F_CLOSE    via RST 8 hook code )
@@ -21150,7 +21393,7 @@ Index:
   368 ( F_FSTAT    via RST 8 hook code )
   369 ( F_SYNC     via RST 8 hook code )
   370 ( M_DOSVERSION via RST 8 hook code )
-  371 ( F_GETFREE  via RST 08 hook code test )
+  371 ( F_GETFREE  via RST 8 hook code test )
   372 ( M_P3DOS )
   373 ( M_P3DOS )
   374 ( M_P3DOS )
@@ -21464,6 +21707,11 @@ Restarting Supervisor
   879 \ Brodie - Starting FORTH - Ch. 10 - I/O and You
   880 \ Brodie - Starting FORTH - Ch. 10 - I/O and You
   881 \ Brodie - Starting FORTH - Ch. 10 - I/O and You
+  887 ( UART Raspberry PI Zero - protocol )
+  888 ( UART Raspberry PI Zero - protocol )
+  889 ( UART Raspberry PI Zero - protocol )
+  890 ( UART Raspberry PI Zero - protocol )
+  891 ( UART Raspberry PI Zero - protocol )
   892 ( trim routine )
   893 ( trim routine )
   895 ( RPI0 wrapper )
@@ -21775,6 +22023,12 @@ Restarting Supervisor
  4029 xxxxxxxxxxxxxxxxxxxxx xxxxx xxxxxxxxxxxxxxxxx xxxxxxxxxxx xxxxx
  4030 xxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxx xxxxxxxxx xxxxxxx xx
  4031 xxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 4400 ( python example )
+ 4401 ( python example )
+ 4402 ( python example )
+ 4403 ( python example )
+ 4404 ( UART Raspberry PI Zero - protocol )
+ 4405 ( UART Raspberry PI Zero - protocol )
  4646 ( reply )
  6475 ( solid circle )
  6476 : solid-circle ( x y r -- )
@@ -21999,7 +22253,7 @@ Restarting Supervisor
 10309 ( MMU7 banking study )
 10310 ( MMU7 banking study )
 10311 ( MMU7 banking study )
-10604 ( studio DRAW )
+10604 
 15360 
 15361 x     x x x x x x x x x x x x x x x x x x x x x x x x x x x x x
 15362 x             x          x          x          x          x
@@ -22018,11 +22272,16 @@ Restarting Supervisor
 16027 N~Å£˙a~Ç#”ö~ÉD.“	≠~Ç.“Œ~ÇDÆ›~ÅÆÍ~Åø&ı~ÇUÆ,ÖWORD”2
 16028 ˜tâÇB¬˝çâÑKEY¬Â≤âàKEYBEMI‘ΩââKEYBEMITƒ âÑNRO◊!€âÑNCOÃ/‚
 16029 -PIXELADƒÎ…íãL2-RAM-PAG≈¸ËíãL2-MAX-PAG≈ÔíãL2-PIXELADƒˆíåL2
-16100 7• R¯“ò”¯“Äâ†ÇË”‡D
+16100 ïò7¯“ò”¯“Ä÷è†ÇË”‡!
 16101 Å%m%Ω$Õè&= å*√*ÛÅ√*ç 	(‰&(= Ω$âÕè&= å*√*â 	(‰&(Å%Ú&>
 16102 -el     I-nsert   H-oldÊ(ˆ-2Q-uit    N-ext    S-hift   R-eplace
-16124 k v-Forth 1.8 - NextZXOS version  Dot-command - build 2025-08
+16103 %m(ç &Ê(§$='Ú%E%∆ Ã Ú%º<#ç ñ 
+‰&E%K ÍˇΩ$kÕÙ0zÕ∏&\äÕ∏&x\
+16104 T(ç Î&zä¸%â à%'m(Ô$ç à%ƒ(m%Ω${Õè&•+† Ã &ìçÅ ¯ˇΩ$éÕÀ&
+16124 k v-Forth 1.8 - NextZXOS version  Dot-command - build 2026-01
 16125 œ&Å∞˙‰&Å±Î&Å≤	Ú&Å≥˘&Ç-±'ÇBÃ'ÉC/Ã"'ÖB/BU∆)'ÖB/SC
 16126 RAILIN«Ùp,ÜACCEP‘˝ù,ÖQUERŸH-ÑFILÃa-ÖERAS≈ s-ÖBLANÀ)~-ÑHO
 16127 ä<ÇDÆ˚ô<ÅÆ¶<Åø	±<ÇUÆº<ÖWORD”«<ÑLIS‘=ÖINDEÿ&]=ÉCL”/ä
 16128 DONE√ˆáÖINIT√ˇ%áÉCMƒ	FáÑDEL√EàÑINS√ÑàÖCTRL√$•ààEDIT-DE∆
+16129 éÑTERÕÛ[èâRPI0-INI‘∏èÑRPI∞
+…è

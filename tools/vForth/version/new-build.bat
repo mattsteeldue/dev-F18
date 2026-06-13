@@ -20,22 +20,22 @@ cd c:\zx\forth\F18\tools\vForth\version
 
 echo   1. Copia verso SD
 echo      Copia selettivamente da  c:\Zx\forth\F18\tools\vForth      a   c:\Zx\GitHub\vforth-next\SD\tools\vForth
-pause
+: pause
 
-: cd                               c:\zx\forth\F18\tools\vForth\version
-call new-build-copy.bat            c:\Zx\forth\F18\tools\vForth          c:\Zx\GitHub\vforth-next\SD\tools\vForth   %BUILD%
-copy                               c:\zx\FORTH\F18\dot\vforth            c:\Zx\GitHub\vforth-next\SD\dot\
+: %~dp0 = directory di questo .bat: il call funziona da qualunque CWD
+call "%~dp0new-build-copy.bat"     c:\Zx\forth\F18\tools\vForth          c:\Zx\GitHub\vforth-next\SD\tools\vForth   %BUILD%
+copy                               c:\zx\forth\F18\tools\vForth\dot\*    c:\Zx\GitHub\vforth-next\SD\dot\
 
 
 : _____________________________________________________
 
 echo   2. Copia verso /
 echo      Copia selettivaemnte da  c:\Zx\forth\F18\tools\vForth      a   c:\Zx\GitHub\vforth-next
-pause
+: pause
 
-: cd                               c:\zx\forth\F18\tools\vForth\version
-call new-build-copy.bat            c:\Zx\forth\F18\tools\vForth          c:\Zx\GitHub\vforth-next                   %BUILD%
-copy                               c:\zx\FORTH\F18\dot\vforth            c:\Zx\GitHub\vforth-next\dot\
+: %~dp0 = directory di questo .bat: il call funziona da qualunque CWD
+call "%~dp0new-build-copy.bat"     c:\Zx\forth\F18\tools\vForth          c:\Zx\GitHub\vforth-next                   %BUILD%
+copy                               c:\zx\forth\F18\tools\vForth\dot\*    c:\Zx\GitHub\vforth-next\dot\
 
 
 : _____________________________________________________
@@ -45,11 +45,21 @@ echo   " "
 echo   3. Crea zip file da SD
 echo   _____________________________________________________
 echo   " "
-pause
+: pause
+
+: pulizia SD per zip leggero: doc\previous svuotata, un solo PDF e un solo
+: !Blocks txt (quelli della build corrente). La radice del repo conserva tutto.
+del /q c:\Zx\GitHub\vforth-next\SD\tools\vForth\doc\previous\*.* 2>nul
+del /q c:\Zx\GitHub\vforth-next\SD\tools\vForth\doc\txt\!Blocks-64.bin_*.txt 2>nul
+copy c:\Zx\forth\F18\tools\vForth\doc\txt\!Blocks-64.bin_%BUILD%.txt c:\Zx\GitHub\vforth-next\SD\tools\vForth\doc\txt\
 
 cd c:\Zx\GitHub\vforth-next\SD
-erasec:\Zx\GitHub\vforth-next\SD\tools\vForth\doc\previous\
 
+: zip ricreato da zero: -add su zip esistente non rimuove le voci stantie
+if exist c:\Zx\GitHub\vforth-next\download\vForth_18_NextZXOS_%BUILD%.zip del /q c:\Zx\GitHub\vforth-next\download\vForth_18_NextZXOS_%BUILD%.zip
+
+: in download resta solo la build corrente: le precedenti vanno in older\
+move c:\Zx\GitHub\vforth-next\download\vForth_18_NextZXOS_*.zip c:\Zx\GitHub\vforth-next\download\older\ 2>nul
 
 pkzip25 -add -rec -times=all -dir=current c:\Zx\GitHub\vforth-next\download\vForth_18_NextZXOS_%BUILD%.zip *
 
@@ -58,12 +68,12 @@ pkzip25 -add -rec -times=all -dir=current c:\Zx\GitHub\vforth-next\download\vFor
 
 
 echo   4. Copia anche i project
-pause
+: pause
 
 echo : DOT VERSION
 copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOT\source\*                  c:\Zx\GitHub\vforth-next\project\MMU7_DOT\source
 copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOT\list\*                    c:\Zx\GitHub\vforth-next\project\MMU7_DOT\list
-copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOT\output\forth              c:\Zx\GitHub\vforth-next\project\MMU7_DOT\output
+copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOT\output\vforth             c:\Zx\GitHub\vforth-next\project\MMU7_DOT\output
 
 echo : MMU7 VERSION
 copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES\source\*                 c:\Zx\GitHub\vforth-next\project\DIRECT_MMU7\source
@@ -101,7 +111,7 @@ copy    c:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES\output\ram8.bin      
 : _____________________________________________________
 
 echo   5. Da ultimo: Crea zip file per Microdrive e Disciple ?
-pause
+: pause
 
 cd c:\Zx\Forth\F18\
 : pkzip25 -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_8Microdrives_%BUILD%.zip     c:\Zx\Forth\F18\M?.mdr
@@ -113,7 +123,7 @@ cd c:\Zx\Forth\F18\
 
 : _____________________________________________________
 
-pause
+: pause
 goto END_PROG
 
 

@@ -142,7 +142,14 @@ copy  tutorial\*.f                              %DEST%\tutorial
 
 : _____________________________________________________
 
-pause
+echo Copying help
+copy  help\*.txt                            %DEST%\help
+copy  help\*.md                             %DEST%\help
+: pause
+
+: _____________________________________________________
+
+: pause
 goto END_PROG
 
 : _____________________________________________________
