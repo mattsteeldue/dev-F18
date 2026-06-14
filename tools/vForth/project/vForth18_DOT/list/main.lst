@@ -2163,12 +2163,12 @@
  765+ 2233             >
  765+ 2233             >last_NFA        defl    temp_NFA            // keep track of NFA saved above
  766+ 2233 E1                           pop     hl
- 767+ 2234 CD 30 21                     call    MMU7_read
- 768+ 2237
- 769+ 2237              Emitc_Ptr:
- 770+ 2237 C5                           push    bc
- 771+ 2238 D5                           push    de
- 772+ 2239 DD E5                        push    ix
+ 767+ 2234
+ 768+ 2234              Emitc_Ptr:
+ 769+ 2234 C5                           push    bc
+ 770+ 2235 D5                           push    de
+ 771+ 2236 DD E5                        push    ix
+ 772+ 2238 CD 30 21                     call    MMU7_read
  773+ 223B F5                           push    af
  774+ 223C
  775+ 223C 7D                           ld      a, l

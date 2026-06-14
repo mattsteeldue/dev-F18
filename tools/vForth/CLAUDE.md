@@ -346,11 +346,13 @@ Canonical example from `inc/2constant.f`:
 
 ### `INCLUDE` / `NEEDS`
 
-The system crashes -- typically displaying a vertical grid pattern on screen -- if the
-last line of the loaded file is formed by one or more spaces before the newline.
-`NEEDS` is affected by the same bug because it uses `INCLUDE` internally.
+Crashes (usually a vertical grid on screen) if the loaded file ends with a space
+immediately before its final newline. `NEEDS` inherits the bug -- it uses `INCLUDE`.
 
-**Workaround:** ensure the last line of every `.f` file has no trailing spaces.
+**Rule (byte-exact):** the file's last byte must be `0x0A` and the second-to-last
+byte must not be `0x20`. Trailing `0x0A`s are fine (the file may end with several
+blank lines); trailing spaces on *interior* lines are harmless. Only the final two
+bytes matter.
 
 ### `LOAD` (block/screen interpreter)
 

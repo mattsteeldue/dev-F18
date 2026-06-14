@@ -1,0 +1,101 @@
+Modifiche da fare al manuale vForth1.8-core-en-20260614.odt
+Generato dallo script util/gen-dict-structure.py -- build 2026-06-14
+==============================================================
+
+RIEPILOGO DIFFERENZE rispetto alla versione precedente:
+  SWAP Mirror: 68F0 -> 68E7
+  SWAP xt:     68F2 -> 68E9
+  DUP  Mirror: (aggiornato) -> 68EE
+  DUP  xt:     (aggiornato) -> 68F0
+  NIP  Cfa:    68E3 -> 68DA
+  NIP  parola adiacente: TUCK (invariata)
+  Heap-pointer NFA/LFA/CFA di SWAP (0307/030C/030E) e DUP (0310/0314/0316): INVARIATI
+
+==============================================================
+[par. 3.20 -- Dictionary memory structure]
+==============================================================
+
+For example the two contiguous definitions SWAP and DUP appears in
+memory as follow (as per build 2026-06-14, since it's perfectly possible
+that a different build shows different addresses).
+
+Heap memory:
+NFA    0307      | 84 | 53 57 41 D0 |             | len |  'S' 'W' 'A' 'P' |
+LFA    030C      | FE 02 |                    | 02FE |  heap-pointer to previous NFA definition
+CFA    030E      | E9 68 |                    | 68E9 |  xt memory-address of this definition
+
+Main memory:
+Mirror 68E7      | 0E 03 |          | 030E | backward-heap-pointer to SWAP's CFA
+ xt    68E9      | E1 | E3 | E5 | DD E9 |
+                 | pop hl | ex (sp),hl | push hl | jp (ix) |
+
+Heap memory:
+NFA    0310      | 83 | 44 55 D0 |             | len |  'D' 'U' 'P' |
+LFA    0314      | 07 03 |                    | 0307 |  heap-pointer to previous NFA definition SWAP
+CFA    0316      | F0 68 |                    | 68F0 |  xt memory-address of this definition
+
+Main memory:
+Mirror 68EE      | 16 03 |          | 0316 | backward-heap-pointer to DUP's CFA
+ xt    68F0      | E1 | E5 | E5 | DD E9 |
+                 | pop hl | push hl | push hl | jp (ix) |
+
+You can verify yourself all of that by typing some commands.
+
+        SEE SWAP
+        Nfa: E307 84
+        Lfa: E30C 02FE TUCK
+        Cfa: 68E9 E5E3
+        68E9  E1 E3 E5 DD  E9 16 03 E1  ace]i  a
+        68F1  E5 E5 DD E9  1E 03 F1 E1  ee]i  qa
+        $E307 9 DUMP
+        E307  84 53 57 41  D0 FE 02 E9   SWAP~ i
+        E30F  68 83 44 55  D0 07 03 F0  h DUP  p
+        $68E7 2 DUMP
+        68E7  0E 03 E1 E3  E5 DD E9 16    ace]i
+
+        SEE DUP
+        Nfa: E310 83
+        Lfa: E314 0307 SWAP
+        Cfa: 68F0 E5E5
+        68F0  E1 E5 E5 DD  E9 1E 03 F1  aee]i  q
+        68F8  E1 E3 F5 E5  DD E9 27 03  acue]i'
+        $E310 8 DUMP
+        E310  83 44 55 D0  07 03 F0 68   DUP  ph
+        $68EE 2 DUMP
+        68EE  16 03 E1 E5  E5 DD E9 1E    aee]i
+
+==============================================================
+[par. 3.6.1 -- Debugger Utility]
+==============================================================
+
+--- Transcript SEE TYPE ---
+
+        SEE TYPE
+        Nfa: E7F8 84
+        Lfa: E7FD 7EF CURS
+        Cfa: 6FC1 69F7
+        BOUNDS (?DO) 12 I C@ EMIT (LOOP) -8 EXIT
+
+--- Transcript SEE NIP ---
+
+        SEE NIP
+        Nfa: E2F6 83
+        Lfa: E2FA 2ED DROP
+        Cfa: 68DA DDE3
+        68DA  E1 E3 DD E9  05 03 E1 F1  ac]i  aq
+        68E2  E5 F5 E5 DD  E9 0E 03 E1  eue]i  a
+
+--- Transcript SEE IF ---
+
+        SEE IF
+        Nfa: EC91 C2
+        Lfa: EC94 C88 BACK
+        Cfa: 804C 69F7
+        COMPILE 0BRANCH HERE 0 , 2 EXIT
+
+--- Nota in prosa dopo SEE NIP (aggiornare i dati numerici nel testo) ---
+
+  byte che seguono il jp (ix) di NIP: 05 03 E1 F1
+  sono il Mirror della definizione successiva TUCK
+  (heap-pointer 0305 alla sua CFA); la sua NFA si ispeziona con:
+      $02FE FAR 8 DUMP

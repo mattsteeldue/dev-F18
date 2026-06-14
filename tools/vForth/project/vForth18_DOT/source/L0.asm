@@ -764,12 +764,12 @@ C_Compare_Return_Equal:
 
                 New_Def CEMITC, "(EMITC)", is_code, is_normal
                 pop     hl
-                call    MMU7_read
 
 Emitc_Ptr:
                 push    bc
                 push    de
                 push    ix
+                call    MMU7_read
                 push    af
 
                 ld      a, l

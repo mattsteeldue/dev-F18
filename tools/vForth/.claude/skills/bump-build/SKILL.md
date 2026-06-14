@@ -92,11 +92,13 @@ cat output/vforth.1 output/vforth.2 > output/vforth
 cd ../..
 ```
 
-Dopo la compilazione, copiare i binari DOES in radice (dove `sync-sd` li legge):
+Dopo la compilazione, copiare i binari DOES in radice e il dot-command DOT
+in `dot/` (dove `sync-sd` li legge):
 
 ```
 cp project/vForth18_DOES/output/forth18e.bin forth18e.bin
 cp project/vForth18_DOES/output/ram8.bin     ram8.bin
+cp project/vForth18_DOT/output/vforth        dot/vforth
 ```
 
 ## 4. Verifica
