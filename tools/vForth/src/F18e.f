@@ -1,6 +1,6 @@
 \ ______________________________________________________________________ 
 \
-\ v-Forth 1.8 - NextZXOS version - build 2026-06-12
+\ v-Forth 1.8 - NextZXOS version - build 2026-06-14
 \ MIT License (c) 1990-2026 Matteo Vitturi     
 \ Direct Threaded Heap Dictionary - NextZXOS version 
 \ ______________________________________________________________________ 
@@ -63,7 +63,9 @@
 \ IX - Inner interpreter next-address pointer. This is 2T-state faster than JP
 \      it must be preserved during ROM/OS calls
 \ IY - (ZX System: must be preserved to use standard Interrupts )
-
+\
+\ MMU7 configuragion should be preserved across ROM/OS calls in some cases.
+\
 \ From this version vForth is a "direct-thread" instead of an "indirect-thread" 
 \ Forth system. It brings a +25% speed improvement. 
 \ Any Low-Level definition saves two bytes, but any non Low-Level definitions 
@@ -6051,7 +6053,7 @@ decimal
     [ decimal 2 ] Literal far count type
 \    [compile] (.")
 \    [ decimal 113 here ,"  v-Forth 1.7 NextZXOS version" -1 allot ]
-\    [ decimal  13 here ,"  Heap Vocabulary - build 2026-06-12" -1 allot ]
+\    [ decimal  13 here ,"  Heap Vocabulary - build 2026-06-14" -1 allot ]
 \    [ decimal  13 here ,"  MIT License "
 \    [ decimal 127 here ," 1990-2026 Matteo Vitturi" -1 allot ]
 \    [ decimal  13 c, c! c! c! c! ] 
