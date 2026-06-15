@@ -153,6 +153,14 @@ CR
 - `NEEDS BINARY` / `NEEDS OCTAL` at interpreter level only, never inside a definition.
 - Sign after prefix: `#-33` correct; `-#33` wrong.
 - Double literals: any punctuation in a number makes it double (32-bit).
+- **Never write `N LITERAL` to "compile a literal".** Inside a colon definition a bare
+  number *already* auto-compiles as a literal, so `$E000 LITERAL` compiles `$E000` **and
+  then** a second, spurious literal (`LITERAL` pops a non-existent compile-time value).
+  For a constant, just write the bare number (`$E000`); `LITERAL` is only for a value
+  computed at compile time inside brackets: `[ 2 3 + ] LITERAL`, `[ DECIMAL 87 ] LITERAL`
+  (see `inc/MMU7@.f`, `inc/J.f`). This is a **silent** error -- it compiles without
+  complaint and only corrupts the stack at run time. (Bug found and fixed in tutorial 041
+  `PEEK-L2-ROW`, 2026-06-15.)
 
 
 ## 7. vForth-Specific Rules
@@ -166,6 +174,20 @@ CR
 - `VALUE` requires `NEEDS VALUE`; `TO` requires `NEEDS TO` (separate inc/ files).
 - The step-by-step stack comment style (rule 4 above) is preferred for definitions
   with more than two stack-manipulation operations.
+- **Use `[']`, not `'`, to get a word's xt inside a definition.** `'` (tick) is *not*
+  immediate in vForth (`: ' -find 0= 0 ?error drop ;`): it parses and looks up the next
+  word at **run time**. Inside a colon definition `' FOO` therefore compiles a call to
+  `'` *plus* an ordinary call to `FOO`; at run time `'` then parses whatever token follows
+  in the input stream -- the wrong word, or an error (message 0) when nothing follows. To
+  compile the execution token of a specific word as a literal, use the immediate `[']`:
+  `: INSTALL  ['] FOO  HANDLER ! ;`. `[']` lives in `inc/['].f`, so add `NEEDS [']`.
+  `'` is correct only in **interpret state** -- typed at the prompt, or as top-level code
+  in a loaded source file. The same store can be right or wrong depending on context:
+  `lib/MOUSE.f` ends with `' MOUSE-DELTA ISR-XT !` at interpret time (no brackets needed),
+  whereas tutorial 049's `INSTALL-COUNTER` does the identical store *inside a definition*
+  and so must use `[']`. Like the `LITERAL` trap above, the mistake is silent at compile
+  time. (Bug found and fixed in tutorial 049 `INSTALL-COUNTER`/`REMOVE-COUNTER`,
+  2026-06-15.)
 
 
 ## 8. CREATE...DOES> Conventions
