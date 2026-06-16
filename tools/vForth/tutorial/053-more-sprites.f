@@ -1,7 +1,8 @@
 \
 \ 053-more-sprites.f
 \ Hardware sprites, intermediate: a struct, loading patterns from a
-\ file, and animation -- all in pure Forth (no ASSEMBLER, no CODE).
+\ file, and animation -- almost all in pure Forth, plus one small
+\ CODE word that ships a 256-byte pattern with a single Z80 "otir".
 \
 \ The ZX Spectrum Next has 64 hardware sprites, each a 16x16 pattern
 \ of 256 bytes (one palette index per pixel).  This tutorial models a
@@ -101,15 +102,25 @@ CREATE SPRITE  SPRITE-OB ALLOT
 \ ===========================================================================
 \
 \ Send 256 bytes starting at address a to the pattern port.  The
-\ original Sprite Lib did this with a single Z80 "otir" instruction;
-\ here it is a plain Forth loop -- slower but assembler-free.
+\ original Sprite Lib shipped a whole pattern with a single Z80
+\ "otir", and so does this CODE word -- far faster than a Forth loop.
+\ EXX swaps to the alternate register set so BC (the Forth IP) and HL
+\ (W) survive without any stack traffic; the address is popped into
+\ HL', BC' is loaded with SPRITE-PATTERN-PORT (high byte 0 = a count
+\ of 256, low byte $5B = the port), OTIR streams the block, then a
+\ second EXX restores the VM registers before NEXT.
 \
-\ SPRITE-BUFLEN OVER + SWAP DO ... LOOP runs I from a to a+255.
+\ The opcodes are written as raw hex C, literals (no ASSEMBLER
+\ vocabulary needed); the mnemonics are kept in trailing comments.
 
-: SPRITE-DATA>  ( a -- )
-    SPRITE-BUFLEN OVER + SWAP DO     ( )   \ I = a .. a+255
-        I C@ SPRITE-PATTERN-PORT P!
-    LOOP ;
+CODE SPRITE-DATA>  ( a -- )
+    $D9 C,                            \ exx
+    $E1 C,                            \ pop hl
+    $01 C,  SPRITE-PATTERN-PORT ,     \ ld bc, SPRITE-PATTERN-PORT
+    $ED C,  $B3 C,                    \ otir
+    $D9 C,                            \ exx
+    $DD C,  $E9 C,                    \ jp (ix)   ( NEXT )
+    SMUDGE
 
 \ Write one attribute byte to the attribute port.
 : SPRITE-ATTR   ( b -- )
@@ -162,7 +173,7 @@ CREATE SPRITE  SPRITE-OB ALLOT
 \
 \ For each of the 64 sprite slots we read 256 bytes into the buffer
 \ and upload them.  F_READ ( a n fh -- n f ) returns the bytes read
-\ and an error/eof flag (f <> 0 means stop).  J fetches the loop's
+\ and an error/eof flag (f <> 0 means stop).  J fetches the open
 \ file handle from the return stack (it sits under the loop index I).
 \
 \   SPRITE-BUFFER SPRITE-BUFLEN  J  F_READ   ( read-count flag )
@@ -214,11 +225,11 @@ CREATE SPRITE  SPRITE-OB ALLOT
 \ These words assume SPRITE-LOAD< has already filled the pattern
 \ slots (do that interactively first -- see section 12).
 \
-\ PLACE stores x, y and the slot id into the shared SPRITE struct and
+\ DISPLAY stores x, y and the slot id into the shared SPRITE struct and
 \ pushes the attributes out.  With the stack ( x y id ), id is on top,
 \ so it is stored first, then y, then x.
 
-: PLACE  ( x y id -- )
+: DISPLAY  ( x y id -- )
     SPRITE _spriteid !               ( x y )   \ store id
     SPRITE _ycoord   !               ( x )     \ store y
     SPRITE _xcoord   !               ( )       \ store x
@@ -244,11 +255,11 @@ CREATE SPRITE  SPRITE-OB ALLOT
 \ the interpreter (OPEN< grabs the file name from the line).  A full
 \ session looks like this:
 \
-\   SPRITES-ON
-\   SPRITE-LOAD< tutorial/DKSprite.spr
-\   100 80 0 PLACE
-\   TEST
-\   SPRITES-OFF
+    SPRITES-ON
+    SPRITE-LOAD<    tutorial/DKSprite.spr
+    100 80 0 DISPLAY
+    TEST
+    SPRITES-OFF
 
 \ ===========================================================================
 \ 13. Tests

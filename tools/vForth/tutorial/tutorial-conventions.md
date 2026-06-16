@@ -9,8 +9,8 @@ To be saved as a project file so Claude can reference it in future sessions.
 - Interaction with the author: Italian.
 - All source code, comments, and documentation: English only.
 - Character encoding: 7-bit ASCII strictly.
-  Allowed bytes: 0x20-0x7E, tab (0x09), LF (0x0A), CR (0x0D), 0x7F.
-  No UTF-8, no BOM, no smart quotes, no em-dash (use -).
+  Allowed bytes: 0x20-0x7E, LF (0x0A), CR (0x0D), 0x7F.
+  No UTF-8, no BOM, no smart quotes, no em-dash (use -), no tab (0x09).
 - Line width: maximum 80 columns. Enforced with:
     awk 'length > 80 {print NR": "length" cols: "$0}' filename.f
 - ASCII check enforced with Python:
@@ -125,7 +125,7 @@ h) Commented-out test block at end:
 
 8. CREATE...DOES> CONVENTIONS
 ------------------------------
-- DOES> pushes PFA as the deepest new stack item.
+- DOES> pushes PFA as the top new stack item.
 - Caller arguments sit above PFA at DOES> entry.
 - Array usage: index precedes the array name:
     42  0 SCORES  !    ( not: 42 SCORES 0 ! )
