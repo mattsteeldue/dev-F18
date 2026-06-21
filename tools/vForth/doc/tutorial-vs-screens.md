@@ -1,13 +1,13 @@
-# tutorial/ vs Screen# 800-881 -- raffronto
+# tutorial/ vs Screen# 800-905 -- raffronto
 
 Confronto fra i due percorsi didattici del progetto vForth:
 
 - **tutorial/** -- corso vForth originale (file `NNN-slug.f`), organizzato per
   argomento, con nomi di esempio propri (`SHOW-SUM`, `.RANGE`, `CLAMP`,
   `SAFE-DIV`, ...).
-- **Screen# 800-881** in `!Blocks-64.bin` -- trascrizione e adattamento a vForth
+- **Screen# 800-905** in `!Blocks-64.bin` -- trascrizione e adattamento a vForth
   dei brani di codice del libro *Starting FORTH* di Leo Brodie
-  (`doc/Starting-FORTH.pdf`), organizzati per capitolo del libro (Ch.1-10) e con
+  (`doc/Starting-FORTH.pdf`), organizzati per capitolo del libro (Ch.1-11) e con
   i nomi originali di Brodie (`STAR`, `GREET`, `EGGSIZE`, `R%`, `DIAMONDS`, ...).
 
 
@@ -18,9 +18,11 @@ definizione* la sovrapposizione e' di fatto nulla: i due percorsi insegnano gli
 stessi concetti Forth con definizioni diverse. La condivisione e' quindi
 **concettuale**, non lessicale.
 
-Inoltre gli Screen coprono soltanto i capitoli 1-10 di *Starting FORTH* (puro
-Forth standard da libro), mentre i tutorial proseguono ben oltre, fino all'intera
-traccia hardware dello ZX Spectrum Next.
+Gli Screen coprono i capitoli 1-11 di *Starting FORTH* (puro Forth standard da
+libro): il Cap.10 e' stato completato fino allo Screen 895 e il Cap.11 "Extending
+the Compiler" e' stato aggiunto agli Screen 896-905. I tutorial proseguono comunque
+ben oltre, fino all'intera traccia hardware dello ZX Spectrum Next, assente dagli
+Screen.
 
 
 ## Raffronto sinottico-concettuale (argomenti presenti in ENTRAMBI)
@@ -29,14 +31,15 @@ traccia hardware dello ZX Spectrum Next.
 |---------------------------------|------------------------------------------------------------|--------------------------------------------------------------------------|
 | Ch.1 -- 800-804                 | 003-output, 005-defining-words                             | `:` definizioni, `." "`, `EMIT`, `CR`, `SPACES`                          |
 | Ch.2 -- 805-814                 | 001-stack-basics, 002-stack-ops                           | aritmetica postfix, `DUP/SWAP/ROT/OVER`, `/MOD`, `.S`, `3DUP`            |
-| Ch.4 -- 816-820                 | 006-control-flow                                          | `IF/ELSE/THEN`, `?DUP`, IF annidati, `WITHIN`                            |
+| Ch.3 "The Editor" -- 815        | 029-edit, 028-blocks                                      | editor `EDIT`/`LED`, `LIST`/`LOAD`, meccanismo BLOCK/Screen              |
 | Ch.5 -- 821-825                 | 002-stack-ops, 015-double-arith                           | `*/`, `MIN/MAX/ABS`, percentuali, conversioni                           |
 | Ch.6 -- 826-837                 | 007-loops                                                 | `DO/LOOP`, `+LOOP`, `?DO`, `I/J`, `LEAVE`, `BEGIN/UNTIL/WHILE`           |
 | Ch.7 -- 838-849                 | 014-pictured-output, 004-numeric-bases                   | `<# # #S #> HOLD SIGN`, `.R/U.R`, `BASE`, `HEX/DECIMAL/BINARY`           |
 | Ch.8 -- 850-867                 | 005-defining-words, 008-memory, 010-create-does, 023-structures | `VARIABLE/CONSTANT`, `!/@/+!`, `CREATE/ALLOT/,/C,`, array, `[COMPILE] CONSTANT` |
 | Ch.8 (double) -- 854-855, 864   | 015-double-arith                                          | `2VARIABLE/2CONSTANT`, `2@/2!`, `D./D+/M+`                               |
 | Ch.9 -- 868-876                 | 017-defer-is, 022-introspection                          | `'`/`[']`/`EXECUTE`, esecuzione vettorizzata (`'ALOHA` <-> `DEFER`), `SEE` |
-| Ch.10 -- 877-881                | 009-strings, 016-input                                   | `TYPE`, `-TRAILING`, stringhe, I/O                                       |
+| Ch.10 -- 877-895                | 009-strings, 016-input, 028-blocks, 054-blocks-as-assets | `TYPE`, `-TRAILING`, `TEXT`, `EXPECT`, stringhe, I/O, BLOCK-as-data, virtual array, `LOAD2BLOCK` |
+| Ch.11 -- 896-905                | 010-create-does, 019-compilation, 020-standard, 021-evaluate | `CREATE/DOES>` defining words, `IMMEDIATE`, `[COMPILE]`, `COMPILE`, `LITERAL`, `LOOPS` (re-INTERPRET) |
 
 
 ## Solo sugli Screen# (esempi specifici del libro Brodie)
@@ -44,8 +47,9 @@ traccia hardware dello ZX Spectrum Next.
 Definizioni e interi argomenti presenti **solo** negli Screen, assenti dai
 tutorial:
 
-- **Ch.3 "The Editor" (815):** `NEEDS EDIT` / `NEEDS LED` -- nessun tutorial
-  dedicato all'editor.
+- **Ch.3 "The Editor" (815):** `NEEDS EDIT` / `NEEDS LED` -- **ora coperto** dal
+  tutorial **029-edit** (editor full-screen `EDIT`, tasto `[Edit]`, comandi di
+  riga via PAD; nota su LED come evoluzione di EDIT sulle pagine 8K RAM).
 - **Esempi-firma di Brodie** mai ripresi: la lettera `F`
   (`STAR/BAR/BLIP/MARGIN`), `GIFT/GIVER/THANKS`, le condanne penali
   (`CONVICTED-OF...WILL-SERVE`, `HOMICIDE`, `ARSON`), `EGGSIZE/CATEGORY/LABEL`,
@@ -56,10 +60,18 @@ tutorial:
   (`'SAMPLES/PLOT`), `ALOHA/SAY/COMING/GOING`, il **Buzzphrase Generator**
   (880-881), `'S`, `N-MAX`, `3BELLS`, `QUADRATIC`, `DPOLY`.
 - **Uso del sistema BLOCK/Screen** come storage (`214 BLOCK ... TYPE`, `LOAD`,
-  `-->`, `MARKER TASK ... LOAD`): didattica block-based che i tutorial non usano.
+  `-->`, `MARKER TASK ... LOAD`): didattica block-based che **ora e' coperta** dai
+  tutorial **028-blocks** (meccanismo: `BLOCK`/`BUFFER`, `UPDATE`/`FLUSH`,
+  `(LINE)`/`LIST`/`INDEX`, `LOAD` e `-->` -- in vForth non esiste `THRU`) e
+  **054-blocks-as-assets** (BLOCK come contenitore binario: `LOAD2BLOCK` e la
+  libreria sonora AFX). Gli Screen restano come reference di esempi: 882-883
+  (`SCREENS`/`BLOCKS` lister, `TEXT`/`EXPECT`), 886-887 (`CHANGE`, editing di un
+  blocco byte-per-byte), 888 (`FORTUNE`, BLOCK-as-data con `CHOOSE`), 889
+  (`.ANIMAL`/`JUNEESHEE`) e 890-895 (**virtual array** su disco:
+  `ELEMENT`/`PUT`/`SHOW`/`ENTER`/`TABLE` con `@`/`!` e `UPDATE`).
 
 
-## Solo su tutorial/ (estensioni vForth, fuori dal raggio di Brodie Ch.1-10)
+## Solo su tutorial/ (estensioni vForth, fuori dal raggio di Brodie Ch.1-11)
 
 - **013-case** -- `CASE/OF/ENDOF` (Brodie usa solo IF annidati; lo Screen 876 ha
   `EXEC:` vettorizzato, non `CASE`).
@@ -67,10 +79,6 @@ tutorial:
   byte).
 - **018-vocabularies** -- vocabolari come argomento autonomo (Brodie li tocca
   solo di sfuggita in 872).
-- **019-compilation / 020-standard** -- `STATE`, `COMPILE`/`POSTPONE`/`COMPILE,`,
-  `IMMEDIATE`, `[ ]`: corrisponde al **Ch.11 di Brodie, NON trascritto** negli
-  Screen (che si fermano al Ch.10).
-- **021-evaluate** -- `EVALUATE`, parsing token (`NEXT-TOKEN`, `CALC-STRING`).
 - **024-floating-point** -- pacchetto floating vForth (assente in Brodie).
 - **025-memory-advanced**, **026-catch-throw** (`CATCH/THROW`), **027-assembler**
   (`CODE`, `VIDEO-SYNC`, `CHECKSUM2`).
@@ -78,6 +86,36 @@ tutorial:
   ULA/Layer2/sprite, AY, copper, Next-registers, MMU, file I/O, mouse, UART/RPi0,
   interrupt, keyboard-matrix, grafica modulare. **Nessun corrispettivo** negli
   Screen, che sono puro Forth standard da libro.
+- **054-blocks-as-assets** -- la tecnica originale dell'autore: BLOCK come
+  contenitore binario auto-descrittivo (`LOAD2BLOCK`, etichetta su riga 0), con la
+  libreria sonora AFX (Scr# 2200+) come caso reale, agganciata al tutorial 050
+  (AFXframe). Concetto-cugino del Cap.10 (BLOCK-as-data) ma estensione vForth.
+
+
+## Cap.10 completato e Cap.11 aggiunto (Screen 882-905)
+
+Gli Screen 882-905 colmano due lacune storiche del corpus: il completamento del
+Cap.10 (882-895) e l'intero Cap.11 "Extending the Compiler" (896-905), prima
+del tutto assente. Corrispondenze con i tutorial:
+
+| Screen# | Contenuto Brodie                                   | Tutorial correlato        |
+|---------|----------------------------------------------------|---------------------------|
+| 882-883 | `SCREENS`/`BLOCKS` lister, `TEXT`/`I'M`/`GREET`    | 028-blocks, 016-input     |
+| 884-885 | love-letter, `EXPECT`, `-TEXT` (cfr. `(COMPARE)`) | 009-strings, 016-input    |
+| 886-887 | `CHANGE` (editing byte di un blocco)               | 028-blocks, 029-edit      |
+| 888-889 | `FORTUNE`, `.ANIMAL`/`JUNEESHEE` (BLOCK-as-data)   | 054-blocks-as-assets, 016 |
+| 890-895 | **virtual array** su disco (`ELEMENT`/`PUT`/...)   | 028-blocks, 025-memory    |
+| 896-897 | `CONSTANT`/`CHARACTERS`/`STRING`/`ARRAY` (DOES>)   | 010-create-does, 023      |
+| 898     | `SHAPE` (CREATE/DOES> + `C,`, UDG)                 | 010-create-does           |
+| 899     | `IMMEDIATE`, `[COMPILE]` (cfr. `POSTPONE`)         | 019/020-compilation       |
+| 900     | `COMPILE`, `[ ]`, `LITERAL`                         | 019/020-compilation       |
+| 901-904 | problemi: `LOADED-BY`, `BASED.`, `PLURAL`, `ASCII` | 010, 019/020              |
+| 905     | `LOOPS` (re-`INTERPRET` dell'input stream)         | 021-evaluate (parziale)   |
+
+Nota: il Cap.11 e' la sede in cui Brodie tratta davvero i **defining words**
+(`CREATE ... DOES>`); finche' mancava, il tutorial 010-create-does veniva mappato
+solo sugli array del Cap.8. Ora 010/019/020 puntano a Screen reali e 021 ha una
+controparte parziale (905).
 
 
 ## Mappa riga-per-riga delle definizioni equivalenti
@@ -151,7 +189,11 @@ totale **58 righe**.
 |57 | `INIT-POINT` (023)               | `!DATE` (851)      | store di piu' campi                        | solido       |
 |58 | `.POINT` (023)                   | `.DATE` (851)      | stampa di piu' campi                       | solido       |
 
-> Nota: le definizioni dei tutorial 011 (bit-ops), 016 (input), 019/020
-> (compilation), 021 (evaluate), 024-027 e dell'intera traccia hardware 030-053
-> non compaiono in tabella: non hanno controparte negli Screen (vedi le due
-> sezioni precedenti).
+> Nota: questa mappa riga-per-riga copre i soli Screen 800-881 (Cap.1-10 fino al
+> Buzzphrase generator). Le corrispondenze dei nuovi Screen 882-905 (Cap.10
+> completato e Cap.11) sono elencate nella sezione "Cap.10 completato e Cap.11
+> aggiunto" piu' sopra, non come righe qui. I tutorial 028-blocks e 029-edit
+> hanno controparte concettuale (Ch.3 / Ch.10), elencata nelle sezioni sopra. I
+> tutorial 011 (bit-ops), 013 (case), 024-027, 054-blocks-as-assets e l'intera
+> traccia hardware 030-053 restano senza controparte negli Screen (estensioni
+> vForth/Next).

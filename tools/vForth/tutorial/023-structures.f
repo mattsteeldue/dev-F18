@@ -14,7 +14,7 @@
 \ special syntax.  Records are accessed through address arithmetic;
 \ ENUM avoids repetitive CONSTANT definitions.
 \
-\ Starting FORTH (Brodie): Ch.8  |  vForth screens 850-867
+\ Starting FORTH (Brodie): Ch.8, Ch.11  |  vForth screens 850-867, 897
 \ Reference: sec.2.12.12
 \
 \ Load from a clean session:

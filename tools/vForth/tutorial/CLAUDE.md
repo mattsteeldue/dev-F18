@@ -62,11 +62,12 @@ Each tutorial `.f` must follow this structure:
        - `no Brodie counterpart (vForth extension)` -- vForth/Next-only topics
          (011 bit-ops, 024 floating, 026 catch/throw, 027 assembler; 013 case adds
          `(Brodie uses nested IF)`).
-       - `Ch.11 (compilation) -- not transcribed in screens` -- 019/020 (Brodie
-         covers it, the screen corpus stops at Ch.10).
-       - `no direct counterpart in screens 800-881` -- standard-Forth topics absent
-         from the screen transcription (012 return stack, 021 evaluate, 025 memory).
-     The hardware track (030-053) is outside Brodie's range and carries no such line.
+       - `no direct counterpart in screens 800-905` -- standard-Forth topics absent
+         from the screen transcription (012 return stack, 025 memory).
+     The screen corpus now covers Brodie Ch.1-11 (800-905): Ch.10 was completed to
+     895 and Ch.11 "Extending the Compiler" added at 896-905, so the defining-word
+     and compilation tutorials (010, 019, 020, and 021 partially) point at real
+     screens. The hardware track (030-053) is outside Brodie's range: no such line.
    - Reference to PDF section(s): sec.N.NN
    - Load and unload instructions
 

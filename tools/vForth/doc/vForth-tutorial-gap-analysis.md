@@ -17,8 +17,8 @@ Three corpora are in play, and the key realisation of this pass is that they are
 
 | Corpus | Location | Form | Role |
 |--------|----------|------|------|
-| **Tutorials** | `tutorial/NNN-*.f` (001-053) | Self-contained `.f` source, INCLUDE-able | Modern, structured, authoritative teaching |
-| **Brodie screens** | `!Blocks-64.bin` Scr# 800-881 | BLOCK screens, LOAD-able | Transcription/adaptation of *Starting FORTH* (Brodie) Ch.1-10; parallel reference track |
+| **Tutorials** | `tutorial/NNN-*.f` (001-054) | Self-contained `.f` source, INCLUDE-able | Modern, structured, authoritative teaching |
+| **Brodie screens** | `!Blocks-64.bin` Scr# 800-905 | BLOCK screens, LOAD-able | Transcription/adaptation of *Starting FORTH* (Brodie) Ch.1-11; parallel reference track |
 | **Example screens** | `!Blocks-64.bin` (scattered) | BLOCK screens | Working code: graphics, sound, asm, system, games |
 
 The tutorials and the Brodie screens are **parallel but independent** tracks, not
@@ -37,29 +37,44 @@ large standalone programs.
 
 ## Axis 1 -- Language / feature coverage
 
-### Tutorial series 001-053 (already solid)
+### Tutorial series 001-054 (already solid)
 
 - **Core language (001-027)**: stack, output, bases, defining words, control
   flow, loops, memory, strings, CREATE/DOES>, bit ops, return stack, CASE,
   pictured output, double, input, DEFER/IS, vocabularies, compilation, EVALUATE,
   introspection, structures, floating point, advanced memory, CATCH/THROW,
   assembler. This block is **substantially complete** for a standard Forth.
+- **Block storage / editing (028-029)**: BLOCK mechanism (028) and the EDIT
+  full-screen editor (029) -- the two formerly-empty slots between the core and
+  hardware tracks, now filled (see gap #1 below).
 - **Next hardware (030-053)**: ULA/Layer0, screen, timing, beeper, AY, keyboard,
   ULA graphics, Layer2, sprites (x2), Next registers, MMU, file I/O, filesystem,
   mouse, copper, BMP, UART, RPi0, interrupts, AFXframe, keyboard matrix, modular
   graphics.
+- **Block-as-data (054)**: the BLOCK-as-binary-asset technique (LOAD2BLOCK + the
+  AFX sound library), appended after the hardware track because it cross-refers
+  tutorial 050 (AFXframe).
 
-All 53 are dense (136-275 lines); none are stubs.
+All are dense (136-275 lines); none are stubs.
 
 ### Coverage gaps (capability present in the system, absent from tutorials)
 
-1. **BLOCK / native Forth storage.** No tutorial on BLOCK, LIST, LOAD, THRU,
-   UPDATE, FLUSH, buffer management -- yet this is the substrate the entire screen
-   corpus runs on. A canonical teaching example already exists: **Scr# 880-881
-   (Buzzphrases Generator, Brodie Ch.10)**, which reads a word table from
-   Scr# 881 via `881 (LINE)` -- a clean use of BLOCK *as data*, not as code.
-   Strong candidate for a new tutorial. (EDIT/LED are *not* good tutorial
-   subjects -- agreed; the BLOCK *mechanism* is.)
+1. **BLOCK / native Forth storage. [CLOSED 2026-06-21]** Now covered by three
+   tutorials: **028-blocks** (the mechanism: BLOCK/BUFFER, UPDATE/FLUSH/
+   EMPTY-BUFFERS, B/BUF B/SCR C/L L/SCR, (LINE)/LIST/INDEX, LOAD and `-->`,
+   reserved blocks, the block-vs-screen unit trap, and the structure-across-
+   boundary / NUL pitfalls); **029-edit** (the EDIT full-screen editor -- keys,
+   the `[Edit]` command menu, PAD-based line ops, saving via FLUSH, and a note
+   on LED as the upper-8K-RAM evolution of EDIT); and **054-blocks-as-assets**
+   (the BLOCK-as-binary-asset technique, below). Note `THRU` is **not** a vForth
+   word -- multi-screen loading uses `-->`. Worked screen examples remain a rich
+   reference: besides **Scr# 880-881 (Buzzphrases Generator)** reading a word
+   table via `881 (LINE)`, the **Scr# 882-895** add a `SCREENS`/`BLOCKS` lister
+   (882), `CHANGE` byte-level block editing (886-887), `FORTUNE` BLOCK-as-data
+   (888), and a full **virtual array on disk** (890-895). On the earlier "EDIT/LED
+   are not good tutorial subjects" call: reversed by the author -- 029 now
+   introduces EDIT directly, since it is the practical front-end to the BLOCK
+   substrate.
 2. **Layer 3 / Tilemap.** Covered only by `demo/Layer3-demo1/2/3` (sophisticated:
    40/80 col, 1-bit vs 4-bit tile defs, base address overlapping the display
    file). No tutorial. Also present as screen studies (Scr# 340, 420-436
@@ -80,8 +95,8 @@ All 53 are dense (136-275 lines); none are stubs.
 
 ## Axis 2 -- Cross-reference structure (parallel tracks)
 
-The screen series 800-881 is a vForth transcription/adaptation of *Starting FORTH*
-(Brodie) Ch.1-10, keeping Brodie's original names. It runs **parallel** to the
+The screen series 800-905 is a vForth transcription/adaptation of *Starting FORTH*
+(Brodie) Ch.1-11, keeping Brodie's original names. It runs **parallel** to the
 tutorials, not under them: same concepts, independent definitions. It is best used
 as a **cross-reference track** -- a reader can see a concept rendered twice, once
 in vForth-idiom tutorial form and once in Brodie-idiom screen form.
@@ -99,19 +114,24 @@ Concept correspondence (topics present in BOTH tracks), per the wiki:
 | Ch.8 850-867 | 005, 008, 010, 023 | `VARIABLE/CONSTANT`, `!/@/+!`, `CREATE/ALLOT/,`, arrays |
 | Ch.8 (double) | 015 | `2VARIABLE/2CONSTANT`, `2@/2!`, `D./D+/M+` |
 | Ch.9 868-876 | 017, 022 | `'`/`[']`/`EXECUTE`, vectored exec, `SEE` |
-| Ch.10 877-881 | 009, 016 | `TYPE`, `-TRAILING`, strings, I/O |
+| Ch.10 877-895 | 009, 016 | `TYPE`, `-TRAILING`, `TEXT`, `EXPECT`, strings, I/O, BLOCK-as-data, virtual array |
+| Ch.11 896-905 | 010, 019, 020, 021 | `CREATE/DOES>` defining words, `IMMEDIATE`, `[COMPILE]`, `COMPILE`, `LITERAL`, `LOOPS` |
 
-**Status (2026-06-20): per-tutorial cross-reference line added.** Each tutorial
-001-027 now carries a `\ Starting FORTH (Brodie): Ch.N  |  vForth screens NNN-NNN`
-line in its header (immediately above `Reference:`), so the concept-to-screen
-mapping above is visible at the point of use, not only in this report and
-`doc/tutorial-vs-screens.md`. Tutorials without a Brodie counterpart state so
-explicitly (`no Brodie counterpart (vForth extension)`, `Ch.11 -- not transcribed
-in screens` for 019/020, or `no direct counterpart in screens 800-881`). The
-original screens were left untouched; the convention is recorded in
-`tutorial/CLAUDE.md` section 3a. This reduces the pressure to renumber for the sake
-of conceptual ordering (Open Question #1): each tutorial now carries its own
-conceptual coordinates regardless of file number.
+**Status (2026-06-21): cross-reference lines added; Ch.10 completed and Ch.11
+transcribed.** Each tutorial 001-027 now carries a
+`\ Starting FORTH (Brodie): Ch.N  |  vForth screens NNN-NNN` line in its header
+(immediately above `Reference:`), so the concept-to-screen mapping above is visible
+at the point of use, not only in this report and `doc/tutorial-vs-screens.md`. The
+screen corpus itself was then extended: **Ch.10 was completed to Scr# 895** (TEXT
+input, block editing, virtual arrays) and **Ch.11 "Extending the Compiler" added at
+Scr# 896-905** (defining words, IMMEDIATE/[COMPILE]/COMPILE/LITERAL, LOOPS). The
+defining-word and compilation tutorials (010, 019, 020, 021 partially) therefore now
+point at real screens. Tutorials still without a Brodie counterpart state so
+explicitly (`no Brodie counterpart (vForth extension)` or `no direct counterpart in
+screens 800-905`). The original screens 800-881 were left untouched; the convention
+is recorded in `tutorial/CLAUDE.md` section 3a. This reduces the pressure to renumber
+for conceptual ordering (Open Question #1): each tutorial carries its own conceptual
+coordinates regardless of file number.
 
 Two boundary facts worth noting (both from the wiki's finer map):
 
@@ -121,15 +141,19 @@ Two boundary facts worth noting (both from the wiki's finer map):
   retracted. The **Q8.8 fixed-point gap (Axis-1 #4) still stands** as a
   *dedicated-library* gap, but it is not a Brodie-chapter hole: Brodie Ch.5 is
   introductory "philosophy of fixed point", not a Q8.8 library.
-- **Brodie Ch.11 (compilation) is NOT transcribed** in the screens, yet tutorials
-  019/020 cover it -- a case where the tutorials go *beyond* the screen track. The
-  inverse asymmetry to keep in mind when numbering.
+- **Brodie Ch.11 (compilation) is now transcribed** (Scr# 896-905): `CREATE/DOES>`
+  defining words (896-898), `IMMEDIATE`/`[COMPILE]`/`COMPILE`/`LITERAL` (899-900),
+  and the chapter problems (901-905). This closes the asymmetry an earlier draft
+  noted (tutorials 019/020 once went *beyond* the screen track); the screen track
+  has caught up. Ch.11 is also where Brodie actually teaches the defining-word
+  technique, so tutorial 010-create-does now maps to Ch.11 (896-898) as well as the
+  Ch.8 arrays it was previously pinned to.
 
-The wiki's "Only on the Screens" section confirms the **BLOCK gap (Axis-1 #1)**:
-block-based storage teaching (`n BLOCK ... TYPE`, `LOAD`, `-->`, the Buzzphrase
-generator 880-881) lives *only* on the screens. That makes Scr# 880-881 the
-natural worked example for a future BLOCK tutorial -- it is the one place
-BLOCK-as-data is taught.
+The block-based storage teaching (`n BLOCK ... TYPE`, `LOAD`, `-->`) is now taught
+in the tutorial track too (028/029/054, **Axis-1 #1 closed**), with the screens as
+a worked-example reference: the Buzzphrase generator (880-881), the Ch.10-completion
+screens 882-895 (block lister, `CHANGE` editing, `FORTUNE`, the 890-895 virtual
+array), and the AFX banks at Scr# 2200+ that 054 draws on directly.
 
 ---
 
@@ -186,31 +210,41 @@ path outside `tutorial/`.
 
 ## Open questions for the author
 
-1. **Numbering**: insert new tutorials (BLOCK, tilemap, dot-command, Q8.8,
-   chomp-capstone) by **renumbering**, or **append 054+**? CLAUDE.md permits
-   renumbering, but with 53 files it has a real cost. A hybrid -- append hardware
-   items at 054+, but *insert* the BLOCK/Q8.8 core items near their Brodie-chapter
-   slot -- may serve the backbone better.
-2. **AFX assets**: assets-of-050 or work-material-to-relocate? (see Axis 3).
-3. **Buzzwords/BLOCK**: promote Scr# 880-881 verbatim as the BLOCK tutorial's
-   worked example, or write a fresh one? The screen version is clean and already
-   demonstrates BLOCK-as-data.
+1. **Numbering [PARTLY SETTLED 2026-06-21]**: the hybrid was adopted -- the core
+   BLOCK items were *inserted* in the two empty slots (028 BLOCK mechanism, 029
+   EDIT) right after the core backbone, while the block-as-data piece was
+   *appended* at 054 because it cross-refers the hardware-track AFXframe (050).
+   Still open for the remaining gaps (tilemap, dot-command, Q8.8, chomp-capstone):
+   append at 055+ or insert?
+2. **AFX assets [PARTLY ANSWERED]**: 054 now formally documents `LOAD2BLOCK` and
+   names the Scr# 2200+ AFX banks as its worked example, pinning the `tutorial/afx/`
+   tree to tutorials 050+054. The repo-inflation question (relocate under
+   `work/`/`assets/` vs. keep) is still open, but the *purpose* is no longer
+   ambiguous.
+3. **Buzzwords/BLOCK [CLOSED]**: resolved by writing fresh tutorials rather than
+   promoting a screen verbatim -- 028 teaches the mechanism, 054 teaches the
+   author's original BLOCK-as-binary-asset use (`LOAD2BLOCK`). The screen examples
+   (Buzzphrase 880-881, block lister 882, `CHANGE` 886-887, `FORTUNE` 888, virtual
+   array 890-895) remain as a cross-reference, not the primary teaching.
 
 ---
 
 ## Summary (TL;DR)
 
-- 53 dense tutorials already cover core (001-027) and Next hardware (030-053)
-  well. The system is far past "needs more tutorials"; it needs a **map** and a
-  few **bridges**.
-- The Brodie screen track (800-881) is a **parallel, independent reference**, not
+- Dense tutorials cover core (001-027), block storage/editing (028-029), Next
+  hardware (030-053), and block-as-data (054). The system is far past "needs more
+  tutorials"; it needs a **map** and a few **bridges**.
+- The Brodie screen track (800-905) is a **parallel, independent reference**, not
   a rewrite of the tutorials and not a backbone to verify against -- same concepts,
   different definitions. Use it as a cross-reference; the wiki and
   `doc/tutorial-vs-screens.md` hold the concept map. (An earlier draft's claim of
   an unfilled "Ch.5 Fixed Point" hole is retracted: Ch.5 is covered by 002+015.)
-- Five Axis-1 coverage gaps: **BLOCK, Tilemap/Layer3, .dot commands, Q8.8 fixed
-  point, ZAP/standalone workflow** -- each already has working code in `demo/` or
-  the screen corpus, so promotion (not invention) is the task.
+  It now spans Brodie Ch.1-11: Ch.10 was completed to Scr# 895 and Ch.11 added at
+  896-905, so the once-missing compilation/defining-word counterparts exist.
+- Axis-1 coverage gaps: **BLOCK is now closed** (028 mechanism, 029 EDIT, 054
+  block-as-data). Remaining: **Tilemap/Layer3, .dot commands, Q8.8 fixed point,
+  ZAP/standalone workflow** -- each already has working code in `demo/` or the
+  screen corpus, so promotion (not invention) is the task.
 - `demo/`: promote brot/Fedora/.dot/Layer3 to tutorials; keep cosmic-conquest,
   lift-challenge, raycast, term10, color-picker as referenced canonical examples.
 - **chomp-chomp**: the legacy/Next-like split is a video *data-model* rewrite, not

@@ -28,7 +28,7 @@ Format: 16 lines x 64 columns per Screen, dumped much like
   util/blocks2txt.pl would write them ("<line#> <content>").
 --------------------------------------------------------------------
 
-Scr# 882
+Scr# 896
   0 \ Brodie - Starting FORTH - Ch.11 - Extending the Compiler
   1 \ Defining Words: a word whose job is to define new words.
   2 \ This is how CONSTANT itself is built - a CREATE part that
@@ -45,7 +45,7 @@ Scr# 882
  13 \ it here just prints a harmless "not unique" warning.
  14 \
  15 \
-Scr# 883
+Scr# 897
   0 \ Brodie - Starting FORTH - Ch.11 - Extending the Compiler
   1 \ The very same recipe builds VARIABLE:
   2 \    : VARIABLE   CREATE  0 ,   DOES> ;
@@ -62,7 +62,7 @@ Scr# 883
  13 \
  14 \ 2* turns a cell index into a byte offset (1 cell = 2 bytes)
  15 \
-Scr# 884
+Scr# 898
   0 \ Brodie - Starting FORTH - Ch.11 - Compiling Words
   1 \ Inside a colon definition  [  and  ]  toggle interpret
   2 \ state; LITERAL then compiles a value computed right there
@@ -79,7 +79,7 @@ Scr# 884
  13 \
  14 \
  15 \
-Scr# 885
+Scr# 899
   0 \ Brodie - Starting FORTH - Ch.11 - Compiling Words
   1 \ IMMEDIATE marks a word to RUN while compiling.
   2 \
@@ -96,7 +96,7 @@ Scr# 885
  13 \
  14 \ vForth also offers the standard POSTPONE ( NEEDS POSTPONE )
  15 \
-Scr# 886
+Scr# 900
   0 \ Brodie - Starting FORTH - Ch.11 - Compiling Words
   1 \ COMPILE lays down the NEXT word's xt at run time, letting
   2 \ an immediate helper plant code into the definition it is
