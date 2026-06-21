@@ -1,0 +1,17 @@
+Scr# 886
+  0 \ Brodie - Starting FORTH - Ch. 10 - I/O and You
+  1 And therefore as a stranger give it welcome.
+  2 There are more things in heaven and earth, Horatio,
+  3 Than are dreamt of in your philosophy. But come;
+  4 Here, as before, never, so help you mercy,
+  5 How strange or odd soe'er I bear myself,
+  6 As I perchance hereafter shall think meet
+  7 To put an antic disposition on,
+  8 That you, at such times seeing me, never shall,
+  9 With arms encumber'd thus, or this headshake,
+ 10 Or by pronouncing of some doubtful phrase,
+ 11 As 'Well, well, we know,' or 'We could, an if we would,'
+ 12 Or 'If we list to speak,' or 'There be, an if they might,'
+ 13 Or such ambiguous giving out, to note
+ 14 That you know aught of me: this not to do,
+ 15 So grace and mercy at your most need help you, Swear.

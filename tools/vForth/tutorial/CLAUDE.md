@@ -49,6 +49,24 @@ Each tutorial `.f` must follow this structure:
    - Filename
    - One-paragraph narrative description
    - vForth-specific notes if any
+   - **Starting FORTH cross-reference line** (tutorials 001-027 only): the Brodie
+     chapter and the parallel vForth screen range, on the line immediately above
+     `Reference:`. Format:
+     ```
+     \ Starting FORTH (Brodie): Ch.N  |  vForth screens NNN-NNN
+     ```
+     Use the concept map in `doc/tutorial-vs-screens.md` (chapter table) to fill it.
+     Multi-chapter tutorials list both (e.g. `Ch.2, Ch.5  |  ... 805-814, 821-825`).
+     When a tutorial has no Brodie counterpart, state it explicitly instead of
+     omitting the line:
+       - `no Brodie counterpart (vForth extension)` -- vForth/Next-only topics
+         (011 bit-ops, 024 floating, 026 catch/throw, 027 assembler; 013 case adds
+         `(Brodie uses nested IF)`).
+       - `Ch.11 (compilation) -- not transcribed in screens` -- 019/020 (Brodie
+         covers it, the screen corpus stops at Ch.10).
+       - `no direct counterpart in screens 800-881` -- standard-Forth topics absent
+         from the screen transcription (012 return stack, 021 evaluate, 025 memory).
+     The hardware track (030-053) is outside Brodie's range and carries no such line.
    - Reference to PDF section(s): sec.N.NN
    - Load and unload instructions
 

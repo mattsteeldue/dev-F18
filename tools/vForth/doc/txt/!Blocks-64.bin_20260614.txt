@@ -10399,10 +10399,10 @@ Scr# 878
   3   : "LABEL"
   4   ." REJECT  SMALL  MEDIUM LARGE  XTRA LRGERROR   " ;
   5 
-  6 ' "LABEL"  5 +
+  6 ' "LABEL"  >BODY 3 +
   7 16 + 8 TYPE         \ MEDIUM
   8 
-  9   : LABEL   8 *  ['] "LABEL" 5 + + 8 TYPE SPACE ;
+  9   : LABEL   8 *  ['] "LABEL" BODY 3 + + 8 TYPE SPACE ;
  10 
  11   : LABEL  0 MAX 5 MIN  LABEL ;
  12 

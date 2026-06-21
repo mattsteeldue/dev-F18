@@ -1,0 +1,17 @@
+Scr# 888
+  0 \ Brodie - Starting FORTH - Ch. 10 - I/O and You
+  1 A wonderful surprise awaits you soon.     
+  2 Good fortune will smile upon you today. 
+  3 Embrace the new opportunities ahead. 
+  4 Your kindness will return multiplied. 
+  5 Success is closer than you think.         
+  6 Love and joy are entering your life. 
+  7 Trust your instincts, they are right. 
+  8 A happy journey begins with one step. 
+  9 Great things are coming your way.         
+ 10 You will soon achieve what you desire. 
+ 11 Peace and harmony will fill your heart. 
+ 12 An exciting adventure is waiting.       
+ 13 Your hard work will soon be rewarded. 
+ 14 Happiness is a choice you will make. 
+ 15 Wonderful news is on its way to you. 

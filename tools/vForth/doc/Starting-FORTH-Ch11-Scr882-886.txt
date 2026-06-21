@@ -1,0 +1,115 @@
+Starting FORTH - Chapter 11 "Extending the Compiler"
+vForth Next screens 882-886  (Brodie examples adapted to vForth)
+
+PROVENANCE / CAVEAT
+  The Starting-FORTH.pdf bundled in this repo is truncated at printed
+  page 64 (end of Ch.3).  Chapter 11 is therefore NOT contained in that
+  PDF: the screens below were reconstructed from the canonical Forth-79
+  content of Brodie's Chapter 11.  Printed page numbers were left out on
+  purpose - please add them from a complete copy of the book and verify
+  the example names against the original before publishing.
+
+CORE WORDS used here are all in forth18e.bin and need no NEEDS:
+  CREATE  DOES>  LITERAL  IMMEDIATE  [COMPILE]  COMPILE  [  ]
+  (POSTPONE, only mentioned in a comment, would need  NEEDS POSTPONE .)
+
+NOTE: screen 882 redefines CONSTANT, a core word; that only prints a
+  harmless "not unique" warning, exactly as Brodie's text does.
+
+NOTE: visually blank screen lines below carry a lone backslash (an empty
+  Forth comment) so every line has content - putscr.pl needs at least one
+  character after the line number, and trailing spaces are too fragile.
+
+HOW TO INSTALL these screens into the block file:
+  perl util/putscr.pl doc/Starting-FORTH-Ch11-Scr882-886.txt !Blocks-64.bin
+  (the "Scr#" headers below drive placement; no third argument needed)
+
+Format: 16 lines x 64 columns per Screen, dumped much like
+  util/blocks2txt.pl would write them ("<line#> <content>").
+--------------------------------------------------------------------
+
+Scr# 882
+  0 \ Brodie - Starting FORTH - Ch.11 - Extending the Compiler
+  1 \ Defining Words: a word whose job is to define new words.
+  2 \ This is how CONSTANT itself is built - a CREATE part that
+  3 \ runs while defining, plus a DOES> part every child runs:
+  4 \
+  5   : CONSTANT   CREATE  ,   DOES>  @ ;
+  6 \
+  7   5 CONSTANT FIVE
+  8   FIVE .
+  9 \
+ 10 \ CREATE lays the head, , stores the value into it, and
+ 11 \ DOES> @ makes every constant fetch that value when run.
+ 12 \ CONSTANT already lives in the vForth core, so redefining
+ 13 \ it here just prints a harmless "not unique" warning.
+ 14 \
+ 15 \
+Scr# 883
+  0 \ Brodie - Starting FORTH - Ch.11 - Extending the Compiler
+  1 \ The very same recipe builds VARIABLE:
+  2 \    : VARIABLE   CREATE  0 ,   DOES> ;
+  3 \ Now a brand-new defining word of our own - ARRAY:
+  4 \
+  5   : ARRAY   ( #cells -- )
+  6       CREATE   2* ALLOT
+  7       DOES>    ( index -- addr )   SWAP 2* + ;
+  8 \
+  9   20 ARRAY DATA
+ 10 \
+ 11   123   5 DATA !
+ 12     5 DATA @ .
+ 13 \
+ 14 \ 2* turns a cell index into a byte offset (1 cell = 2 bytes)
+ 15 \
+Scr# 884
+  0 \ Brodie - Starting FORTH - Ch.11 - Compiling Words
+  1 \ Inside a colon definition  [  and  ]  toggle interpret
+  2 \ state; LITERAL then compiles a value computed right there
+  3 \ at compile time.
+  4 \
+  5   : FOUR-MORE   [ 2 2 + ] LITERAL  + ;
+  6 \
+  7   10 FOUR-MORE .
+  8 \
+  9 \ At compile time  2 2 +  is evaluated to 4 and LITERAL
+ 10 \ compiles that 4 in line, so FOUR-MORE merely adds 4.
+ 11 \ Run-time equivalent:   : FOUR-MORE   4 + ;
+ 12 \
+ 13 \
+ 14 \
+ 15 \
+Scr# 885
+  0 \ Brodie - Starting FORTH - Ch.11 - Compiling Words
+  1 \ IMMEDIATE marks a word to RUN while compiling.
+  2 \
+  3   : SAY-HI   ." HI "  ;  IMMEDIATE
+  4 \
+  5 \ Used plainly in a definition, SAY-HI fires at compile
+  6 \ time - it prints HI while TEST is being compiled:
+  7   : TEST   SAY-HI  42 ;
+  8 \
+  9 \ [COMPILE] postpones an immediate word so it is compiled
+ 10 \ instead, firing only when the new word later runs:
+ 11   : GREETING   [COMPILE] SAY-HI ;
+ 12   GREETING
+ 13 \
+ 14 \ vForth also offers the standard POSTPONE ( NEEDS POSTPONE )
+ 15 \
+Scr# 886
+  0 \ Brodie - Starting FORTH - Ch.11 - Compiling Words
+  1 \ COMPILE lays down the NEXT word's xt at run time, letting
+  2 \ an immediate helper plant code into the definition it is
+  3 \ helping to build.
+  4 \
+  5   : COMPILE-DUP   COMPILE DUP ;  IMMEDIATE
+  6 \
+  7   : TRIPLE   ( n -- n n n )   COMPILE-DUP  COMPILE-DUP ;
+  8 \
+  9   5 TRIPLE  . . .
+ 10 \
+ 11 \ Each COMPILE-DUP (immediate) compiles one DUP into TRIPLE,
+ 12 \ so TRIPLE expands to the phrase   DUP DUP .
+ 13 \
+ 14 \
+ 15 \
