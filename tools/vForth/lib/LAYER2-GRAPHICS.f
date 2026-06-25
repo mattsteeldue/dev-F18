@@ -17,6 +17,10 @@ MARKER NO-LAYER2-GRAPHICS       \ unload only this mode (keeps GRAPHICS-COMMON)
     NOOP
 ;
 
+\ shared words extracted to inc/ (deduplicated via NEEDS)
+NEEDS L1-POINT
+NEEDS L1-EDGE
+
 BASE @
 
 \ ____________________________________________________________________
@@ -50,20 +54,6 @@ CODE L2-PIXELADD ( x y -- a )
     D9 C,             \ exx
     DD C, E9 C,       \ next
     SMUDGE            \ c;
-
-\ ____________________________________________________________________
-\
-\ Layer 2 POINT (per-pixel attribute)
-: L1-POINT  ( x y -- c )
-    PIXELADD C@
-;
-
-\ ____________________________________________________________________
-\
-\ Layer 2 EDGE rule
-: L1-EDGE  ( b -- f )
-    ATTRIB =
-;
 
 \ ____________________________________________________________________
 \
