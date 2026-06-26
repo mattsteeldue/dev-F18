@@ -7,8 +7,6 @@
 \
 .( L0-PIXELATT )
 
-NEEDS CODE      \ CODE = RENAME MCOD CODE
-
 BASE @
 HEX
 CODE L0-PIXELATT    ( b a -- )

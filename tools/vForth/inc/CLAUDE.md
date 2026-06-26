@@ -57,6 +57,38 @@ CODE SYNC-VID
 The ASSEMBLER vocabulary is a vForth VOCABULARY available only on the ZX Spectrum Next /
 CSpect; it plays no role in SjASMPlus development.
 
+**Do not write `NEEDS CODE`.** `CODE` is a core word, always present in
+`forth18e.bin`, so guarding it with `NEEDS` is pointless noise. A release-form
+CODE file needs no dependency guard at all -- only the words it actually uses
+(e.g. `NEEDS GRAPHICS-COMMON`).
+
+> **Archaeology -- `MCOD` vs `CODE` in F18e.f.** During the original
+> self-bootstrap from vForth, the author defined assembler words via a word
+> `MCOD` (renamed to `CODE` only at the very end of compilation) to guarantee
+> the freshly-built `CODE` was used rather than the one from the previous
+> compilation. The vestigial `NEEDS CODE` guards (and the `\ CODE = RENAME MCOD
+> CODE` comments) once removed from these files are a leftover of that era. The
+> idiosyncrasy survives only in the historical `src/F18e.f`; leave it there as-is
+> -- do not reintroduce it in `inc/`.
+
+The canonical template is [`inc/.border.f`](.border.f):
+
+```forth
+\
+\ .border.f
+\
+.( .BORDER )
+\
+BASE @          \ save base status
+HEX
+CODE .BORDER  ( b -- )
+    E1  C,          \ pop hl
+    ...
+    DD  C,  E9 C,   \ jp (hl)
+    SMUDGE
+BASE !
+```
+
 ### Automatic conversion: asm2hex.py
 
 `util/asm2hex.py` converts a dev-form `.f` file (using ASSEMBLER vocabulary mnemonics)

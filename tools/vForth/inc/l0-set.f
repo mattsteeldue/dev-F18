@@ -5,8 +5,6 @@
 \
 .( L0-SET )
 
-NEEDS CODE      \ CODE = RENAME MCOD CODE
-
 BASE @
 HEX
 CODE L0-SET   ( b1 b2 -- b3 )

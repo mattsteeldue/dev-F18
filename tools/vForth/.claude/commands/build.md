@@ -31,7 +31,7 @@ Steps:
    the headless-emulator smoke test: boot to the SPLASH banner, e.g.
    `printf '.quit\n' | python3 emu/repl.py | grep build` shows the expected build date),
    copy the two binaries to the repo base directory -- the same directory that holds
-   `!Blocks-64.bin` -- so that /sync-sd will carry them onto the SD image:
+   `!Blocks-64.bin` -- so that /sync-cspect will carry them onto the SD image:
    ```
    project/vForth18_DOES/output/forth18e.bin  ->  ./forth18e.bin
    project/vForth18_DOES/output/ram8.bin      ->  ./ram8.bin
@@ -44,6 +44,6 @@ Steps:
    project/vForth18_DOT/output/vforth  ->  ./dot/vforth
    ```
    Copy only if content differs (compare MD5). Note the two-leg path: this first
-   leg lands in the repo; the second leg is handled by /sync-sd, whose phase 4
+   leg lands in the repo; the second leg is handled by /sync-cspect, whose phase 4
    copies dot/ to `W:\dot` (the NextZXOS dot-command directory at the ROOT of the
    SD image, NOT under W:\tools\vForth).

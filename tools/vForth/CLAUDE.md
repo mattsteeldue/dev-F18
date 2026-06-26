@@ -354,6 +354,15 @@ byte must not be `0x20`. Trailing `0x0A`s are fine (the file may end with severa
 blank lines); trailing spaces on *interior* lines are harmless. Only the final two
 bytes matter.
 
+**Editing note (trailing spaces):** there is **no need to strip trailing spaces**
+from source files -- only the final two bytes are constrained by the rule above.
+The guiding principle is the **minimal diff between commits**: do not produce changes
+that flag a difference just for a space or two that "wobble". Concretely: never do
+repo-wide trailing-whitespace cleanups, and when editing a line do not gratuitously
+drop its trailing space. Conversely, removing an innocuous trailing space *is fine*
+when the line is already being changed for a real reason and it keeps the surrounding
+hunk consistent -- it is context-dependent, not a hard rule. Judge by diff noise.
+
 ### `LOAD` (block/screen interpreter)
 
 - **Structure spanning BLOCK boundaries.** Long structured definitions (e.g. `ENUMERATED`)

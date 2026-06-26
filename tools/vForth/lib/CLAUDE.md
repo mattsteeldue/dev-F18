@@ -72,6 +72,17 @@ floating-point vocabulary. Reload via `024 TUTORIAL` from a clean session for a 
 NEEDS FLIP
 ```
 
+- **Refactoring caveat -- re-audit the `NEEDS` header when a definition changes which
+  words it calls.** When you rewrite a word's body and it starts using a different
+  primitive (e.g. `(COLOR)` swapping `NEGATE` for `INVERT`, where `INVERT` comes from
+  `inc/invert.f` and is **not** a guaranteed core word), add the matching `NEEDS` line.
+  Crucially, do this in **every** module that carries a copy of that definition: several
+  features ship in both a modular form (`GRAPHICS-COMMON.f` + the `LAYERxx-GRAPHICS.f`
+  files) and a monolithic form (`GRAPHICS.f`), and the two must stay in lockstep. A
+  missing `NEEDS` is silent until someone loads that module standalone in a clean session
+  and the new dependency is absent. Rule of thumb after such a refactor: grep every sibling
+  module for the changed word and confirm its header `NEEDS` block covers the new callee.
+
 ## Heap Memory Facility
 
 vForth provides an extended heap in the MMU7 8K page ($E000-$FFFF), growing across

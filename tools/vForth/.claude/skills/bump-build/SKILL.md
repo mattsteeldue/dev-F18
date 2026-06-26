@@ -93,7 +93,7 @@ cd ../..
 ```
 
 Dopo la compilazione, copiare i binari DOES in radice e il dot-command DOT
-in `dot/` (dove `sync-sd` li legge):
+in `dot/` (dove `sync-cspect` li legge):
 
 ```
 cp project/vForth18_DOES/output/forth18e.bin forth18e.bin

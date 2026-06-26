@@ -5,8 +5,6 @@
 \
 .( L0-XOR )
 
-NEEDS CODE      \ CODE = RENAME MCOD CODE
-
 BASE @
 HEX
 CODE L0-XOR   ( b1 b2 -- b3 )

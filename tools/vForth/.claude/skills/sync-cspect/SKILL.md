@@ -1,9 +1,9 @@
 ---
-name: sync-sd
-description: Sincronizza le novita' del progetto vForth sull'immagine SD di CSpect (monta W: via imdisk se serve, copia con sync2sd.ps1, verifica con verify2sd.ps1, smonta). Usare quando l'utente vuole aggiornare l'immagine SD, deployare su CSpect, o chiede /sync-sd.
+name: sync-cspect
+description: Sincronizza le novita' del progetto vForth sull'immagine SD di CSpect (monta W: via imdisk se serve, copia con sync2sd.ps1, verifica con verify2sd.ps1, smonta). Usare quando l'utente vuole aggiornare l'immagine SD, deployare su CSpect, o chiede /sync-cspect.
 ---
 
-# sync-sd: deploy su immagine SD di CSpect
+# sync-cspect: deploy su immagine SD di CSpect
 
 Sincronizza `C:\zx\forth\F18\tools\vForth` su `W:\tools\vForth` (immagine SD montata
 via imdisk). Tutta la configurazione (percorsi, esclusioni, immagine) sta in

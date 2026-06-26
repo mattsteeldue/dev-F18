@@ -3,8 +3,6 @@
 \
 .( 2OVER )
 
-NEEDS CODE      \ just to be sure we are fine
-
 BASE @
 
 HEX
