@@ -20,6 +20,7 @@ MARKER NO-LAYER2-GRAPHICS       \ unload only this mode (keeps GRAPHICS-COMMON)
 \ shared words extracted to inc/ (deduplicated via NEEDS)
 NEEDS L1-POINT
 NEEDS L1-EDGE
+NEEDS .BORDER
 
 BASE @
 
@@ -33,8 +34,17 @@ CONSTANT  L2-RAM-PAGE           \ keeps Layer 2 Active RAM Page
 
 \ ____________________________________________________________________
 \
+\ Layer 2 INITIALIZE
+: L2-INITIALIZE
+    RGB-COLORS
+    ATTRIB .INK
+    BACKGROUND .PAPER
+    BACKGROUND .BORDER
+;
+
+\ ____________________________________________________________________
+\
 \ Layer 2 PIXELADD
-HEX
 CODE L2-PIXELADD ( x y -- a )
     HEX
     D9 C,             \ exx
@@ -143,6 +153,8 @@ HEX
     ' L2-PLOT       \ PIXELATT  (has no meaning for Layer 2)
     ' NOOP          \ XY-RATIO
     ' L1-EDGE       \ EDGE
+    ' L2-INITIALIZE \ INITIALIZE
+    _BLUE           \ BACKGROUND
     0D8             \ ATTRIB (L20-ATTRIB)
 
 LAYER: LAYER2

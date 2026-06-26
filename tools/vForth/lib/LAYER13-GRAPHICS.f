@@ -24,8 +24,19 @@ NEEDS L0-PIXELADD
 NEEDS L0-POINT
 NEEDS L0-PLOT
 NEEDS L0-XPLOT
+NEEDS .BORDER
 
 BASE @
+
+\ ____________________________________________________________________
+\
+\ Layer 1,3 INITIALIZE
+: L13-INITIALIZE
+    ATTR-COLORS
+    ATTRIB     .INK
+    BACKGROUND .PAPER
+    BACKGROUND .BORDER
+;
 
 \ ____________________________________________________________________
 \
@@ -52,7 +63,9 @@ HEX
     ' L13-PIXELATT  \ PIXELATT
     ' NOOP          \ XY-RATIO
     ' NOOP          \ EDGE
-    _WHITE 3 LSHIFT _BLACK +    \ ATTRIB (L13-ATTRIB)
+    ' L13-INITIALIZE \ INITIALIZE
+    _BLUE           \ BACKGROUND
+    _BLUE 3 LSHIFT _YELLOW +    \ ATTRIB (L13-ATTRIB)
 
 LAYER: LAYER13
 

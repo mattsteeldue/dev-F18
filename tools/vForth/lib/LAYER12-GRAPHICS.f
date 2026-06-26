@@ -27,6 +27,13 @@ NEEDS L0-XPLOT
 BASE @
 
 \ ____________________________________________________________________
+
+: L12-INITIALIZE
+    ATTR-COLORS
+    BACKGROUND .PAPER
+;
+
+\ ____________________________________________________________________
 \
 \ Layer 1,2 PIXELADD
 \ fit the correct 8k page on MMU7 and leaves the address from $E000
@@ -70,6 +77,8 @@ HEX
     ' 2DROP         \ PIXELATT  (has no meaning on Layer 1,2)
     ' 2/            \ XY-RATIO
     ' NOOP          \ EDGE
+    ' L12-INITIALIZE \ INITIALIZE
+    _BLUE           \ BACKGROUND
     00              \ ATTRIB (L12-ATTRIB)
 
 LAYER: LAYER12

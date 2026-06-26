@@ -25,8 +25,21 @@ NEEDS L0-PIXELATT
 NEEDS L0-POINT
 NEEDS L0-PLOT
 NEEDS L0-XPLOT
+NEEDS .BORDER
+NEEDS .PERM
 
 BASE @
+
+\ ____________________________________________________________________
+\
+\ Layer 0 INITIALIZE
+: L0-INITIALIZE
+    ATTR-COLORS
+    ATTRIB     .INK
+    BACKGROUND .PAPER
+    BACKGROUND .BORDER
+    .PERM                       \ make Layer 0 attribute choice permanent
+;
 
 \ ____________________________________________________________________
 \
@@ -42,7 +55,9 @@ HEX
     ' L0-PIXELATT   \ PIXELATT
     ' NOOP          \ XY-RATIO
     ' NOOP          \ EDGE
-    _BLUE 3 LSHIFT _WHITE +     \ ATTRIB (L0-ATTRIB)
+    ' L0-INITIALIZE \ INITIALIZE
+    _BLUE           \ BACKGROUND
+    _BLUE 3 LSHIFT _YELLOW +    \ ATTRIB (L0-ATTRIB)
 
 LAYER: LAYER0
 

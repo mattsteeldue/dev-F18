@@ -25,8 +25,19 @@ NEEDS L0-PIXELATT
 NEEDS L0-POINT
 NEEDS L0-PLOT
 NEEDS L0-XPLOT
+NEEDS .BORDER
 
 BASE @
+
+\ ____________________________________________________________________
+\
+\ Layer 1,1 INITIALIZE
+: L11-INITIALIZE
+    ATTR-COLORS
+    ATTRIB     .INK
+    BACKGROUND .PAPER
+    BACKGROUND .BORDER
+;
 
 \ ____________________________________________________________________
 \
@@ -42,7 +53,9 @@ HEX
     ' L0-PIXELATT   \ PIXELATT
     ' NOOP          \ XY-RATIO
     ' NOOP          \ EDGE
-    _BLUE 3 LSHIFT _WHITE +     \ ATTRIB (L11-ATTRIB)
+    ' L11-INITIALIZE \ INITIALIZE
+    _BLUE           \ BACKGROUND
+    _BLUE 3 LSHIFT _YELLOW +    \ ATTRIB (L11-ATTRIB)
 
 LAYER: LAYER11
 
