@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(& C:\\\\zx\\\\forth\\\\F18\\\\tools\\\\vForth\\\\util\\\\mountw.ps1 -Dismount; Write-Output \"EXIT=$LASTEXITCODE\")"
+      "PowerShell(& C:\\\\zx\\\\forth\\\\F18\\\\tools\\\\vForth\\\\util\\\\mountw.ps1 -Dismount; Write-Output \"EXIT=$LASTEXITCODE\")",
+      "PowerShell(Select-String -Path 'W:\\\\tools\\\\vForth\\\\help\\\\layer22-graphics.txt' -Pattern 'MMU7|bank' | ForEach-Object { $_.Line })"
     ],
     "additionalDirectories": [
       "c:\\zx\\forth\\f18\\tools\\vforth\\help",
