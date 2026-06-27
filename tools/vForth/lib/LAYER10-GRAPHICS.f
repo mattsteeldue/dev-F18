@@ -20,6 +20,8 @@ MARKER NO-LAYER10-GRAPHICS      \ unload only this mode (keeps GRAPHICS-COMMON)
 
 \ shared words extracted to inc/ (deduplicated via NEEDS)
 NEEDS L1-POINT
+NEEDS L1-PLOT
+NEEDS L1-XPLOT
 NEEDS L1-EDGE
 NEEDS .BORDER
 
@@ -64,33 +66,8 @@ CODE L10-PIXELADD ( x y -- a )
 
 \ ____________________________________________________________________
 \
-\ Layer 1,0 PLOT
-\ COORD-CHECK and PIXELADD are vectorized via DEFER..IS
-: L1-PLOT  ( x y -- )
-    COORD-CHECK
-    IF
-        PIXELADD
-        ATTRIB SWAP C!
-    ELSE
-        2DROP
-    THEN
-;
-
-\ ____________________________________________________________________
+\ L1-PLOT and L1-XPLOT now come from inc/ (see NEEDS above).
 \
-\ Layer 1,0 XPLOT
-\ COORD-CHECK and PIXELADD are vectorized via DEFER..IS
-DECIMAL
-: L1-XPLOT  ( x y -- )
-    COORD-CHECK
-    IF
-        PIXELADD
-        DUP C@ 255 XOR SWAP C!
-    ELSE
-        2DROP
-    THEN
-;
-
 \ ____________________________________________________________________
 \
 \ Build LAYER10 and activate it

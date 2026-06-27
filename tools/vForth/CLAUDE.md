@@ -98,6 +98,30 @@ BC'/DE'/HL' -- more W's used in complex definition: it's customary using EXX to 
   512 bytes each + 4 bytes each to keep track of BLOCK number and flags)
 - **Blocks/Screens**: 2 Blocks forms a Screen 512 bytes each, blocks are persistently stored in `!Blocks.txt` on SD card
 
+### Banks (16K) vs Pages (8K) -- BASIC vs vForth
+
+Two different units name the same RAM, at two different levels. **Do not mix
+them**: NextBASIC and vForth describe memory at different granularities.
+
+- **BANK = 16K** -- the unit **NextBASIC** (and the NextZXOS allocator) works
+  with. The 64K Z80 address space is four banks; `BANK n` and the OS allocate
+  RAM 16K at a time. Hardware registers that count allocation units are
+  bank-based too -- e.g. **NextReg `$12` (Layer 2 RAM bank)** is a 16K-bank
+  number.
+- **PAGE = 8K** -- the unit the **MMU** maps. The 64K space is eight 8K slots
+  (`MMU0`..`MMU7`); one 16K bank = two consecutive 8K pages. Page-level paging
+  is available only at the machine-code level -- and **vForth is assimilable to
+  machine code**, so vForth thinks in 8K pages.
+
+vForth dedicates the top slot, **MMU7 (`$E000-$FFFF`)**, to page in the rest of
+RAM on demand: the heap dictionary, the Layer 2 framebuffers, etc. `MMU7!`
+/ `MMU7@` take/return an **8K page** number, never a 16K bank.
+
+**Writing rule:** say "16K bank" for BASIC/NextZXOS allocation and for NextReg
+`$12`; say "8K page" for anything mapped through MMU7. A size may legitimately
+be quoted as both (e.g. the 80K Layer 2 320x256 framebuffer = five 16K banks =
+ten 8K MMU7 pages), but never write "16K bank via MMU7" -- the MMU pages 8K.
+
 ### Blocks, Screens, and reserved ranges
 
 A **Screen** is the unit a programmer addresses with `n LOAD`; a **Block** is the half KB

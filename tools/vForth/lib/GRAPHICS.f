@@ -335,7 +335,7 @@ HEX
     COORD-CHECK IF
         PIXELADD C@
     ELSE
-        2DROP -1    \ becasuse 0 is a valid color (black) 
+        2DROP -1    \ because 0 is a valid color (black)
     THEN
 ;
 

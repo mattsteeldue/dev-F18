@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& C:\\\\zx\\\\forth\\\\F18\\\\tools\\\\vForth\\\\util\\\\mountw.ps1 -Dismount; Write-Output \"EXIT=$LASTEXITCODE\")"
+    ],
+    "additionalDirectories": [
+      "c:\\zx\\forth\\f18\\tools\\vforth\\help",
+      "c:\\zx\\forth\\f18\\tools\\vforth",
+      "C:\\Users\\matteo\\.claude\\projects\\C--zx-forth-f18\\memory"
+    ]
+  }
+}

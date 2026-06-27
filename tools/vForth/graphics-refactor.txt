@@ -1,7 +1,0 @@
-Ri-fattorizzazione della libreria GRAPHICS.
-La libreria @lib\GRAPHICS.f è nata in modo sperimentale con lo scopo di testare le varie modalità grafiche.
-Avere in memoria del dizionario tutte le modalità grafiche è dispendioso in termini di RAM.
-In questo task evitiamo collisioni di nomi di file, quindi creiamo solo file nuovi, lasciamo inalterate le librerie esistenti che garantiscono comunque una compatibilità con il pregresso che mi sta bene.
-Devi ri-fattorizzazare @lib\GRAPHICS.f e creare la libreria GRAPHICS-COMMON.f per mantenere le parti comuni (come le costanti e gli stubs) a tutte le modalità grafiche presenti in GRAPHICS.f e poi un file LAYER??-GRAPHICS.f per ciascuna modalità grafica, quindi: LAYER0-GRAPHICS.f, LAYER10-GRAPHICS.f, ..., LAYER2-GRAPHICS.f.
-L'utente finale usera la tecnica NEEDS LAYERxx-GRAPHICS per importare solo una specifica modalità grafica opportunamente configurata rispetto alla parte comune.
-La complessità di questo intervento sta nel fatto che dobbiamo utilizzare la tecnica CREATE...DOES> e che desideriamo ridurre l'ingombro finale del codice compilato in dizionario.

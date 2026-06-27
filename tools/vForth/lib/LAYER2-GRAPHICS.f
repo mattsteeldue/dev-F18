@@ -20,17 +20,10 @@ MARKER NO-LAYER2-GRAPHICS       \ unload only this mode (keeps GRAPHICS-COMMON)
 \ shared words extracted to inc/ (deduplicated via NEEDS)
 NEEDS L1-POINT
 NEEDS L1-EDGE
+NEEDS L2-RAM-PAGE
 NEEDS .BORDER
 
 BASE @
-
-\ ____________________________________________________________________
-\
-\ Layer 2 Active RAM Page
-\ this operation is done only once at compile time, just to save time
-\ and setup MMU7! accordingly
-HEX 12 REG@ 2*
-CONSTANT  L2-RAM-PAGE           \ keeps Layer 2 Active RAM Page
 
 \ ____________________________________________________________________
 \
