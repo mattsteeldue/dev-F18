@@ -1,6 +1,7 @@
 # Piano di sviluppo: LAYER24 (Layer 2, 640x256, 16 colori, 4bpp)
 
-> Stato: **PIANO APPROVATO, implementazione non ancora iniziata.**
+> Stato: **IMPLEMENTATO E VALIDATO IN HEADLESS (2026-06-28).** Resta solo la
+> validazione visiva su CSpect (avviata dall'utente) e poi il rilascio.
 > Nome modulo deciso dall'utente: **LAYER24** (il "4" richiama 4bpp / 16 colori).
 > Primitive con prefisso **L4-** (= 4bpp).
 > Riferimento sorgente: `doc/zx-next-dev-guide-r3.txt` cap. 3.6 (Layer 2),
@@ -151,5 +152,22 @@ Nuova libreria a core invariato -> pipeline `/release-rebuild` come per LAYER22
 
 ## Punto di ripresa
 
-Tutto e' deciso. Prossimo passo concreto: scrivere `inc/l4-pixeladd.f` (il CODE,
-il pezzo piu' delicato), poi le tre primitive Forth, l4-edge, infine il modulo lib.
+**Implementazione completata** (2026-06-28). File creati:
+`inc/l4-pixeladd.f`, `inc/l4-plot.f`, `inc/l4-point.f`, `inc/l4-xplot.f`,
+`inc/l4-edge.f`, `lib/LAYER24-GRAPHICS.f`.
+
+Due aggiustamenti rispetto al piano scritto:
+- `L4-PIXELADD`: il piano scriveva `bsrl de,1`; `bsrl de,b` (`ED 2A`) e' un
+  opcode Z80N reale ma prende il numero di bit da `B`, non come immediato.
+  Reso quindi come `ld b,1` (`06 01`) + `bsrl de,b` (`ED 2A`) per dimezzare `y`.
+- `L4-CLEAR`: il fill non puo' usare il nibble grezzo (darebbe strisce
+  colore0/colore-b); riempie con il byte a doppio nibble `(b&0F)<<4 | (b&0F)`.
+
+**Validazione headless OK** (`emu/repl.py`): roundtrip PLOT/POINT su tutti i
+casi, incluso il caso critico di due pixel adiacenti pari/dispari nello stesso
+byte (y=20 nibble alto=3, y=21 nibble basso=7) -> nessuno distrugge l'altro;
+byte successivo (y=22=9) e rilettura y=21=7 confermati. L'INCLUDE del lib in
+headless ha risolto l'intera catena `NEEDS` dei file `inc/l4-*`.
+
+Prossimo passo: validazione visiva su CSpect (avviata dall'utente; NON dal
+sandbox), poi `/release-rebuild`.
