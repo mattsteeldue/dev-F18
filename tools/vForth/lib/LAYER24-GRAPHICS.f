@@ -39,7 +39,6 @@ NEEDS L4-XPLOT
 NEEDS L4-EDGE
 NEEDS L4-PIXELADD
 NEEDS L2-RAM-PAGE
-NEEDS MMU7@
 NEEDS .BORDER
 
 BASE @
@@ -94,7 +93,7 @@ HEX
     ' L4-PLOT       \ PLOT
     ' L4-XPLOT      \ XPLOT
     ' L4-PLOT       \ PIXELATT  (placeholder; never called in this mode)
-    ' NOOP          \ XY-RATIO
+    ' 2/            \ XY-RATIO
     ' L4-EDGE       \ EDGE
     ' L4-INITIALIZE \ INITIALIZE
     _BLUE           \ BACKGROUND

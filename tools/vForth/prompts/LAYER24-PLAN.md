@@ -119,7 +119,7 @@ Clone di `lib/LAYER22-GRAPHICS.f`:
   - V-RANGE `0100` (256), H-RANGE `0280` (640)
   - PIXELADD = `' L4-PIXELADD`, POINT = `' L4-POINT`, PLOT = `' L4-PLOT`,
     XPLOT = `' L4-XPLOT`, PIXELATT = `' L4-PLOT` (placeholder), EDGE = `' L4-EDGE`,
-    XY-RATIO = `' NOOP`, INITIALIZE = `' L4-INITIALIZE`
+    XY-RATIO = `' 2/` (come LAYER12, non `' NOOP`), INITIALIZE = `' L4-INITIALIZE`
   - layer-mode byte = `20` (base Layer 2, come LAYER22; e' $70 a cambiare risoluzione)
   - char-size `04`, attribute mask `1 0FF`, BACKGROUND/ATTRIB come da scelta colore.
 - `LAYER: LAYER24` poi attiva con `LAYER24`.
@@ -169,5 +169,29 @@ byte (y=20 nibble alto=3, y=21 nibble basso=7) -> nessuno distrugge l'altro;
 byte successivo (y=22=9) e rilettura y=21=7 confermati. L'INCLUDE del lib in
 headless ha risolto l'intera catena `NEEDS` dei file `inc/l4-*`.
 
-Prossimo passo: validazione visiva su CSpect (avviata dall'utente; NON dal
-sandbox), poi `/release-rebuild`.
+Aggiustamento successivo (2026-06-28): in `lib/LAYER24-GRAPHICS.f` la word di
+stub per `XY-RATIO` e' ora `' 2/` (non `' NOOP`), in modo analogo a LAYER12.
+**Testato e confermato:** `CIRCLE` rende il corretto aspect-ratio (cerchio
+tondo, non ovale) -- lo stub `2/` e' quindi quello giusto. Resta solo lo shift
+orizzontale di 256 px descritto sotto, ortogonale all'aspect-ratio.
+
+**Problema noto su CSpect (2026-06-28):** sotto CSpect le prove non funzionano
+bene -- il pixel `0,0` risulta spostato di **256 pixel verso destra**. Da
+indagare: probabile differenza di interpretazione dell'origine/clip-window del
+modo 640x256 4bpp (NextReg `$70`=`$20`, clip X `0..159`) nell'emulazione CSpect
+rispetto all'hardware reale.
+
+**Verifiche CSpect (2026-06-28):** i pixel vengono indirizzati sulla **pagina
+8K corretta** -- l'aritmetica di paging/PIXELADD e' giusta. La stranezza pare
+legata al fatto che le operazioni di I/O sullo **stream standard del canale #2**
+dello Spectrum sembrano funzionare correttamente (cioe' lo shift non emerge dal
+percorso di disegno diretto ma dall'interazione con quel canale). Forte sospetto
+di **artefatto dell'emulatore CSpect**.
+
+**Prossimo accertamento: hardware reale.** Lo shift di 256 px potrebbe essere
+un artefatto dell'emulazione CSpect e non un bug della libreria. Va verificato
+su Spectrum Next reale: se `0,0` cade nell'origine corretta sul ferro, il
+problema e' di CSpect e la libreria resta valida; altrimenti il difetto e'
+nell'impostazione origine/clip del modo 640x256 4bpp e va corretto.
+
+Poi, una volta confermata la resa corretta, `/release-rebuild`.

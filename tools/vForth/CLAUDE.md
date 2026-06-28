@@ -276,7 +276,13 @@ demo/         -- Example programs and games
 tutorial/     -- Guided tutorials
 doc/          -- PDF reference manual
 util/         -- Perl scripts (blocks2txt.pl, putscr.pl)
+prompts/      -- Plans, analyses, and design docs produced while discussing
 ```
+
+> **Plans go in `prompts/`, never the project root.** Any plan, analysis, or
+> design document we produce by discussing (e.g. `LAYER24-PLAN.md`,
+> `PAINT-PLAN.md`) must be saved under `prompts/`, not at the repo root, which
+> is to be kept clean. Write new plans there by default.
 
 ## Character Encoding
 
