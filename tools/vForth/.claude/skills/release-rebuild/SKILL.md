@@ -1,6 +1,6 @@
 ---
 name: release-rebuild
-description: Pipeline completa di rilascio vForth a parita' di sorgente core, per timbrare una nuova build (es. introduzione di nuove librerie come LAYER22). Accetta YYYYMMDD. Gate iniziale bloccante: verifica esistenza .odt/.pdf E che contengano la data nuova ma NON quella precedente (.odt via content.xml, .pdf via pdftotext); poi bump-build (compila DOES+DOT + aggiorna i riferimenti data), genera automaticamente il dump !Blocks txt via perl blocks2txt.pl, sync (sd-sync + sync-cspect) e rilascio pubblico (new-version/new-build.bat). NON tocca mai .odt/.pdf. Usare quando l'utente chiede /release-rebuild o un rilascio completo a binario sostanzialmente invariato.
+description: Pipeline completa di rilascio vForth a parita' di sorgente core, per timbrare una nuova build (es. introduzione di nuove librerie come LAYER22). Accetta YYYYMMDD. Gate iniziale bloccante: verifica esistenza .odt/.pdf E che contengano la data nuova ma NON quella precedente (.odt via content.xml, .pdf via pdftotext); poi bump-build (compila DOES+DOT + aggiorna i riferimenti data), genera automaticamente il dump !Blocks txt via perl blocks2txt.pl, sync (sync-cspect sull'immagine CSpect), rilascio pubblico (new-version/new-build.bat) e aggiornamento di HISTORY.txt nel repo pubblico. NON tocca mai .odt/.pdf. Usare quando l'utente chiede /release-rebuild o un rilascio completo a binario sostanzialmente invariato.
 ---
 
 # release-rebuild: pipeline completa di rilascio vForth
@@ -148,14 +148,16 @@ Prerequisiti: `perl` in PATH (Strawberry: `C:\Strawberry\perl\bin\perl.exe`) e
 
 ## 3. Sync
 
-In ordine:
+**`/sync-cspect`** -- deploy sull'immagine SD di CSpect (`W:\tools\vForth` <-
+`cspect-next-2gb.img`). Sincronizza anche le nuove librerie (es.
+`lib/LAYER22-GRAPHICS.f`).
+**Prerequisito critico: CSpect deve essere CHIUSO** (lock esclusivo
+sull'immagine). Se e' aperto, lo skill sync-cspect si ferma: avvisa l'utente,
+non forzare. Comporta due popup UAC (mount/dismount di `W:`).
 
-1. **`/sd-sync`** -- allinea `inc/` e `lib/` (incluse le nuove librerie, es.
-   `lib/LAYER22-GRAPHICS.f`) verso `SD/tools/vForth/`.
-2. **`/sync-cspect`** -- deploy sull'immagine SD di CSpect.
-   **Prerequisito critico: CSpect deve essere CHIUSO** (lock esclusivo
-   sull'immagine). Se e' aperto, lo skill sync-cspect si ferma: avvisa l'utente,
-   non forzare.
+> Nota: **non** usare `/sd-sync` qui. In questo repo non esiste (ne' esistera')
+> una cartella di staging `SD/`: l'unica sync verso l'ambiente di test e'
+> `/sync-cspect`.
 
 ## 4. Rilascio pubblico (i .bat)
 
@@ -182,10 +184,31 @@ Repo pubblico: `c:\Zx\GitHub\vforth-next`. I `.bat` stanno in
    quello della build), crea `download\vForth_18_NextZXOS_YYYYMMDD.zip`, aggiorna
    i project pubblici `MMU7_DOT` / `DIRECT_MMU7`. Usa
    `doc\txt\!Blocks-64.bin_YYYYMMDD.txt` (verificato al gate).
+   Due messaggi `Nome duplicato o impossibile trovare il file` durante "Moving
+   older docs to previous" sono **benigni**: il `move` cerca anche pattern non
+   presenti sulla SD (es. il `.odt`, che resta privato -- si pubblica solo il
+   `.pdf`).
+
+3. **Aggiorna `HISTORY.txt` del repo pubblico** (`c:\Zx\GitHub\vforth-next\HISTORY.txt`).
+   `new-build.bat` **non** lo tocca: va accodato a mano la voce di questo build,
+   rispettando la formattazione del file. Convenzioni rilevate: **CRLF**, solo
+   ASCII 7-bit, entry separate da **una riga vuota**, header `\ build YYYYMMDD`
+   seguito da testo libero (poche righe ~80 col). Per un rilascio a sorgente
+   invariato conviene dire esplicitamente che il core-binary non cambia (come la
+   entry `20260419`). Esempio di append (preserva CRLF/ASCII, non sovrascrive):
+   ```powershell
+   $f='C:\Zx\GitHub\vforth-next\HISTORY.txt'; $nl="`r`n"
+   $lines=@('', '\ build YYYYMMDD', '<riga 1 delle novita''>', '<riga 2>', '...')
+   [System.IO.File]::AppendAllText($f, ($lines -join $nl)+$nl, [System.Text.Encoding]::ASCII)
+   ```
+   Le novita' descrivono cosa cambia in QUESTO build (es. la famiglia
+   `LAYERxx-GRAPHICS` e il nuovo `LAYER22`).
 
 ## 5. Riepilogo finale
 
 Riferisci: data build, esito gate, esito bump (binari ricompilati/copiati),
 esito sync (file copiati, eventuali `PROTETTO`/`TS-FIX`, stato di W:), esito
-rilascio (zip creato, project copiati). Commit/push del repo di lavoro **solo se
-l'utente lo chiede** (l'utente committa via GitHub Desktop, non da CLI).
+rilascio (zip creato, project copiati) e voce aggiunta a `HISTORY.txt`.
+Commit/push **solo se l'utente lo chiede** (l'utente committa via GitHub
+Desktop, non da CLI): ricorda che i commit da fare sono **due** -- il repo di
+lavoro `F18` e il repo pubblico `vforth-next`.
