@@ -49,13 +49,15 @@ Each tutorial `.f` must follow this structure:
    - Filename
    - One-paragraph narrative description
    - vForth-specific notes if any
-   - **Starting FORTH cross-reference line** (tutorials 001-027 only): the Brodie
+   - **Starting FORTH cross-reference line** (tutorials 001-029): the Brodie
      chapter and the parallel vForth screen range, on the line immediately above
      `Reference:`. Format:
      ```
      \ Starting FORTH (Brodie): Ch.N  |  vForth screens NNN-NNN
      ```
-     Use the concept map in `doc/tutorial-vs-screens.md` (chapter table) to fill it.
+     The block-storage pair 028/029 maps to Brodie **Ch.3 "The Editor (and Staff)"**
+     (disk/BLOCK/editor; screen 815 plus the Ch.10-completion screens 882-895).
+     Use the concept map in `prompts/tutorial-vs-screens.md` (chapter table) to fill it.
      Multi-chapter tutorials list both (e.g. `Ch.2, Ch.5  |  ... 805-814, 821-825`).
      When a tutorial has no Brodie counterpart, state it explicitly instead of
      omitting the line:

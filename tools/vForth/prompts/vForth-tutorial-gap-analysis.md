@@ -29,7 +29,7 @@ it is essentially nil. The screens are therefore not a deprecated old version bu
 a **second, cross-referenceable reference track**: the same concept rendered twice
 in two idioms. The authoritative concept-to-concept mapping lives in the wiki page
 "Tutorials vs. Starting FORTH Screens" and, at definition granularity (~58 rows
-with a match-strength column), in `doc/tutorial-vs-screens.md`. This report defers
+with a match-strength column), in `prompts/tutorial-vs-screens.md`. This report defers
 to those for Axis-2 detail. The `demo/` `.f` files are a fourth, separate body:
 large standalone programs.
 
@@ -107,6 +107,7 @@ Concept correspondence (topics present in BOTH tracks), per the wiki:
 |-------------------|----------------------|----------------|
 | Ch.1 800-804 | 003, 005 | `:`, `." "`, `EMIT`, `CR`, `SPACES` |
 | Ch.2 805-814 | 001, 002 | postfix arith, `DUP/SWAP/ROT/OVER`, `/MOD`, `.S` |
+| Ch.3 815 (+882-895) | 028, 029 | `EDIT`/`LED`, `LIST`/`LOAD`, BLOCK/Screen storage |
 | Ch.4 816-820 | 006 | `IF/ELSE/THEN`, `?DUP`, `WITHIN` |
 | Ch.5 821-825 | 002, 015 | `*/`, `MIN/MAX/ABS`, percentages, conversions |
 | Ch.6 826-837 | 007 | `DO/LOOP`, `+LOOP`, `?DO`, `I/J`, `LEAVE`, `BEGIN/UNTIL` |
@@ -118,10 +119,13 @@ Concept correspondence (topics present in BOTH tracks), per the wiki:
 | Ch.11 896-905 | 010, 019, 020, 021 | `CREATE/DOES>` defining words, `IMMEDIATE`, `[COMPILE]`, `COMPILE`, `LITERAL`, `LOOPS` |
 
 **Status (2026-06-21): cross-reference lines added; Ch.10 completed and Ch.11
-transcribed.** Each tutorial 001-027 now carries a
+transcribed.** Each tutorial 001-029 now carries a
 `\ Starting FORTH (Brodie): Ch.N  |  vForth screens NNN-NNN` line in its header
-(immediately above `Reference:`), so the concept-to-screen mapping above is visible
-at the point of use, not only in this report and `doc/tutorial-vs-screens.md`. The
+(immediately above `Reference:`) -- including the block-storage pair 028/029, whose
+Brodie counterpart is **Ch.3 "The Editor (and Staff)"** (the disk/BLOCK/editor
+chapter, screen 815 plus the Ch.10-completion screens 882-895), so the
+concept-to-screen mapping above is visible
+at the point of use, not only in this report and `prompts/tutorial-vs-screens.md`. The
 screen corpus itself was then extended: **Ch.10 was completed to Scr# 895** (TEXT
 input, block editing, virtual arrays) and **Ch.11 "Extending the Compiler" added at
 Scr# 896-905** (defining words, IMMEDIATE/[COMPILE]/COMPILE/LITERAL, LOOPS). The
@@ -237,7 +241,7 @@ path outside `tutorial/`.
 - The Brodie screen track (800-905) is a **parallel, independent reference**, not
   a rewrite of the tutorials and not a backbone to verify against -- same concepts,
   different definitions. Use it as a cross-reference; the wiki and
-  `doc/tutorial-vs-screens.md` hold the concept map. (An earlier draft's claim of
+  `prompts/tutorial-vs-screens.md` hold the concept map. (An earlier draft's claim of
   an unfilled "Ch.5 Fixed Point" hole is retracted: Ch.5 is covered by 002+015.)
   It now spans Brodie Ch.1-11: Ch.10 was completed to Scr# 895 and Ch.11 added at
   896-905, so the once-missing compilation/defining-word counterparts exist.
