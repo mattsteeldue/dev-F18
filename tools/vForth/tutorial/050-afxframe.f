@@ -27,6 +27,7 @@ CR
 .(     Type NEWTASK to unload.            ) CR
 
 NEEDS INTERRUPTS
+NEEDS [']
 
 \ ===========================================================================
 \ 1. The .afx format
@@ -165,14 +166,14 @@ NEEDS AFXFRAME
     AFX-CH-DESC !         \ set data pointer for channel 1
     AYSETUP               \ silence and enable all chips
     ISR-OFF
-    ' AFXFRAME ISR-XT !   \ install AFXFRAME as ISR
+    ['] AFXFRAME ISR-XT ! \ install AFXFRAME as ISR
     ISR-ON
     ." AFX player running. BREAK to stop." CR
 ;
 
 : AFX-STOP  ( -- )
     ISR-OFF
-    ' NOOP ISR-XT !
+    ['] NOOP ISR-XT !
     AYSETUP               \ silence all chips
 ;
 
