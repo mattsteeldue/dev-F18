@@ -62,7 +62,8 @@ tutorial:
 - **Uso del sistema BLOCK/Screen** come storage (`214 BLOCK ... TYPE`, `LOAD`,
   `-->`, `MARKER TASK ... LOAD`): didattica block-based che **ora e' coperta** dai
   tutorial **028-blocks** (meccanismo: `BLOCK`/`BUFFER`, `UPDATE`/`FLUSH`,
-  `(LINE)`/`LIST`/`INDEX`, `LOAD` e `-->` -- in vForth non esiste `THRU`) e
+  `(LINE)`/`LIST`/`INDEX`, `LOAD` e `-->` -- `THRU` disponibile via `NEEDS THRU`
+  dal 2026-07-02, prima non esisteva) e
   **054-blocks-as-assets** (BLOCK come contenitore binario: `LOAD2BLOCK` e la
   libreria sonora AFX). Gli Screen restano come reference di esempi: 882-883
   (`SCREENS`/`BLOCKS` lister, `TEXT`/`EXPECT`), 886-887 (`CHANGE`, editing di un

@@ -1,0 +1,83 @@
+Paragraph 2.2.2 "Tutorial" -- draft text for the vForth manual (.odt).
+To be pasted by hand after 2.2.1 "Online Reference - Interactive help".
+Lead-in words at the start of some paragraphs (Loading., Usage., ...) follow
+the style of 2.2.1 and are meant to be set in bold.
+Drafted 2026-07-02.
+
+======================================================================
+
+2.2.2 Tutorial
+
+Beyond the interactive help, vForth ships with a complete set of guided
+tutorials. Two complementary tracks are available: a modern one, made of
+source files in the tutorial/ directory, and a classic one, made of
+Screens in the block file, transcribed from the introductory book
+"Starting FORTH" by Leo Brodie.
+
+The tutorial/ directory. Fifty-five numbered lessons, one file each
+(NNN-topic.f), meant to be read and tried in sequence. Tutorials 001-029
+cover the Forth language itself: stack manipulation, defining words,
+control flow, memory, strings, CREATE / DOES>, compilation, vocabularies,
+floating point, the assembler, and the Block / Screen system with its
+editor. Tutorials 030-055 cover the ZX Spectrum Next hardware: ULA and
+Layer 2 graphics, sprites, beeper and AY sound, keyboard and mouse,
+timing and interrupts, Next registers, MMU paging, file I/O, Copper,
+UART and more.
+
+Loading. The tutorial launcher is not part of the core and must be
+loaded once per session:
+
+    NEEDS TUTORIAL
+
+Usage. After loading, pass the lesson number to TUTORIAL:
+
+    3 TUTORIAL
+
+loads and interprets tutorial/003-output.f. Each tutorial prints a short
+banner, defines a few small demonstration words to try at the prompt,
+and shows its examples as comments in the form
+
+    \  42 .     => 42
+
+where => introduces the expected output. To list a tutorial source on
+screen without interpreting it, use VIEW instead:
+
+    3 VIEW
+
+The [EDIT] key pauses the listing.
+
+Unloading. Every tutorial begins with MARKER NEWTASK: typing NEWTASK
+removes the whole tutorial from the dictionary, so you can move to the
+next lesson without wasting dictionary space. The name is fixed and the
+same in all tutorials. The only exception is tutorial 024 (floating
+point): there NEWTASK restores integer number interpretation via
+NO-FLOATING, but does not unload the floating-point vocabulary itself.
+
+The Brodie Screens (800-905). Screens # 800 to # 905 of the default
+!Blocks-64.bin file contain a transcription of the examples of "Starting
+FORTH" by Leo Brodie, chapters 1 to 11, in plain standard Forth. Use
+LIST to read a screen and LOAD to interpret it:
+
+    800 LIST
+    800 LOAD
+
+Consecutive screens are chained with -->; alternatively, THRU
+(available after NEEDS THRU) interprets a whole range at once:
+
+    800 803 THRU
+
+Do not mix the two techniques on the same range: screens already
+chained-in by --> would be loaded twice.
+The book itself is not bundled with vForth for copyright reasons, but
+FORTH, Inc. kindly makes it available free of charge on its own website:
+
+    https://www.forth.com/wp-content/uploads/2018/01/Starting-FORTH.pdf
+
+The two tracks run in parallel and are independent: they share the
+concepts but not the definitions -- the tutorials are written in
+idiomatic vForth, while the Screens stay close to the book. The header
+of each tutorial 001-029 carries a cross-reference line pointing to the
+corresponding Starting FORTH chapter and screen range, so the same topic
+can be studied from both sides.
+
+See also: HELP (2.2.1), EDIT, LIST, LOAD, MARKER

@@ -15,8 +15,7 @@
 \
 \ TUT-TABLE holds one heap-pointer per tutorial (1-based, entry 0 = 0).
 \ The input number maps directly to the file prefix nnn: 30 TUTORIAL
-\ loads tutorial/030-ula-display.f.  Slots 26-29 are reserved (files
-\ do not exist; TUTORIAL reports "cannot open file" for those numbers).
+\ loads tutorial/030-ula-display.f.
 \ TUTORIAL fetches ha, calls FAR to resolve it, then skips the count
 \ byte to obtain a z-string, and passes it to F_OPEN / F_INCLUDE.
 \
@@ -79,8 +78,8 @@ CREATE TUT-TABLE
     H" tutorial/025-memory-advanced.f" ,
     H" tutorial/026-catch-throw.f"     ,
     H" tutorial/027-assembler.f"       ,
-    H" tutorial/028-reserved.f"        ,
-    H" tutorial/029-reserved.f"        ,
+    H" tutorial/028-blocks.f"          ,
+    H" tutorial/029-edit.f"            ,
     H" tutorial/030-ula-display.f"     ,
     H" tutorial/031-screen-control.f"  ,
     H" tutorial/032-timing.f"          ,

@@ -1,0 +1,33 @@
+Introductory note for section 5.1 "The 'core' dictionary" -- to be pasted by
+hand right under the heading, before the first alphabetical entry ('0x00').
+Clarifies the core / non-core ambiguity raised by adding THRU (2026-07-02)
+to this alphabetical list, and by the fact that many non-core words are
+NOT here at all -- they live in their own dedicated chapter instead.
+Drafted 2026-07-02.
+
+======================================================================
+
+Despite its title, this alphabetical list documents two kinds of
+definitions. Core definitions are compiled into forth18e.bin and are
+always present at startup; they need no loading at all. Extension
+definitions live as source files in the inc/ and lib/ directories of the
+SD card and enter the dictionary only on request, via NEEDS: their entry
+ends with the sentence "This definition is available after NEEDS cccc".
+Every entry without that closing sentence describes a core definition.
+The interactive HELP (sec. 2.2.1) follows the same convention, with the
+reminder "Available after NEEDS cccc" on the last line of its pages.
+
+This list is not, however, the only place extension words are
+documented, and most of them are not here at all. Whenever a library
+module is large or coherent enough to deserve its own narrative --
+Graphics mode and Layer facility, Mouse, Floating-Point Option, the
+ASSEMBLER vocabulary, AY sound chip facility, Keyboard input, the Heap
+Memory Facility -- it gets a dedicated section of its own earlier (or,
+for Heap and Testing, as a titled subsection later) in this manual, with
+its own worked examples. Such a word is documented once, in that
+section, and is not repeated here. This alphabetical list is reserved
+for the core vocabulary plus the smaller extension words that do not
+warrant a section of their own (TO, VALUE, WITHIN, THROW, ENUMERATED,
+THRU, ...). When looking for a word and not finding it here, check the
+Table of Contents for a section named after the feature it belongs to
+before concluding it does not exist.

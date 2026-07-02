@@ -153,8 +153,10 @@ CR
 \
 \ --> is immediate, it works even in the middle of a definition.
 \
-\ Note: classic Forth THRU (load a range) is not implemented in vForth yet.  
-\ To load a range, chain screens with --> 
+\ Note: classic Forth THRU ( scr1 scr2 -- ) is not in the core: load it
+\ with NEEDS THRU, then  800 803 THRU  interprets Screens 800..803.
+\ Do not mix THRU with --> chaining: screens already chained-in by -->
+\ would be loaded twice.
 \
 
 .( Try  9 LOAD to print all standard error messages. )
