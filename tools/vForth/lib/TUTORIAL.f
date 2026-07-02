@@ -105,8 +105,10 @@ CREATE TUT-TABLE
     H" tutorial/051-keyboard-matrix.f" ,
     H" tutorial/052-modular-graphics.f" ,
     H" tutorial/053-more-sprites.f"    ,
+    H" tutorial/054-blocks-as-assets.f" ,
+    H" tutorial/055-afx-sound-board.f" ,
 
-53 CONSTANT TUT-MAX
+55 CONSTANT TUT-MAX
 
 
 \ ---------------------------------------------------------------------------

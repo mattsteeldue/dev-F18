@@ -39,6 +39,9 @@ Two distinct documents are involved -- do not confuse them:
 - The prefix determines load order and reading sequence; renumbering is acceptable
   when inserting new topics.
 - Stored in: `tutorial/`
+- **Register every new tutorial in `lib/TUTORIAL.f`**: add its `H" tutorial/NNN-slug.f"`
+  entry to `TUT-TABLE` and bump `TUT-MAX`, otherwise `NNN TUTORIAL` cannot load it.
+  (Tutorial 054 shipped without this step and was unreachable until 2026-07-01.)
 
 
 ## 3. File Structure
