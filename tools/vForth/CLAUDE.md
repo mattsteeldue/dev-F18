@@ -411,3 +411,13 @@ supported and will produce incorrect behaviour.
 Pressing `[BREAK]` stops any active I/O operation immediately. If `LED` is driving an
 I/O sequence at the time, this may produce data loss.
 
+### `LAYER24` (lib/LAYER24-GRAPHICS.f) -- unverified on real hardware
+
+The Layer 2 640x256 4bpp mode works in the headless emulator but shows an
+unexpected behaviour on CSpect: the image is shifted 256 px to the right
+(NextReg $70=$20, clip X 0..159). The library addresses pages and coordinates
+correctly, and LAYER22 works on the same emulator, so this is suspected to be
+a CSpect emulation artifact -- but it has NOT yet been verified on real
+hardware. Until then, treat LAYER24 as experimental. Details and 2026-06-28
+findings in `prompts/LAYER24-PLAN.md`.
+
