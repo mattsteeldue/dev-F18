@@ -64,7 +64,7 @@ CR
 
 : SCR>BLK  ( screen# -- block# )  B/SCR * ;   \ first block of a screen
 
-.( Try  1 LIST  to see a brief introduction of BLOCK system.)
+.( Try: 1 LIST  to see a brief introduction of BLOCK system.) CR
 
 \ ===========================================================================
 \ 3. BLOCK and BUFFER -- getting a buffer address
@@ -159,7 +159,7 @@ CR
 \ would be loaded twice.
 \
 
-.( Try  9 LOAD to print all standard error messages. )
+.( Try: 9 LOAD  to print all standard error messages. ) CR
 
 \ ===========================================================================
 \ 8. Reserved blocks and switching the block file

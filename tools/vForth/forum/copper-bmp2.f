@@ -36,8 +36,8 @@ hex 5c08 constant last-k decimal
 
 : starte
 case
-  [char] a of int-on   endof
-  [char] d of int-off  endof
+  [char] a of isr-on   endof
+  [char] d of isr-off  endof
   [char] e of -1 to lire  -2 to lire1 -3 to lire2 endof
   [char] q of  1 to lire   2 to lire1  3 to lire2 endof
 endcase 
@@ -74,8 +74,8 @@ DECIMAL
 
 INT-OFF
 ' ISR-TEST INT-W !
-\ int-on 
-\ int-off
+\ isr-on 
+\ isr-off
 
 create bmpname ," /fth/testbild1.bmp"
 create filename ," C:/demos/bmp256converts/bitmaps/future.bmp"

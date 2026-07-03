@@ -71,8 +71,8 @@ hex 5c08 constant last-k decimal
 
 : starte
 case
-   97 of int-on  endof
-  100 of int-off  endof
+   97 of isr-on  endof
+  100 of isr-off  endof
   101 of -1 to lire  endof
   113 of 1 to lire  endof
 endcase 
@@ -105,12 +105,12 @@ DECIMAL
   endif
 ;
 
-INT-OFF
-' ISR-TEST INT-W !
-int-on 
-int-off
+isr-OFF
+' ISR-TEST ISR-W !
+isr-on 
+isr-off
 
-create bmpname ," C:/demos/bmp256converts/bitmaps/critters.bmp"
+create bmpname ," /tools/vforth/demo/bmp/critters.bmp"
 
 : los
   layer2
@@ -119,3 +119,4 @@ create bmpname ," C:/demos/bmp256converts/bitmaps/critters.bmp"
   start ;
 
 
+    

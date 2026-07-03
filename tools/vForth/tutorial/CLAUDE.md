@@ -394,3 +394,19 @@ sound was audible, despite the comment "enable ch A noise". Corrected to `%00110
 Lesson for authors: when targeting "channel A", double-check you are clearing the bit in
 *column A* of the table above -- it is easy to be one bit position off, and because the
 register is active-low the mistake is silent (wrong channel plays, or nothing does).
+
+
+## 15. Known Issues -- Malfunctions Requiring Hardware Verification
+
+**Tutorials 045 (copper), 046 (BMP load), and 050 (AFX frame):** all exhibit issues.
+Details:
+
+- **045-copper.f**: May have issues with display timing / copper-effect rendering.
+  Unverified on real ZX Spectrum Next hardware.
+- **046-bmp-load.f**: File I/O and image loading behavior may differ between emulator
+  and hardware. Unverified on hardware.
+- **050-afxframe.f**: Does not compile (syntax or dependency errors). Requires
+  investigation and repair.
+
+Flag: these tutorials should be considered **experimental** or **broken** until fixed
+and hardware-verified.

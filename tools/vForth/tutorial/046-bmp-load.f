@@ -23,7 +23,10 @@ CR
 .( --- Tutorial 046: BMP image loading loaded. ) CR
 .(     Type NEWTASK to unload.             ) CR
 
-NEEDS GRAPHICS
+NEEDS BMP-LOAD
+NEEDS LAYER2
+NEEDS LAYER12
+NEEDS .PAPER
 
 \ ===========================================================================
 \ 1. BMP file requirements
@@ -102,10 +105,11 @@ NEEDS WAIT-KEY
     LAYER2
     CLS
     ." Loading image..." CR
-    BMP-LOAD" C:/demos/test256.bmp"
+    BMP-LOAD" /demos/testbild.bmp"
     ." Done. Press any key." CR
     WAIT-KEY DROP
-    LAYER0
+    LAYER12 
+    1 .PAPER
     CLS
 ;
 
@@ -133,7 +137,7 @@ CREATE DEMO-FILE  ," C:/demos/demo.bmp"
     LAYER2
     DEMO-FILE BMP-LOAD
     WAIT-KEY DROP
-    LAYER0  CLS
+    LAYER12 1 .PAPER CLS
 ;
 
 \ ===========================================================================
@@ -149,7 +153,7 @@ CREATE SLIDE-C  ," C:/slides/slide3.bmp"
     SLIDE-A BMP-LOAD  WAIT-KEY DROP
     SLIDE-B BMP-LOAD  WAIT-KEY DROP
     SLIDE-C BMP-LOAD  WAIT-KEY DROP
-    LAYER0  CLS
+    LAYER12 1 .PAPER CLS
 ;
 
 \ ===========================================================================
