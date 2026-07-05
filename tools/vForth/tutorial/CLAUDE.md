@@ -398,18 +398,25 @@ register is active-low the mistake is silent (wrong channel plays, or nothing do
 
 ## 15. Known Issues -- Malfunctions Requiring Hardware Verification
 
-**Tutorials 045 (copper), 046 (BMP load), and 050 (AFX frame):** all exhibit issues.
-Details:
+Status as of 2026-07-05:
 
-- **045-copper.f**: May have issues with display timing / copper-effect rendering.
-  Unverified on real ZX Spectrum Next hardware.
-- **046-bmp-load.f**: File I/O and image loading behavior may differ between emulator
-  and hardware. Unverified on hardware.
-- **050-afxframe.f**: Does not compile (syntax or dependency errors). Requires
-  investigation and repair.
+- **045-copper.f**: may have issues with display timing / copper-effect rendering.
+  Unverified on real ZX Spectrum Next hardware. **Still open.**
+- **046-bmp-load.f**: **RESOLVED** -- works on CSpect (2026-07-05). The "malfunction"
+  was a wrong file path: names passed to `BMP-LOAD` / `OPEN<` are **relative to the
+  directory vForth was started from** (`tools/vForth` on the SD card). A PATH GOTCHA
+  note was added to the tutorial's section 1, and the dead sample path
+  `demos/demo.bmp` was fixed to `demo/BMP/jaws.bmp`. A second glitch: every wait
+  was written `WAIT-KEY DROP`, but `WAIT-KEY ( -- )` leaves nothing on the stack
+  (it is not `KEY`), so each `DROP` underflowed -- "Stack is empty" on returning
+  to the prompt after `SLIDE-SHOW`. All five `DROP`s removed.
+- **050-afxframe.f**: compile failure diagnosed 2026-07-05: `AFX-START`/`AFX-STOP`
+  call `AYSETUP` (defined in `lib/AY.f`) but the tutorial never loaded it -- and
+  `lib/AFXFRAME.f` has its own `NEEDS AY` commented out. `NEEDS AY` added to the
+  tutorial header; **awaiting CSpect verification**.
 
-Flag: these tutorials should be considered **experimental** or **broken** until fixed
-and hardware-verified.
+Flag: 045 remains **experimental** until hardware-verified; 050 until its fix is
+confirmed on CSpect.
 
 
 ## 16. Hardware Sprites: slot vs pattern, palette offset (tutorial 053)

@@ -28,6 +28,7 @@ CR
 
 NEEDS INTERRUPTS
 NEEDS [']
+NEEDS AY                \ AYSETUP, AYSELECT, SHH (lib/AY.f)
 
 \ ===========================================================================
 \ 1. The .afx format

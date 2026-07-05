@@ -51,6 +51,13 @@ NEEDS .PAPER
 \   45 ($2D) : file seek error
 \   46 ($2E) : file read error
 \   42 ($2A) : file close error
+\
+\ PATH GOTCHA: every file name is RELATIVE to vForth's current
+\ directory, i.e. the directory vForth was started from (tools/vForth
+\ on the SD card).  "demo/BMP/jaws.bmp" therefore names
+\ /tools/vForth/demo/BMP/jaws.bmp on the card.  A wrong path shows up
+\ as error 41 (file open error) and is easily mistaken for a broken
+\ loader -- check the path relative to tools/vForth first.
 
 \ ===========================================================================
 \ 2. BMP-LOAD -- load BMP into Layer 2
@@ -81,10 +88,10 @@ NEEDS .PAPER
 \   BMP-LOAD" filename"    (immediate word, works at interpret time)
 \
 \ At interpret time:
-\   BMP-LOAD" C:/pics/scene.bmp"
+\   BMP-LOAD" tutorial/testbild.bmp"
 \
 \ At compile time (inside a : definition):
-\   : SHOW-SCENE  BMP-LOAD" C:/pics/scene.bmp" ;
+\   : SHOW-SCENE  BMP-LOAD" tutorial/testbild.bmp" ;
 \
 \ BMP-LOAD" handles the string setup internally.
 
@@ -94,7 +101,7 @@ NEEDS .PAPER
 \
 \ To run this demo, place a suitable BMP on the SD card:
 \   - Width 256, height 192, 8bpp (256-color)
-\   - Saved as C:/demos/test256.bmp
+\   - Saved as tutorial/testbild.bmp
 \
 \ Then execute:
 \   SHOW-BMP
@@ -105,9 +112,9 @@ NEEDS WAIT-KEY
     LAYER2
     CLS
     ." Loading image..." CR
-    BMP-LOAD" /demos/testbild.bmp"
+    BMP-LOAD" tutorial/testbild.bmp"
     ." Done. Press any key." CR
-    WAIT-KEY DROP
+    WAIT-KEY
     LAYER12 
     1 .PAPER
     CLS
@@ -119,7 +126,7 @@ NEEDS WAIT-KEY
 \
 \ A counted-z string variable is created with ," inside CREATE:
 \
-\   CREATE MY-BMP  ," C:/pics/sky.bmp"
+\   CREATE MY-BMP  ," tutorial/testbild.bmp"
 \
 \ The layout in memory:
 \   byte 0    : string length (not including NUL)
@@ -131,12 +138,12 @@ NEEDS WAIT-KEY
 \
 \ This is useful when the filename is stored in a variable.
 
-CREATE DEMO-FILE  ," C:/demos/demo.bmp"
+CREATE DEMO-FILE  ," demo/BMP/jaws.bmp"
 
 : LOAD-DEMO  ( -- )
     LAYER2
     DEMO-FILE BMP-LOAD
-    WAIT-KEY DROP
+    WAIT-KEY
     LAYER12 1 .PAPER CLS
 ;
 
@@ -144,15 +151,15 @@ CREATE DEMO-FILE  ," C:/demos/demo.bmp"
 \ 6. Demo: BMP slide show
 \ ===========================================================================
 
-CREATE SLIDE-A  ," C:/slides/slide1.bmp"
-CREATE SLIDE-B  ," C:/slides/slide2.bmp"
-CREATE SLIDE-C  ," C:/slides/slide3.bmp"
+CREATE SLIDE-A  ," demo/BMP/future.bmp"
+CREATE SLIDE-B  ," demo/BMP/rocky.bmp"
+CREATE SLIDE-C  ," demo/BMP/trouble.bmp"
 
 : SLIDE-SHOW  ( -- )
     LAYER2
-    SLIDE-A BMP-LOAD  WAIT-KEY DROP
-    SLIDE-B BMP-LOAD  WAIT-KEY DROP
-    SLIDE-C BMP-LOAD  WAIT-KEY DROP
+    SLIDE-A BMP-LOAD  WAIT-KEY
+    SLIDE-B BMP-LOAD  WAIT-KEY
+    SLIDE-C BMP-LOAD  WAIT-KEY
     LAYER12 1 .PAPER CLS
 ;
 
@@ -180,4 +187,4 @@ CREATE SLIDE-C  ," C:/slides/slide3.bmp"
 \ Only structural tests are possible here.
 \
 \ NEEDS TESTING
-\ T{  DEMO-FILE C@  ->  20  }T    \ "C:/demos/demo.bmp" length
+\ T{  DEMO-FILE C@  ->  17  }T    \ "demo/BMP/jaws.bmp" length
