@@ -103,7 +103,16 @@ CREATE SPRITE-BUFFER SPRITE-BUFLEN ALLOT
    1 +FIELD _rotmir     1 +FIELD _pattern  1 +FIELD _anchor
 CONSTANT SPRITE-OB
 
+\ The ERASE is essential: DISPLAY and TEST only ever store the pattern
+\ id and the coordinates, so _rotmir, _pattern and _anchor keep their
+\ creation-time content forever.  Without ERASE that content is heap
+\ garbage; in particular a non-zero _pattern becomes a PALETTE OFFSET
+\ (attribute 2 bits 7:4) that the hardware adds to every pixel's
+\ colour index -- the pink skin ($F7) silently shifts to another hue
+\ (e.g. offset 4 gives $37, a pale blue).
+
 CREATE SPRITE  SPRITE-OB ALLOT
+       SPRITE  SPRITE-OB ERASE
 
 \ ===========================================================================
 \ 5. Uploading a pattern

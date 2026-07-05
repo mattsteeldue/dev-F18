@@ -269,9 +269,9 @@ refactoring pattern.
 When a word's behavior depends on internal state (NMODE, BASE, etc.), explicitly warn
 readers about the consequences of forgetting to set or reset that state:
 
-- **What the default state is** — so readers know what to expect on entry.
-- **What happens if they forget to change it** — silent misparsing, wrong output, crashes.
-- **Why this is dangerous** — hard to debug because no error is raised.
+- **What the default state is** -- so readers know what to expect on entry.
+- **What happens if they forget to change it** -- silent misparsing, wrong output, crashes.
+- **Why this is dangerous** -- hard to debug because no error is raised.
 
 Example: forgetting `FLOATING` before entering floating-point numbers causes the parser
 to interpret them as double integers (silently), producing incorrect results or crashes.
@@ -410,3 +410,59 @@ Details:
 
 Flag: these tutorials should be considered **experimental** or **broken** until fixed
 and hardware-verified.
+
+
+## 16. Hardware Sprites: slot vs pattern, palette offset (tutorial 053)
+
+Working reference: Screens 399-413 in `!Blocks-64.bin` (Derek Bolli's Sprite Lib
+port); test sprite file `tutorial/DKSprite.spr` (64 patterns; skin pixels use
+colour indexes `$F7`/`$FB` = pink with the default identity palette, `$E3` is the
+transparency index). Both bugs below were found by diffing tutorial 053 against
+those screens and confirmed fixed on CSpect (2026-07-05).
+
+Sprite attribute bytes (written to port `$57` after selecting a slot on `$303B`):
+
+| Byte | Content                                                              |
+|------|----------------------------------------------------------------------|
+| 0    | X low 8 bits                                                         |
+| 1    | Y low 8 bits                                                         |
+| 2    | palette offset (7:4), X mirror (3), Y mirror (2), rotate (1), X8 (0) |
+| 3    | visible (7), attr-4 enable (6), **pattern number (5:0)**             |
+
+### Slot vs pattern -- never conflate them
+
+Attribute 3 bits 5:0 are the **PATTERN** the sprite displays, *not* the sprite
+slot. The slot (which of the 64 hardware sprites is being programmed) is chosen
+only by the write to port `$303B`. Frame animation rewrites **the same slot**
+with alternating pattern numbers (`SPRITE 0 SPRITE-UPDATE`, Screens 406/411).
+
+**Bug found and fixed in tutorial 053 (2026-07-05):** `SPRITE-UPDATE` used the
+`_spriteid` field both for the `$303B` slot select and for attribute 3. The walk
+animation (`I 1 AND`) then alternated the *slot* too: it lit hardware sprites 0
+and 1 on alternate steps, both left visible -- a pair of half-overlapped sprites
+walking together instead of one animated character (and the final `0 SPRITE-HIDE`
+left sprite 1 on screen). Fix: `SPRITE-UPDATE ( a n -- )` takes the slot as a
+separate argument, as the screens' version always did.
+
+### Palette offset: uninitialised struct = shifted hues
+
+Attribute 2 bits 7:4 are a **palette offset** the hardware adds to the high
+nibble of *every pixel's* colour index. A sprite struct allocated with
+`CREATE ... ALLOT` and never `ERASE`d leaves heap garbage in the fields the demo
+does not store (`_pattern`, `_rotmir`, `_anchor`); a non-zero `_pattern` shifts
+every colour (pink `$F7` -> e.g. offset 4 -> `$37` = pale blue), and a dirty
+`_rotmir` can silently mirror/rotate the sprite. The symptom "all hues shifted /
+pinks turned pale blue" means **palette offset**, not a corrupted palette.
+Rule: always `ERASE` a struct right after `ALLOT` unless every field is stored.
+
+### Palette notes
+
+- The sprite palette defaults to the identity mapping (colour i = i, RRRGGGBB);
+  `.spr` files drawn for it (like DKSprite.spr) need no palette programming.
+  NextReg `$40/$41/$43` are shared state though: tutorial 053's
+  `SPRITE-PALETTE-INIT` rewrites the identity defensively. Careful with `$43`:
+  bits 3:1 select the displayed palette per layer and bit 0 enables ULANext;
+  `%00100000` restores the power-on defaults LAYER12 expects.
+- Screen 409's palette write (`18 40 REG!` + `E3 41 REG!`) is Derek Bolli's ULA
+  "paper bright 0" background tweak (see `forum/next-sprite-test.f`) -- it has
+  nothing to do with sprite colours.

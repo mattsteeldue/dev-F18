@@ -122,6 +122,20 @@ RAM on demand: the heap dictionary, the Layer 2 framebuffers, etc. `MMU7!`
 be quoted as both (e.g. the 80K Layer 2 320x256 framebuffer = five 16K banks =
 ten 8K MMU7 pages), but never write "16K bank via MMU7" -- the MMU pages 8K.
 
+### Hardware sprites: two classic gotchas
+
+Full details, attribute table and history in **`tutorial/CLAUDE.md` section 16**
+(bugs found in tutorial 053, fixed and CSpect-verified 2026-07-05). In short:
+
+- **Slot vs pattern.** Attribute 3 bits 5:0 are the **pattern** a sprite shows;
+  the sprite **slot** is chosen only by the write to port `$303B`. Animation
+  rewrites the *same* slot with alternating patterns -- using the pattern number
+  as the slot lights up extra overlapping sprites.
+- **Palette offset.** Attribute 2 bits 7:4 are added to the high nibble of every
+  pixel's colour index. Garbage there (typically a sprite struct `ALLOT`ed but
+  never `ERASE`d) shifts all hues -- e.g. pink `$F7` turns pale blue. Shifted
+  colours mean palette *offset*, not a corrupted palette.
+
 ### Blocks, Screens, and reserved ranges
 
 A **Screen** is the unit a programmer addresses with `n LOAD`; a **Block** is the half KB
