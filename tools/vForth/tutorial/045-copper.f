@@ -25,7 +25,8 @@ CR
 .(     Type NEWTASK to unload.         ) CR
 
 NEEDS COPPER
-NEEDS ms
+NEEDS LAYER2
+NEEDS LAYER12
 
 
 \ ===========================================================================
@@ -121,10 +122,12 @@ NEEDS ms
         I 32 * 7 AND  $41 COP-MOVE \ write palette color
     LOOP
     COP-HALT
+    LAYER2
     COP-START
     ." Rainbow effect running. Press BREAK to stop." CR
     BEGIN  ?TERMINAL  UNTIL
     COP-STOP
+    LAYER12
 ;
 
 \ ===========================================================================
@@ -150,10 +153,12 @@ NEEDS ms
     96  0 COP-WAIT
     $12 $41 COP-MOVE
     COP-HALT
+    LAYER2
     COP-START
     ." Split screen effect. BREAK to stop." CR
     Begin  ?TERMINAL  UNTIL
     COP-STOP
+    LAYER12
 ;
 
 \ ===========================================================================

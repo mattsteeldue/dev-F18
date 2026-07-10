@@ -8937,8 +8937,8 @@ Scr# 795
 Scr# 796 
   0 ( ZX-Next Copper - Example )
   1 COPPER STOP
-  2 COPPER-UPLOAD
-  3 COPPER HALD
+  2 COPPER-UP
+  3 COPPER HALT
   4 
   5 
   6 
