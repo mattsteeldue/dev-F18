@@ -410,13 +410,37 @@ Status as of 2026-07-05:
   was written `WAIT-KEY DROP`, but `WAIT-KEY ( -- )` leaves nothing on the stack
   (it is not `KEY`), so each `DROP` underflowed -- "Stack is empty" on returning
   to the prompt after `SLIDE-SHOW`. All five `DROP`s removed.
+  **2026-07-10**: section 6 replaced with the double-buffered slide show ported
+  from `demo/BMP-DEMO.f` (now removed -- content merged here); the fourteen
+  `.bmp` assets moved from `demo/BMP/` to `tutorial/bmp/`, and every path in the
+  tutorial updated accordingly. (`REG!` needs no `NEEDS` -- it is a core word,
+  compiled into `forth18e.bin`; see `src/F18e.f` line 5240 and `main.lst`. An
+  earlier revision of this note wrongly added `NEEDS REG!`, since removed.)
+  **Awaiting CSpect verification** of the new slide show.
 - **050-afxframe.f**: compile failure diagnosed 2026-07-05: `AFX-START`/`AFX-STOP`
   call `AYSETUP` (defined in `lib/AY.f`) but the tutorial never loaded it -- and
   `lib/AFXFRAME.f` has its own `NEEDS AY` commented out. `NEEDS AY` added to the
   tutorial header; **awaiting CSpect verification**.
+- **056-layer2-palette.f (new, 2026-07-10)**: first tutorial to cover Next
+  palette registers $40/$41/$43/$44 and Global Transparency $14, scoped to
+  Layer 2 only (ULA/Sprites/Tilemap palettes share the mechanism but are out
+  of scope). Written from `doc/zx-next-dev-guide-r3.txt` sec.3.4/3.6.4 (no
+  vForth manual section exists yet for palettes). Two gotchas worth keeping
+  in mind if this area is touched again: (1) auto-increment on `$40` only
+  advances after a *write* to `$41`/`$44`, never after a read, and the index
+  must be reset to 0 explicitly before streaming a whole palette -- relying
+  on whatever `$40` happened to hold silently wrote to the wrong indexes in
+  an early draft; (2) `$43` packs edit-target, active-display-bank and
+  ULANext-enable in one byte, so every write in the tutorial sets the whole
+  byte rather than trying to flip a single bit. Demos overwrite the Layer 2
+  palette banks and restore identity colors afterwards (`RESTORE-IDENTITY`)
+  rather than relying on `PAL-RESET` alone, which only resets the $43
+  control byte, not the palette RAM contents. **Awaiting CSpect
+  verification** -- never run outside this session.
 
 Flag: 045 remains **experimental** until hardware-verified; 050 until its fix is
-confirmed on CSpect.
+confirmed on CSpect; 046's new slide show (section 6) until confirmed on
+CSpect; 056 until confirmed on CSpect.
 
 
 ## 16. Hardware Sprites: slot vs pattern, palette offset (tutorial 053)

@@ -5,8 +5,9 @@ NEEDS VALUE
 NEEDS TO
 NEEDS CASE
 needs layer2
+needs layer12
 needs flip
-NEEDS INTERRUPT
+NEEDS INTERRUPTS
 needs copper
 
 0 value schiebe
@@ -18,16 +19,16 @@ needs copper
 
 : gehe
 cop-stop
-HEX
+
 00   00    cop-wait 
-schiebe lire + to schiebe schiebe   17    cop-MOVE 
-40 0f    cop-wait 
-schiebe1 lire1 + to schiebe1 schiebe1   17 cop-MOVE 
-80 1e cop-wait 
-schiebe2 lire2 + to schiebe2 schiebe2   17 cop-MOVE 
+schiebe lire + to schiebe schiebe   $17    cop-MOVE 
+$40 $0f    cop-wait 
+schiebe1 lire1 + to schiebe1 schiebe1   $17 cop-MOVE 
+$80 $1e cop-wait 
+schiebe2 lire2 + to schiebe2 schiebe2   $17 cop-MOVE 
 cop-halt ;
 
-hex 5c08 constant last-k decimal
+$5c08 constant last-k decimal
 : keypress ( — c )
   0 last-k c!
   begin last-k c@ until
@@ -50,7 +51,7 @@ endcase
 ?terminal until ;
 
 0 variable fh-BMP
-HEX 12 reg@ 2* CONSTANT Layer2-Base-Page  \ 8K Base page for Layer 2
+$12 reg@ 2* CONSTANT Layer2-Base-Page  \ 8K Base page for Layer 2
 DECIMAL
 : LOAD-BMP< ( a -- )  \ a is a counted z-string address, the kind created by ,"
     1+ 0 01 f_open 41 ?error fh-BMP !
@@ -59,7 +60,7 @@ DECIMAL
     6 0 DO
         5 I - LAYER2-BASE-PAGE + MMU7!  \ fit the correct page at MMU7
         32 0 DO
-            31 I - FLIP [ HEX ] E000 OR [ DECIMAL ] \ destination address
+            31 I - FLIP $E000 OR [ DECIMAL ] \ destination address
             256 fh-BMP @ f_read 46 ?error drop \ ignore number of byte read
         LOOP
     LOOP
@@ -72,13 +73,13 @@ DECIMAL
   endif
 ;
 
-INT-OFF
-' ISR-TEST INT-W !
+ISR-OFF
+' ISR-TEST ISR-XT !
 \ isr-on 
 \ isr-off
 
-create bmpname ," /fth/testbild1.bmp"
-create filename ," C:/demos/bmp256converts/bitmaps/future.bmp"
+\ create bmpname ," /fth/testbild1.bmp"
+create filename ," tutorial/bmp/future.bmp"
 
 : los
   layer2

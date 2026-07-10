@@ -63,7 +63,7 @@ HALT
 ;  
   
 hex 5c08 constant last-k decimal
-: keypress ( — c )
+: keypress ( ï¿½ c )
   0 last-k c!
   begin last-k c@ until
   last-k c@
@@ -110,7 +110,7 @@ ISR-OFF
 isr-on 
 isr-off
 
-create bmpname ," /tools/vforth/demo/bmp/critters.bmp"
+create bmpname ," /tools/vforth/tutorial/bmp/critters.bmp"
 
 : los
   layer2
