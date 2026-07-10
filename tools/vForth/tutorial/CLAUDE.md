@@ -400,8 +400,25 @@ register is active-low the mistake is silent (wrong channel plays, or nothing do
 
 Status as of 2026-07-05:
 
-- **045-copper.f**: may have issues with display timing / copper-effect rendering.
-  Unverified on real ZX Spectrum Next hardware. **Still open.**
+- **045-copper.f**: **RESOLVED** -- confirmed working on CSpect (2026-07-10),
+  all keys included. The old border/palette demo sections
+  (`COPPER-RAINBOW`/`COPPER-SPLIT`/`COPPER-OFF`) were speculative and never
+  confirmed working. Replaced with `SPLIT-SCROLL-DEMO`, a three-band split
+  vertical-scroll effect over a loaded Layer 2 bitmap (NextReg `$17` Layer 2
+  Y Offset written at three different `COP-WAIT` scanlines), ported from a
+  working forum contribution (`forum/copper-bmp2.f`) and cleaned up: BMP
+  loading now goes through `BMP-LOAD"` (the tutorial 046 loader) instead of
+  the forum source's hand-rolled, order-reversed page loop; German-derived
+  word/variable names (`gehe`/`schiebe`/`lire`/`starte`/`los`, ...)
+  translated to English (`BUILD-COPPER-LIST`/`SCROLLn`/`STEPn`/
+  `HANDLE-KEY`/`SPLIT-SCROLL-DEMO`); and the ISR was hooked up via `ISR-XT`
+  instead of the forum source's `ISR-W`, which is not a real word in
+  `lib/INTERRUPTS.f` and left the handler never actually installed.
+  `SPLIT-SCROLL-DEMO` also saves/restores NextReg `$17` (Layer 2 Y Offset)
+  around the effect, so it leaves that hardware register exactly as it
+  found it -- the same in/out discipline as the `LAYER2`/`LAYER12` switch.
+  The author confirmed on CSpect that `a` (start), `d` (pause) and `e`/`q`
+  (reverse direction) all work correctly.
 - **046-bmp-load.f**: **RESOLVED** -- works on CSpect (2026-07-05). The "malfunction"
   was a wrong file path: names passed to `BMP-LOAD` / `OPEN<` are **relative to the
   directory vForth was started from** (`tools/vForth` on the SD card). A PATH GOTCHA
@@ -416,7 +433,7 @@ Status as of 2026-07-05:
   tutorial updated accordingly. (`REG!` needs no `NEEDS` -- it is a core word,
   compiled into `forth18e.bin`; see `src/F18e.f` line 5240 and `main.lst`. An
   earlier revision of this note wrongly added `NEEDS REG!`, since removed.)
-  **Awaiting CSpect verification** of the new slide show.
+  Confirmed working on CSpect (2026-07-10), including the new slide show.
 - **050-afxframe.f**: compile failure diagnosed 2026-07-05: `AFX-START`/`AFX-STOP`
   call `AYSETUP` (defined in `lib/AY.f`) but the tutorial never loaded it -- and
   `lib/AFXFRAME.f` has its own `NEEDS AY` commented out. `NEEDS AY` added to the
@@ -438,8 +455,8 @@ Status as of 2026-07-05:
   control byte, not the palette RAM contents. **Awaiting CSpect
   verification** -- never run outside this session.
 
-Flag: 045 remains **experimental** until hardware-verified; 050 until its fix is
-confirmed on CSpect; 046's new slide show (section 6) until confirmed on
+Flag: 045 confirmed on CSpect (2026-07-10); 046 (including its new slide
+show) confirmed on CSpect (2026-07-10); 050 until its fix is confirmed on
 CSpect; 056 until confirmed on CSpect.
 
 
