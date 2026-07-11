@@ -50,10 +50,17 @@ NEEDS DMA
 \
 \ Example: allocate a small source block and copy it to a test destination.
 \
-\ CAUTION: never point DMA test transfers at $E000-$FFFF - that window is
-\ the MMU7 slot holding the heap dictionary, and writing there corrupts
-\ the word headers. We ALLOT scratch buffers in the dictionary instead:
-\ they are owned by this tutorial and safe to overwrite.
+\ CAUTION: $E000-$FFFF is not off-limits by address - it is the MMU7
+\ window, and its content is simply whichever 8K page is currently
+\ mapped there. A DMA transfer may legitimately target it (this is in
+\ fact how DMA is used to stream data into paged RAM, e.g. loading a
+\ LAYER2 framebuffer), as long as MMU7! has selected the intended page
+\ FIRST and that page is not the one holding the heap dictionary while
+\ the dictionary is still needed - writing there while the heap page is
+\ mapped corrupts the word headers. This tutorial sidesteps the whole
+\ question by using ALLOTed scratch buffers in ordinary dictionary
+\ space, owned by the tutorial and safe to overwrite, which need no
+\ MMU7 care at all.
 
 CREATE TEST-SRC   $80 ALLOT
 CREATE TEST-DEST  $80 ALLOT

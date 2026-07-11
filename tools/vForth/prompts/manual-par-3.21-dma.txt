@@ -1,0 +1,109 @@
+Paragraph 3.21 "Direct Memory Access (DMA)" -- draft text for the vForth
+manual (.odt). To be pasted by hand after 3.20 "Dictionary memory
+structure" (or wherever the DMA library ends up in the final numbering --
+adjust the heading number to fit).
+Word-entry format follows 3.12 Beeper / 3.13 AY: WORD  ( before -- after )
+line, then a description paragraph, in the same style as the rest of the
+manual.
+STATUS CAVEAT (read before pasting): lib/DMA.f was load-tested in the
+headless emulator (compiles, BASE preserved, stack balanced) but actual
+data transfer is still UNVERIFIED on CSpect or real hardware as of
+2026-07-11 -- see tutorial/057-dma.f "NEEDS TESTING" section. Consider
+keeping the closing caveat paragraph below until that verification is
+done, or removing it once confirmed.
+Drafted 2026-07-11.
+
+======================================================================
+
+3.21 Direct Memory Access (DMA)
+
+The following definitions are available after you type NEEDS DMA. To
+forget this library from the dictionary you can type NO-DMA (a MARKER
+placed at its head). The zxnDMA is a single-channel DMA controller on the
+ZX Spectrum Next that moves data between memory and memory, memory and an
+I/O port, or an I/O port and memory, at full CPU speed and without CPU
+involvement in the byte-by-byte transfer. The hardware is programmed by
+writing seven sequential configuration bytes (registers WR0-WR6) to port
+$006B; the library hides this register sequencing behind four transfer
+words that simply take source, destination and length. This library
+covers only continuous-mode transfers (the whole block moves in one go);
+burst mode with fixed-time-transfer, used for audio streaming, is
+reserved for a future extension.
+
+While a continuous-mode transfer is in progress the CPU is blocked until
+it completes, and level-triggered maskable interrupts cannot fire during
+that time -- keep this in mind if DMA is used together with the ULA frame
+interrupt or a CTC channel (see 3.5 Interrupt Service Routine and, for
+the newer hardware-vectored form, the Hardware Interrupt Mode 2 section).
+$E000-$FFFF is not off-limits by address: it is the MMU7 window, and its
+content is simply whichever 8K page is currently mapped there. A DMA
+transfer may legitimately target it, provided MMU7! has selected the
+intended page first and that page is not the one holding the heap
+dictionary (the default at $E000 in ordinary use) while the dictionary is
+still needed -- writing there while the heap page is mapped corrupts the
+word headers. Tutorial 057 avoids the question entirely by using ALLOTed
+scratch buffers in ordinary dictionary space, which need no MMU7 care.
+
+Authoritative reference: ZX Spectrum Next Developer's Guide & Reference
+Manual rev.3, section 3.3 "DMA".
+
+
+DMA-COPY                    src dest len   ---
+Copy len bytes from address src to address dest at full CPU speed; both
+addresses increment after each byte. The CPU is blocked until the whole
+transfer completes. This is faster than a CMOVE loop because the
+hardware, not the Forth inner interpreter, drives the address and count
+arithmetic. For example, copy 128 bytes from TEST-SRC to TEST-DEST:
+     TEST-SRC TEST-DEST 128 DMA-COPY
+
+
+DMA-FILL                    byte dest len   ---
+Fill len bytes starting at dest with the constant value byte. The source
+address stays fixed on a one-byte internal buffer while the destination
+address increments; this is faster than a FILL loop for large blocks.
+For example, fill 128 bytes at FILL-DEST with $AA:
+     $AA FILL-DEST 128 DMA-FILL
+
+
+DMA-OUT                     src ioport len   ---
+Send len bytes from memory, starting at src (incrementing), to the fixed
+I/O port ioport; every byte is written to the same port in sequence. For
+example, stream 128 bytes to the border-color port:
+     TEST-SRC $FE 128 DMA-OUT
+
+
+DMA-IN                      ioport dest len   ---
+Read len bytes from the fixed I/O port ioport into memory, starting at
+dest (incrementing); every byte comes from the same port in sequence.
+For example, read 16 bytes from the keyboard port into memory:
+     $FE IN-DEST 16 DMA-IN
+
+
+DMA-STATUS                            ---     b
+Read and return the zxnDMA status byte (register WR6 read-status
+sequence). Bit 5 clear means the last transfer has completed; the other
+bits report end-of-block, match and ready conditions as documented in the
+Z80 DMA datasheet.
+
+
+DMA-DONE?                             ---     f
+Convenience wrapper around DMA-STATUS: return a true flag once the last
+continuous-mode transfer has finished (bit 5 of the status byte is 0).
+
+
+DMA-ENABLE / DMA-DISABLE / DMA-LOAD / DMA-CONTINUE / DMA-RESET /
+DMA-RESET-STATUS                      ---
+Low-level WR6 command words, exposed individually for advanced control:
+enable or disable the DMA channel, (re)load the address/length registers
+and start a transfer, continue a paused transfer, reset the whole chip,
+or reset only the status flags. The four transfer words above already
+sequence DISABLE, the register writes, LOAD and ENABLE for you; use
+these directly only when composing a transfer sequence of your own.
+
+
+This library was load-tested in the headless emulator (register
+sequencing verified byte by byte) but actual data movement on CSpect or
+real hardware has not yet been confirmed -- treat it as provisional until
+that verification is done.
+
+See also: 3.5 Interrupt Service Routine, Hardware Interrupt Mode 2
