@@ -3,445 +3,219 @@
 \
 .( IM2-HW )
 \
+\ Hardware Interrupt Mode 2 for ZX Spectrum Next (core 3.0+).
+\ Uses Next registers $C0/$C4/$C5/$C6 to give each interrupt source
+\ (line, UART, CTC 0-7, ULA) its own vector-table slot with hardware
+\ daisy-chain priority: the handler that runs knows which source fired.
+\
+\ Used in the form:
+\
+\   ' cccc IM2-HW-SLOT-ULA IM2-HW-HANDLER!
+\   IM2-HW-ON                        \ ULA source enabled by default
+\   IM2-HW-SLOT-CTC0 IM2-HW-ENABLE   \ optionally enable more sources
+\   ...
+\   IM2-HW-OFF
+\
+\ Handler contract: handlers run on the small ISR stacks shared with
+\ lib/INTERRUPTS.f (about 40 cells). Keep them short: no console or
+\ file I/O, no MMU7 remapping without save/restore (see tutorial 049).
+\ Classic ISR-ON mode and IM2-HW-ON mode are mutually exclusive.
+\
 
-NEEDS VALUE
-
-MARKER IM2-HW
-
-( Hardware Interrupt Mode 2 library for ZX Spectrum Next core 3.0+
-  Provides high-level Forth interface to Z80N IM2 daisy-chain with
-  dedicated vector slots and register control.
-
-  Phase 1: Vector table, ULA + CTC0 handlers, Init/Disable.
-)
-
-( === Low-level register I/O (must be defined before using) === )
+NEEDS INTERRUPTS
 
 BASE @
+
 HEX
 
-CODE REG!  ( b n -- )
-    D9 C,               \   exx
-    01 C, 243B ,        \   ld      bc, $243B
-    E1 C,               \   pop    hl
-    ED C, 69 C,         \   out    (c), l
-    04 C,               \   inc    b
-    E1 C,               \   pop    hl
-    ED C, 69 C,         \   out    (c), l
-    D9 C,               \   exx
-    DD C, E9 C,         \   jpix
-    SMUDGE
+MARKER NO-IM2-HW
 
-CODE REG@  ( n -- b )
-    D9 C,               \   exx
-    01 C, 243B ,        \   ld      bc, $243B
-    E1 C,               \   pop    hl
-    ED C, 69 C,         \   out    (c), l
-    04 C,               \   inc    b
-    ED C, 68 C,         \   in     l, (c)
-    E5 C,               \   push   hl
-    D9 C,               \   exx
-    DD C, E9 C,         \   jpix
-    SMUDGE
+\ ____________________________________________________________________
 
-( === Z80 I register setup === )
+\ Slot numbers in hardware daisy-chain priority order (dev guide r3).
+00 CONSTANT IM2-HW-SLOT-LINE
+01 CONSTANT IM2-HW-SLOT-UART0RX
+02 CONSTANT IM2-HW-SLOT-UART1RX
+03 CONSTANT IM2-HW-SLOT-CTC0
+04 CONSTANT IM2-HW-SLOT-CTC1
+05 CONSTANT IM2-HW-SLOT-CTC2
+06 CONSTANT IM2-HW-SLOT-CTC3
+07 CONSTANT IM2-HW-SLOT-CTC4
+08 CONSTANT IM2-HW-SLOT-CTC5
+09 CONSTANT IM2-HW-SLOT-CTC6
+0A CONSTANT IM2-HW-SLOT-CTC7
+0B CONSTANT IM2-HW-SLOT-ULA
+0C CONSTANT IM2-HW-SLOT-UART0TX
+0D CONSTANT IM2-HW-SLOT-UART1TX
 
-CODE IM2-HW-SET-I-REG  ( a -- )
-    E1 C,               \   pop    hl
-    7D C,               \   ld     a, l
-    ED C, 47 C,         \   ld     i, a
-    DD C, E9 C,         \   jpix
-    SMUDGE
+\ ____________________________________________________________________
+\
+\ return-from-interrupt low-level definition: exact mirror of the
+\ IM2-COMMON dispatch below. Restores SP, both register sets and IX,
+\ then ei + reti (reti: daisy-chain convention for hardware IM2).
+\
+CODE IM2-HW-RET  ( -- )
+    ED C, 7B C, ISR-SAVE-SP ,   \ ld sp,(ISR-SAVE-SP)
+    D9 C,                       \ exx
+    DD C, E1 C,                 \ pop ix
+    C1 C, D1 C, E1 C,           \ pop bc, de, hl   (alternate set)
+    D9 C,                       \ exx
+    C1 C, D1 C,                 \ pop bc, de       (main set)
+    F1 C, 08 C, F1 C,           \ pop af  ex af,af'  pop af
+    E1 C,                       \ pop hl           (the stub's push)
+    FB C,                       \ ei
+    ED C, 4D C,                 \ reti
+SMUDGE
+
+\ ____________________________________________________________________
+
+.( IM2-FRAGS )
+
+\ 16 threaded fragments, one per slot: [ handler-xt, IM2-HW-RET ].
+\ Installing a handler stores its xt in the first cell of the pair.
+CREATE IM2-FRAGS
+    ' NOOP , ' IM2-HW-RET ,     \ 00 LINE
+    ' NOOP , ' IM2-HW-RET ,     \ 01 UART0 Rx
+    ' NOOP , ' IM2-HW-RET ,     \ 02 UART1 Rx
+    ' NOOP , ' IM2-HW-RET ,     \ 03 CTC0
+    ' NOOP , ' IM2-HW-RET ,     \ 04 CTC1
+    ' NOOP , ' IM2-HW-RET ,     \ 05 CTC2
+    ' NOOP , ' IM2-HW-RET ,     \ 06 CTC3
+    ' NOOP , ' IM2-HW-RET ,     \ 07 CTC4
+    ' NOOP , ' IM2-HW-RET ,     \ 08 CTC5
+    ' NOOP , ' IM2-HW-RET ,     \ 09 CTC6
+    ' NOOP , ' IM2-HW-RET ,     \ 0A CTC7
+    ' NOOP , ' IM2-HW-RET ,     \ 0B ULA
+    ' NOOP , ' IM2-HW-RET ,     \ 0C UART0 Tx
+    ' NOOP , ' IM2-HW-RET ,     \ 0D UART1 Tx
+    ' NOOP , ' IM2-HW-RET ,     \ 0E reserved
+    ' NOOP , ' IM2-HW-RET ,     \ 0F reserved
+
+\ ____________________________________________________________________
+
+\ 32-byte aligned vector table: 32-aligned and 32 bytes long, so it
+\ can never cross a 256-byte page boundary.
+HERE 1F AND NEGATE 1F AND ALLOT
+HERE 20 ALLOT CONSTANT IM2-HW-TABLE
+
+\ ____________________________________________________________________
+\
+\ common dispatch code: every stub jumps here with the interrupted
+\ program's HL already pushed and HL = fragment address for its slot.
+\ Saves the full context, moves Forth onto the ISR stacks, sets IP to
+\ the fragment and enters the inner interpreter.
+\
+HERE
+    F3 C,                       \ di  (the ULA stub's rst 38 did ei)
+    F5 C, 08 C, F5 C,           \ push af  ex af,af'  push af
+    D5 C, C5 C,                 \ push de, bc      (main: RSP, IP)
+    D9 C,                       \ exx
+    E5 C, D5 C, C5 C,           \ push hl, de, bc  (alternate set)
+    DD C, E5 C,                 \ push ix
+    D9 C,                       \ exx  (back: HL = fragment address)
+    44 C, 4D C,                 \ ld b,h  ld c,l   (IP = fragment)
+    ED C, 73 C, ISR-SAVE-SP ,   \ ld (ISR-SAVE-SP),sp
+    31 C, ISR-SP0 ,             \ ld sp, ISR-SP0
+    11 C, ISR-RP0 ,             \ ld de, ISR-RP0
+    DD C, 21 C, (NEXT) ,        \ ld ix, next
+    DD C, E9 C,                 \ jp (ix)
+CONSTANT IM2-COMMON
+
+\ ____________________________________________________________________
+
+.( IM2-STUBS )
+
+\ one small stub per slot; its address goes into the vector table.
+\ The ULA stub is prefixed with rst 38 so the ROM 50Hz housekeeping
+\ (keyboard scan, FRAMES) keeps running while hardware IM2 is active.
+: IM2-STUB,  ( slot -- )
+    HERE OVER 2* IM2-HW-TABLE + !
+    DUP IM2-HW-SLOT-ULA = IF FF C, THEN
+    E5 C,                       \ push hl
+    21 C, 4 * IM2-FRAGS + ,     \ ld hl, fragment
+    C3 C, IM2-COMMON ,          \ jp IM2-COMMON
+;
+
+: IM2-STUBS,  ( -- )  10 0 DO  I IM2-STUB,  LOOP ;
+
+IM2-STUBS,
+
+\ ____________________________________________________________________
+
+\ slot -> (register, mask) for the Interrupt Enable 0/1/2 registers.
+\ Reserved slots map to register 0 = no-op.
+CREATE IM2-REGBITS
+    C4 C, 02 C,                 \ 00 LINE
+    C6 C, 01 C,                 \ 01 UART0 Rx
+    C6 C, 10 C,                 \ 02 UART1 Rx
+    C5 C, 01 C,                 \ 03 CTC0
+    C5 C, 02 C,                 \ 04 CTC1
+    C5 C, 04 C,                 \ 05 CTC2
+    C5 C, 08 C,                 \ 06 CTC3
+    C5 C, 10 C,                 \ 07 CTC4
+    C5 C, 20 C,                 \ 08 CTC5
+    C5 C, 40 C,                 \ 09 CTC6
+    C5 C, 80 C,                 \ 0A CTC7
+    C4 C, 01 C,                 \ 0B ULA
+    C6 C, 04 C,                 \ 0C UART0 Tx
+    C6 C, 40 C,                 \ 0D UART1 Tx
+    00 C, 00 C,                 \ 0E reserved
+    00 C, 00 C,                 \ 0F reserved
+
+: IM2-REGBIT  ( slot -- reg mask )
+    2* IM2-REGBITS + DUP C@ SWAP 1+ C@ ;
+
+\ ____________________________________________________________________
+
+.( IM2-HW API )
+
+\ install / query a slot's handler
+: IM2-HW-HANDLER!  ( xt slot -- )  4 * IM2-FRAGS + ! ;
+
+: IM2-HW-HANDLER@  ( slot -- xt )  4 * IM2-FRAGS + @ ;
+
+\ enable / disable one interrupt source (read-modify-write)
+: IM2-HW-ENABLE  ( slot -- )
+    IM2-REGBIT OVER
+    IF  OVER REG@ OR SWAP REG!  ELSE  2DROP  THEN ;
+
+: IM2-HW-DISABLE  ( slot -- )
+    IM2-REGBIT OVER
+    IF  FF XOR OVER REG@ AND SWAP REG!  ELSE  2DROP  THEN ;
+
+\ ____________________________________________________________________
+
+.( IM2-HW-ON )
+
+\ enter hardware IM2 mode: ULA source only at first (its stub's
+\ rst 38 keeps the system alive); add sources with IM2-HW-ENABLE.
+: IM2-HW-ON  ( -- )
+    ISR-DI
+    01 C4 REG!
+    00 C5 REG!
+    00 C6 REG!
+    IM2-HW-TABLE 8 RSHIFT SETIREG
+    IM2-HW-TABLE E0 AND 01 OR C0 REG!
+    ISR-IM2
+    ISR-EI
+;
+
+\ ____________________________________________________________________
+
+.( IM2-HW-OFF )
+
+\ leave hardware IM2 mode and restore the reset defaults
+: IM2-HW-OFF  ( -- )
+    ISR-DI
+    00 C0 REG!
+    81 C4 REG!                  \ reset default: expansion bus + ULA
+    00 C5 REG!
+    00 C6 REG!
+    ISR-OFF
+;
+
+\ ____________________________________________________________________
 
 BASE !
 
-( === Vector table allocation === )
-
-( Align to 32-byte boundary using HERE $1F AND ... technique )
-HERE $1F AND
-?DUP IF  32 SWAP - ALLOT  THEN
-CONSTANT IM2-HW-TABLE
-
-( I register MSB from table address )
-IM2-HW-TABLE 8 RSHIFT
-CONSTANT IM2-HW-I-REGISTER
-
-( Shadow registers: cache current state to avoid losing other bits )
-0 VALUE IM2-HW-ENABLED-MASK      ( $C4 cache )
-0 VALUE IM2-HW-ENABLED-MASK-C5   ( $C5 cache )
-0 VALUE IM2-HW-ENABLED-MASK-C6   ( $C6 cache )
-
-( === Handler slot indices === )
-
-0 CONSTANT IM2-HW-SLOT-LINE
-1 CONSTANT IM2-HW-SLOT-UART0RX
-2 CONSTANT IM2-HW-SLOT-UART1RX
-3 CONSTANT IM2-HW-SLOT-CTC0
-4 CONSTANT IM2-HW-SLOT-CTC1
-5 CONSTANT IM2-HW-SLOT-CTC2
-6 CONSTANT IM2-HW-SLOT-CTC3
-7 CONSTANT IM2-HW-SLOT-CTC4
-8 CONSTANT IM2-HW-SLOT-CTC5
-9 CONSTANT IM2-HW-SLOT-CTC6
-10 CONSTANT IM2-HW-SLOT-CTC7
-11 CONSTANT IM2-HW-SLOT-ULA
-12 CONSTANT IM2-HW-SLOT-UART0TX
-13 CONSTANT IM2-HW-SLOT-UART1TX
-14 CONSTANT IM2-HW-SLOT-RESERVED14
-15 CONSTANT IM2-HW-SLOT-RESERVED15
-
-( === Vector table management === )
-
-: ISR-RET  ;
-
-: IM2-HW-SET-HANDLER-AT  ( xt slot -- )
-  2* IM2-HW-TABLE + !
-;
-
-: IM2-HW-GET-HANDLER-AT  ( slot -- xt )
-  2* IM2-HW-TABLE + @
-;
-
-( === Initialization and control === )
-
-: IM2-HW-INIT-VECTOR-TABLE  ( -- )
-  16 0 DO
-    ['] ISR-RET I IM2-HW-SET-HANDLER-AT
-  LOOP
-;
-
-: IM2-HW-SET-I-REGISTER  ( -- )
-  IM2-HW-I-REGISTER IM2-HW-SET-I-REG
-;
-
-: IM2-HW-CONFIG-CONTROL  ( -- )
-  IM2-HW-TABLE $FF AND 5 RSHIFT
-  1 OR
-  $C0 REG!
-;
-
-: IM2-HW-CLEAR-MASKS  ( -- )
-  0 $C4 REG!
-  0 $C5 REG!
-  0 $C6 REG!
-  0 TO IM2-HW-ENABLED-MASK
-  0 TO IM2-HW-ENABLED-MASK-C5
-  0 TO IM2-HW-ENABLED-MASK-C6
-;
-
-: IM2-HW-INIT  ( -- )
-  DI
-  IM2-HW-INIT-VECTOR-TABLE
-  IM2-HW-CLEAR-MASKS
-  IM2-HW-SET-I-REGISTER
-  IM2-HW-CONFIG-CONTROL
-  EI
-;
-
-: IM2-HW-DISABLE  ( -- )
-  DI
-  0 $C0 REG!
-  IM2-HW-CLEAR-MASKS
-;
-
-( === Phase 1 API: ULA and CTC0 handlers === )
-
-: IM2-HW-SET-HANDLER-ULA  ( xt -- )
-  IM2-HW-SLOT-ULA IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-ULA  ( -- xt )
-  IM2-HW-SLOT-ULA IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-SET-HANDLER-CTC0  ( xt -- )
-  IM2-HW-SLOT-CTC0 IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-CTC0  ( -- xt )
-  IM2-HW-SLOT-CTC0 IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-ULA  ( -- )
-  IM2-HW-ENABLED-MASK $80 OR
-  DUP TO IM2-HW-ENABLED-MASK
-  $C4 REG!
-;
-
-: IM2-HW-DISABLE-ULA  ( -- )
-  IM2-HW-ENABLED-MASK $7F AND
-  DUP TO IM2-HW-ENABLED-MASK
-  $C4 REG!
-;
-
-: IM2-HW-ENABLE-CTC0  ( -- )
-  IM2-HW-ENABLED-MASK $08 OR
-  DUP TO IM2-HW-ENABLED-MASK
-  $C4 REG!
-;
-
-: IM2-HW-DISABLE-CTC0  ( -- )
-  IM2-HW-ENABLED-MASK $F7 AND
-  DUP TO IM2-HW-ENABLED-MASK
-  $C4 REG!
-;
-
-: IM2-HW-STATUS  ( -- c )
-  $C4 REG@
-  DUP TO IM2-HW-ENABLED-MASK
-;
-
-( === Phase 2 API: All handler slots (LINE, UART, CTC) === )
-
-( LINE (slot 0) - Bit 1 of $C4 )
-: IM2-HW-SET-HANDLER-LINE  ( xt -- )
-  IM2-HW-SLOT-LINE IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-LINE  ( -- xt )
-  IM2-HW-SLOT-LINE IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-LINE  ( -- )
-  IM2-HW-ENABLED-MASK $02 OR
-  DUP TO IM2-HW-ENABLED-MASK
-  $C4 REG!
-;
-
-: IM2-HW-DISABLE-LINE  ( -- )
-  IM2-HW-ENABLED-MASK $FD AND
-  DUP TO IM2-HW-ENABLED-MASK
-  $C4 REG!
-;
-
-( UART0 Rx (slot 1) - Bit 0 of $C6 )
-: IM2-HW-SET-HANDLER-UART0RX  ( xt -- )
-  IM2-HW-SLOT-UART0RX IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-UART0RX  ( -- xt )
-  IM2-HW-SLOT-UART0RX IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-UART0RX  ( -- )
-  IM2-HW-ENABLED-MASK-C6 $01 OR
-  DUP TO IM2-HW-ENABLED-MASK-C6
-  $C6 REG!
-;
-
-: IM2-HW-DISABLE-UART0RX  ( -- )
-  IM2-HW-ENABLED-MASK-C6 $FE AND
-  DUP TO IM2-HW-ENABLED-MASK-C6
-  $C6 REG!
-;
-
-( UART1 Rx (slot 2) - Bit 4 of $C6 )
-: IM2-HW-SET-HANDLER-UART1RX  ( xt -- )
-  IM2-HW-SLOT-UART1RX IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-UART1RX  ( -- xt )
-  IM2-HW-SLOT-UART1RX IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-UART1RX  ( -- )
-  IM2-HW-ENABLED-MASK-C6 $10 OR
-  DUP TO IM2-HW-ENABLED-MASK-C6
-  $C6 REG!
-;
-
-: IM2-HW-DISABLE-UART1RX  ( -- )
-  IM2-HW-ENABLED-MASK-C6 $EF AND
-  DUP TO IM2-HW-ENABLED-MASK-C6
-  $C6 REG!
-;
-
-( CTC1 (slot 4) - Bit 1 of $C5 )
-: IM2-HW-SET-HANDLER-CTC1  ( xt -- )
-  IM2-HW-SLOT-CTC1 IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-CTC1  ( -- xt )
-  IM2-HW-SLOT-CTC1 IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-CTC1  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $02 OR
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-: IM2-HW-DISABLE-CTC1  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $FD AND
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-( CTC2 (slot 5) - Bit 2 of $C5 )
-: IM2-HW-SET-HANDLER-CTC2  ( xt -- )
-  IM2-HW-SLOT-CTC2 IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-CTC2  ( -- xt )
-  IM2-HW-SLOT-CTC2 IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-CTC2  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $04 OR
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-: IM2-HW-DISABLE-CTC2  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $FB AND
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-( CTC3 (slot 6) - Bit 3 of $C5 )
-: IM2-HW-SET-HANDLER-CTC3  ( xt -- )
-  IM2-HW-SLOT-CTC3 IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-CTC3  ( -- xt )
-  IM2-HW-SLOT-CTC3 IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-CTC3  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $08 OR
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-: IM2-HW-DISABLE-CTC3  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $F7 AND
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-( CTC4 (slot 7) - Bit 4 of $C5 )
-: IM2-HW-SET-HANDLER-CTC4  ( xt -- )
-  IM2-HW-SLOT-CTC4 IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-CTC4  ( -- xt )
-  IM2-HW-SLOT-CTC4 IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-CTC4  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $10 OR
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-: IM2-HW-DISABLE-CTC4  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $EF AND
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-( CTC5 (slot 8) - Bit 5 of $C5 )
-: IM2-HW-SET-HANDLER-CTC5  ( xt -- )
-  IM2-HW-SLOT-CTC5 IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-CTC5  ( -- xt )
-  IM2-HW-SLOT-CTC5 IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-CTC5  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $20 OR
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-: IM2-HW-DISABLE-CTC5  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $DF AND
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-( CTC6 (slot 9) - Bit 6 of $C5 )
-: IM2-HW-SET-HANDLER-CTC6  ( xt -- )
-  IM2-HW-SLOT-CTC6 IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-CTC6  ( -- xt )
-  IM2-HW-SLOT-CTC6 IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-CTC6  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $40 OR
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-: IM2-HW-DISABLE-CTC6  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $BF AND
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-( CTC7 (slot 10) - Bit 7 of $C5 )
-: IM2-HW-SET-HANDLER-CTC7  ( xt -- )
-  IM2-HW-SLOT-CTC7 IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-CTC7  ( -- xt )
-  IM2-HW-SLOT-CTC7 IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-CTC7  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $80 OR
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-: IM2-HW-DISABLE-CTC7  ( -- )
-  IM2-HW-ENABLED-MASK-C5 $7F AND
-  DUP TO IM2-HW-ENABLED-MASK-C5
-  $C5 REG!
-;
-
-( UART0 Tx (slot 12) - Bit 2 of $C6 )
-: IM2-HW-SET-HANDLER-UART0TX  ( xt -- )
-  IM2-HW-SLOT-UART0TX IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-UART0TX  ( -- xt )
-  IM2-HW-SLOT-UART0TX IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-UART0TX  ( -- )
-  IM2-HW-ENABLED-MASK-C6 $04 OR
-  DUP TO IM2-HW-ENABLED-MASK-C6
-  $C6 REG!
-;
-
-: IM2-HW-DISABLE-UART0TX  ( -- )
-  IM2-HW-ENABLED-MASK-C6 $FB AND
-  DUP TO IM2-HW-ENABLED-MASK-C6
-  $C6 REG!
-;
-
-( UART1 Tx (slot 13) - Bit 6 of $C6 )
-: IM2-HW-SET-HANDLER-UART1TX  ( xt -- )
-  IM2-HW-SLOT-UART1TX IM2-HW-SET-HANDLER-AT
-;
-
-: IM2-HW-GET-HANDLER-UART1TX  ( -- xt )
-  IM2-HW-SLOT-UART1TX IM2-HW-GET-HANDLER-AT
-;
-
-: IM2-HW-ENABLE-UART1TX  ( -- )
-  IM2-HW-ENABLED-MASK-C6 $40 OR
-  DUP TO IM2-HW-ENABLED-MASK-C6
-  $C6 REG!
-;
-
-: IM2-HW-DISABLE-UART1TX  ( -- )
-  IM2-HW-ENABLED-MASK-C6 $BF AND
-  DUP TO IM2-HW-ENABLED-MASK-C6
-  $C6 REG!
-;
-
+: IM2-HW ;

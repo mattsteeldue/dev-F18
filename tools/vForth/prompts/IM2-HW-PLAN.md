@@ -303,10 +303,14 @@ Mirrors ISR-SUB/ISR-XT/ISR-RET exactly, but per slot.
 
 - `IM2-FRAGS`: 16 entries x 2 cells: `[ handler-xt , ' IM2-HW-RET ]`.
   Handler install = store xt at `IM2-FRAGS + slot*4`. Default `' NOOP`.
-- Vector table: `HERE $1F AND ?DUP IF $20 SWAP - ALLOT THEN` then
-  `HERE CONSTANT IM2-HW-TABLE  $20 ALLOT` (both fixes: HERE before
-  CONSTANT, and the 32 bytes actually reserved). 32-aligned + 32 bytes
-  long means it can never cross a 256-byte page.
+- Vector table: `HERE $1F AND NEGATE $1F AND ALLOT` (branchless: IF is
+  compile-only, unusable at interpret time - lib/INTERRUPTS.f page-align
+  idiom) then `HERE $20 ALLOT CONSTANT IM2-HW-TABLE` (both fixes: HERE
+  captured first, and the 32 bytes actually reserved). NB: the ALLOT
+  must come BEFORE the CONSTANT (ISR-TABLE idiom) - writing
+  `HERE CONSTANT ... $20 ALLOT` would lay the CONSTANT's own code
+  inside the table. 32-aligned + 32 bytes long means it can never
+  cross a 256-byte page.
 - Per-slot stub (8 bytes, built with C, via a helper word run 16 times;
   entry address stored into `IM2-HW-TABLE + slot*2`):
 

@@ -1241,22 +1241,36 @@ def inst_cp_a_l(cpu):
 # Extended instructions (prefix 0xED)
 
 
-def inst_nextreg_a(cpu):
-    """0xED 0x92 n: NEXTREG n,A - write A to Next register n.
+def _nextreg_write(cpu, reg, val):
+    """Write a NextReg: register 87 (MMU slot 7) is fully modelled --
+    assigning cpu.mmu7_page swaps the $E000-$FFFF window content (see
+    Z80CPU.mmu7_page); every other register lands in the cpu.nextregs
+    register file so it can be read back via $243B/$253B."""
+    if reg == 87:
+        cpu.mmu7_page = val & 0xFF
+    else:
+        cpu.nextregs[reg] = val & 0xFF
 
-    Register 87 (MMU slot 7) is fully modelled: assigning cpu.mmu7_page
-    swaps the $E000-$FFFF window content (see Z80CPU.mmu7_page)."""
+
+def _nextreg_read(cpu, reg):
+    """Read a NextReg back: 87 from the tracked MMU7 page, anything else
+    from the register file; never-written registers are idle bus 0xFF."""
+    if reg == 87:
+        return cpu.mmu7_page & 0xFF
+    return cpu.nextregs.get(reg, 0xFF)
+
+
+def inst_nextreg_a(cpu):
+    """0xED 0x92 n: NEXTREG n,A - write A to Next register n."""
     reg = cpu.fetch_byte()
-    if reg == 87:  # MMU register for slot 7
-        cpu.mmu7_page = cpu.A & 0xFF
+    _nextreg_write(cpu, reg, cpu.A)
 
 
 def inst_nextreg_nn(cpu):
     """0xED 0x91 n m: NEXTREG n,m - write immediate m to Next register n"""
     reg = cpu.fetch_byte()
     val = cpu.fetch_byte()
-    if reg == 87:
-        cpu.mmu7_page = val & 0xFF
+    _nextreg_write(cpu, reg, val)
 
 
 def inst_push_nn(cpu):
@@ -2509,15 +2523,23 @@ def _bc_port_in(cpu):
     on every emitted character, so it must see the real tracked MMU7 page
     (a dummy $FF would then be written back through `nextreg 87,a` and swap
     garbage into $E000-$FFFF). Anything else reads an idle bus (0xFF)."""
-    if cpu.BC == 0x253B and getattr(cpu, 'nextreg_selected', None) == 87:
-        return cpu.mmu7_page & 0xFF
+    if cpu.BC == 0x253B:
+        sel = getattr(cpu, 'nextreg_selected', None)
+        if sel is not None:
+            return _nextreg_read(cpu, sel)
     return 0xFF
 
 
 def _bc_port_out(cpu, val):
-    """Write the 16-bit port in BC; models the NextReg select port $243B."""
+    """Write the 16-bit port in BC; models the NextReg select port $243B
+    and the data port $253B (routed through the same register file as the
+    nextreg instructions)."""
     if cpu.BC == 0x243B:
         cpu.nextreg_selected = val & 0xFF
+    elif cpu.BC == 0x253B:
+        sel = getattr(cpu, 'nextreg_selected', None)
+        if sel is not None:
+            _nextreg_write(cpu, sel, val)
 
 
 def _make_in_r_c(idx):

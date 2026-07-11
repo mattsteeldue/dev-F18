@@ -50,6 +50,11 @@ class Z80CPU:
         self.mmu7_pages = {}
         self._mmu7_page = 0x20  # Current heap page (initially page 32)
 
+        # Generic NextReg register file: value of every NextReg written so
+        # far (register 87 is NOT kept here -- it routes to mmu7_page).
+        # Unwritten registers read back as 0xFF (idle bus).
+        self.nextregs = {}
+
     # MMU7 banking: writing a new page number swaps the $E000-$FFFF window.
     # Pages never seen before read as zero-filled RAM (uninitialised on the
     # real machine); page 1 is the OS bank-0 default left by +3DOS calls.
