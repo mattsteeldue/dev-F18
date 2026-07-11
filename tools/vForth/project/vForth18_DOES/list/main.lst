@@ -1,4 +1,8 @@
-# file opened: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/main.asm
+source/system.asm(163): warning[fwdref]: forward reference of symbol: if Enter_Ptr != 0
+source/system.asm(207): ^ emitted from here
+source/system.asm(163): warning[opkeyword]: Label collides with one of the operator keywords, try capitalizing it or other name: MOD
+source/system.asm(207): ^ emitted from here
+# file opened: source/main.asm
    1  0000              //  ______________________________________________________________________
    2  0000              //
    3  0000              //  main.asm
@@ -149,7 +153,7 @@
  148  6366              //    - Words that collide with Assembler are normally suffixed with "_OP"
  149  6366
  150  6366                              include "system.asm"
-# file opened: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/system.asm
+# file opened: source/system.asm
    1+ 6366              //  ______________________________________________________________________
    2+ 6366              //
    3+ 6366              //  system.asm
@@ -395,9 +399,9 @@
  243+ 6366              // FIRST_system:   equ     $D1E4               // Address of first BUFFER
  244+ 6366              // LIMIT_system:   equ     $E000               // Address of first byte beyond last BUFFER
  245+ 6366
-# file closed: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/system.asm
+# file closed: source/system.asm
  151  6366                              include "L0.asm"
-# file opened: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/L0.asm
+# file opened: source/L0.asm
    1+ 6366              //  ______________________________________________________________________
    2+ 6366              //
    3+ 6366              //  L0.asm
@@ -2893,7 +2897,7 @@
 1167+ 66B2              // this include is "here" for backward compatibility
 1168+ 66B2
 1169+ 66B2                              include "next-opt0.asm"
-# file opened: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/next-opt0.asm
+# file opened: source/next-opt0.asm
    1++66B2              //  ______________________________________________________________________
    2++66B2              //
    3++66B2              //  next-opt.asm
@@ -3596,7 +3600,7 @@
  249++6766 18 DB                         jr      F_Open_Exit
  250++6768
  251++6768
-# file closed: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/next-opt0.asm
+# file closed: source/next-opt0.asm
 1170+ 6768
 1171+ 6768
 1172+ 6768              //  ______________________________________________________________________
@@ -7372,9 +7376,9 @@
 2178+ 69DE              //  ______________________________________________________________________
 2179+ 69DE
 2180+ 69DE
-# file closed: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/L0.asm
+# file closed: source/L0.asm
  152  69DE                              include "L1.asm"
-# file opened: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/L1.asm
+# file opened: source/L1.asm
    1+ 69DE              //  ______________________________________________________________________
    2+ 69DE              //
    3+ 69DE              //  L1.asm
@@ -16378,9 +16382,9 @@
 1709+ 7514 25 68                        dw      EXIT                    // ;
 1710+ 7516
 1711+ 7516
-# file closed: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/L1.asm
+# file closed: source/L1.asm
  153  7516                              include "L2.asm"
-# file opened: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/L2.asm
+# file opened: source/L2.asm
    1+ 7516              //  ______________________________________________________________________
    2+ 7516              //
    3+ 7516              //  L2.asm
@@ -18381,9 +18385,9 @@
  549+ 7811
  550+ 7811              //  ______________________________________________________________________
  551+ 7811
-# file closed: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/L2.asm
+# file closed: source/L2.asm
  154  7811                              include "next-opt1.asm"
-# file opened: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/next-opt1.asm
+# file opened: source/next-opt1.asm
    1+ 7811              //  ______________________________________________________________________
    2+ 7811              //
    3+ 7811              //  next-opt.asm
@@ -19079,9 +19083,9 @@
  185+ 7906              //  ______________________________________________________________________
  186+ 7906
  187+ 7906
-# file closed: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/next-opt1.asm
+# file closed: source/next-opt1.asm
  155  7906                              include "L3.asm"
-# file opened: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/L3.asm
+# file opened: source/L3.asm
    1+ 7906              //  ______________________________________________________________________
    2+ 7906              //
    3+ 7906              //  L3.asm
@@ -23284,7 +23288,7 @@
 1020+ 81B0
 1021+ 81B0 00           Here_Dictionary db      0
 1022+ 81B1
-# file closed: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/L3.asm
+# file closed: source/L3.asm
  156  81B1
  157  81B1              // now we save the compiled file so we can either run it or debug it
  158  81B1              //              SAVENEX OPEN "output/forth17.nex", ORIGIN, S0_system
@@ -23310,4 +23314,4 @@
  178  81B1                              //      LOAD "forth18e.bin" CODE
  179  81B1
  180  81B1                              END
-# file closed: C:\Zx\Forth\F18\tools\vForth\project\vForth18_DOES/source/main.asm
+# file closed: source/main.asm
