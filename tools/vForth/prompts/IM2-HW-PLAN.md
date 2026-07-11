@@ -267,3 +267,137 @@ IM2-HW-ENABLE-CTC0
 - [ ] Tutorial or help written (Phase 2+)
 - [ ] Confirmed on CSpect with music playback (user validation)
 
+---
+
+## REDESIGN 2026-07-11 (post-review) - the committed lib is broken
+
+The Phase 1+2 implementation (commit 1b196c5) never loaded and cannot
+work: full findings in `prompts/REVIEW-2026-07-11.md`. Summary: DI/EI do
+not exist as words; `CONSTANT IM2-HW-TABLE` pops garbage (missing HERE)
+and the 32 table bytes are never ALLOTed; raw Forth xts in the vector
+table cannot serve as ISRs; ULA/CTC0 enable bits target the wrong
+registers. The API bulk (56 per-slot words) also duplicates itself.
+This section is the verified design for the rewrite.
+
+### Reuse lib/INTERRUPTS.f (NEEDS INTERRUPTS)
+
+Its trampoline is the proven pattern to copy, and its helpers solve the
+missing pieces directly:
+
+- `ISR-DI` / `ISR-EI` / `ISR-IM2` / `SETIREG` - the CODE words IM2-HW
+  referenced as DI/EI (which do not exist anywhere).
+- `ISR-OFF` - the correct disable path: di, I=$3F, im 1, ei. The old
+  `IM2-HW-DISABLE` only wrote $C0=0, leaving the CPU in im 2 with our
+  I register -> first legacy-IM2 ULA interrupt reads table[$FF] beyond
+  our 32-byte table and derails.
+- `ISR-SAVE-SP`, `ISR-SP0`, `ISR-RP0` - register-save cell and the small
+  data/return stacks for the handler's Forth context. Sharing is safe:
+  classic ISR-ON mode and hw-IM2 mode are mutually exclusive, and hw IM2
+  cannot nest (ints stay disabled until the final ei/reti).
+- `(NEXT)` is core: pushes the inner-interpreter address (used by
+  ISR-SUB via `ld ix, nn`).
+
+### Dispatch design: per-slot stub + threaded fragment
+
+Mirrors ISR-SUB/ISR-XT/ISR-RET exactly, but per slot.
+
+- `IM2-FRAGS`: 16 entries x 2 cells: `[ handler-xt , ' IM2-HW-RET ]`.
+  Handler install = store xt at `IM2-FRAGS + slot*4`. Default `' NOOP`.
+- Vector table: `HERE $1F AND ?DUP IF $20 SWAP - ALLOT THEN` then
+  `HERE CONSTANT IM2-HW-TABLE  $20 ALLOT` (both fixes: HERE before
+  CONSTANT, and the 32 bytes actually reserved). 32-aligned + 32 bytes
+  long means it can never cross a 256-byte page.
+- Per-slot stub (8 bytes, built with C, via a helper word run 16 times;
+  entry address stored into `IM2-HW-TABLE + slot*2`):
+
+      E5              push hl
+      21 nn nn        ld hl, IM2-FRAGS + slot*4
+      C3 nn nn        jp IM2-COMMON
+
+  Slot 11 (ULA) only: prefix `FF` (rst $38) so the ROM 50Hz housekeeping
+  (keyboard scan, FRAMES) keeps running while hw IM2 is active -
+  otherwise KEY dies. Same trick as ISR-SUB's first byte.
+- `IM2-COMMON` (one raw code blob, address in a CONSTANT):
+
+      F3              di            (rst $38 re-enabled ints; also safe)
+      F5 08 F5        push af / ex af,af' / push af
+      D5 C5           push de / push bc          (main DE=RSP, BC=IP)
+      D9              exx
+      E5 D5 C5        push hl / de / bc          (alt set)
+      DD E5           push ix
+      D9              exx                        (back: HL = fragment)
+      44 4D           ld b,h / ld c,l            (IP = fragment)
+      ED 73 nn nn     ld (ISR-SAVE-SP), sp
+      31 nn nn        ld sp, ISR-SP0
+      11 nn nn        ld de, ISR-RP0
+      DD 21 nn nn     ld ix, <(NEXT) value>
+      DD E9           jp (ix)
+
+- `CODE IM2-HW-RET` (second xt of every fragment) - exact mirror:
+
+      ED 7B nn nn     ld sp, (ISR-SAVE-SP)
+      D9              exx
+      DD E1           pop ix
+      C1 D1 E1        pop bc / de / hl           (alt set)
+      D9              exx
+      C1 D1           pop bc / de                (main)
+      F1 08 F1        pop af / ex af,af' / pop af
+      E1              pop hl                     (the stub's push)
+      FB              ei
+      ED 4D           reti
+
+  reti (not ret): daisy-chain convention for hw IM2.
+
+### Register map (verified on dev guide r3, "Interrupt Enable 0/1/2")
+
+| Slot | Source   | Reg | Bit  | Note                                |
+|------|----------|-----|------|-------------------------------------|
+| 0    | LINE     | $C4 | 1    |                                     |
+| 1    | UART0 Rx | $C6 | 0    | (bit 1 = Rx half full, not used)    |
+| 2    | UART1 Rx | $C6 | 4    | (bit 5 = Rx half full, not used)    |
+| 3-10 | CTC 0-7  | $C5 | 0-7  | CTC n -> bit n (NOT $C4 $08!)       |
+| 11   | ULA      | $C4 | 0    | NOT $80: $C4 bit 7 = expansion bus  |
+| 12   | UART0 Tx | $C6 | 2    |                                     |
+| 13   | UART1 Tx | $C6 | 6    |                                     |
+
+The old Phase-2 $C6 bits (0,4,2,6) were already correct; Phase-1's ULA
+($80) and CTC0 ($C4 $08) were wrong.
+
+$C0 write: `IM2-HW-TABLE $E0 AND 1 OR` - the three top bits of the
+table LSB stay AT bits 7:5 (guide: "supplying the top 3 bits of LSB of
+the vector table to bits 7-5"), bit 0 = 1 enables hw IM2. The old
+`5 RSHIFT` moved them to bits 2:0.
+
+### API (replaces the 56 per-slot words with a slot-map table)
+
+- Keep the `IM2-HW-SLOT-*` constants (0-15, guide priority order).
+- `IM2-HW-HANDLER!` ( xt slot -- ) / `IM2-HW-HANDLER@` ( slot -- xt )
+- `IM2-HW-ENABLE` / `IM2-HW-DISABLE` ( slot -- ): read-modify-write the
+  real register via core REG@/REG! (no shadow caches needed) through a
+  16-entry slot->(reg,mask) table; reserved slots map to 0 = no-op.
+- `IM2-HW-ON`: ISR-DI; $C4=$01 (ULA only, keeps system alive via the
+  rst $38 stub), $C5=0, $C6=0; table MSB SETIREG;
+  `IM2-HW-TABLE $E0 AND 1 OR $C0 REG!`; ISR-IM2; ISR-EI.
+- `IM2-HW-OFF`: ISR-DI; 0 $C0 REG!; $81 $C4 REG! (reset default:
+  expansion bus + ULA); 0 $C5 / 0 $C6; ISR-OFF.
+- REG!/REG@ are CORE words - do not redefine them in the lib.
+- `MARKER NO-IM2-HW` at top + guard `: IM2-HW ;` as the LAST definition
+  (lib/INTERRUPTS.f pattern) so `NEEDS IM2-HW` succeeds only on a full
+  load.
+
+### Handler contract (document in lib header)
+
+Handlers run on ISR-SP0/ISR-RP0 (~40 cells): keep them short, no
+console I/O, no file access, no MMU7 remapping without save/restore.
+Same rules as ISR-XT handlers (tutorial 049).
+
+### Verification plan
+
+Emulator (load-path + structure): table 32-aligned, 16 distinct stub
+addresses in the vector table, HANDLER!/HANDLER@ round-trip, REG@
+read-back of $C4/$C5/$C6 after ENABLE/DISABLE. `1 $C4 REG! $C4 REG@ .`
+confirms the emu NextReg model first. Do NOT call IM2-HW-ON in the
+headless emu until its im2/HALT interaction is understood - risk of
+killing the REPL keyboard path. Real dispatch (handler fires, counter
+increments) only on CSpect, with the tutorial-049-style counter demo.
+
