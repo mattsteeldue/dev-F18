@@ -4,7 +4,6 @@
 
 .( DMA - zxnDMA support )
 
-NEEDS VALUE
 NEEDS SPLIT
 
 BASE @ \ save base
@@ -26,22 +25,22 @@ MARKER NO-DMA
 : DMA-W ( n -- )
     SPLIT SWAP DMA! DMA! ;
 
-\ WR0 register bytes — direction and parameter bits
+\ WR0 register bytes - direction and parameter bits
 7D CONSTANT DMA-WR0-A2B     \ A->B, append both A addr and length
 79 CONSTANT DMA-WR0-B2A     \ B->A, append both A addr and length
 
-\ WR1 register bytes — Port A configuration
+\ WR1 register bytes - Port A configuration
 14 CONSTANT DMA-A-MEM-INCR  \ A=memory, address increments
 24 CONSTANT DMA-A-MEM-FIXED \ A=memory, address fixed
 
-\ WR2 register bytes — Port B configuration
+\ WR2 register bytes - Port B configuration
 10 CONSTANT DMA-B-MEM-INCR  \ B=memory, address increments
 28 CONSTANT DMA-B-IO-FIXED  \ B=I/O, address fixed
 
-\ WR4 register bytes — Port B address (continuous mode)
+\ WR4 register bytes - Port B address (continuous mode)
 AD CONSTANT DMA-WR4-CONT    \ continuous mode, append B address
 
-\ WR5 register byte — CE only, stop on end of block
+\ WR5 register byte - CE only, stop on end of block
 82 CONSTANT DMA-WR5-DEFAULT
 
 \ WR6 command register bytes
@@ -57,10 +56,10 @@ CB CONSTANT DMA-CMD-RESET-B-TIMING
 CF CONSTANT DMA-CMD-LOAD
 D3 CONSTANT DMA-CMD-CONTINUE
 
-\ Module state — shadow registers and scratch buffers
-VALUE DMA-A-ADDR   \ Port A address parameter
-VALUE DMA-B-ADDR   \ Port B address parameter
-VALUE DMA-LEN      \ Transfer length parameter
+\ Module state - shadow registers and scratch buffers
+VARIABLE DMA-A-ADDR   \ Port A address parameter
+VARIABLE DMA-B-ADDR   \ Port B address parameter
+VARIABLE DMA-LEN      \ Transfer length parameter
 
 CREATE DMA-FILL-BYTE 1 ALLOT  \ single-byte buffer for FILL operations
 
@@ -72,6 +71,7 @@ CREATE DMA-FILL-BYTE 1 ALLOT  \ single-byte buffer for FILL operations
         DMA-WR0-B2A
     THEN
     DMA!
+    SWAP        \ WR0 wants A address first, then length
     DMA-W   \ aAddr (LSB, MSB)
     DMA-W   \ len (LSB, MSB)
 ;
@@ -110,8 +110,9 @@ CREATE DMA-FILL-BYTE 1 ALLOT  \ single-byte buffer for FILL operations
 
 : DMA-STATUS ( -- b )
     DMA-CMD-READ-MASK DMA!
-    01 DMA!        \ read status byte mask
-    DMA@ ;         \ read status from DMA port
+    01 DMA!                    \ read mask: status byte only
+    DMA-CMD-INIT-READ-SEQ DMA! \ reset read sequence to first masked reg
+    DMA@ ;                     \ read status from DMA port
 
 : DMA-DONE? ( -- flag )
     DMA-STATUS
@@ -139,7 +140,7 @@ CREATE DMA-FILL-BYTE 1 ALLOT  \ single-byte buffer for FILL operations
     DMA-CMD-DISABLE DMA!
     DMA-LEN !  DMA-B-ADDR !
     DMA-FILL-BYTE C!
-    DMA-FILL-BYTE TO DMA-A-ADDR
+    DMA-FILL-BYTE DMA-A-ADDR !
 
     DMA-A-ADDR @ DMA-LEN @ 1 (DMA-WR0)   \ WR0: A->B
     DMA-A-MEM-FIXED DMA!                  \ WR1: A memory, fixed
@@ -177,5 +178,8 @@ CREATE DMA-FILL-BYTE 1 ALLOT  \ single-byte buffer for FILL operations
     DMA-WR5-DEFAULT DMA!                  \ WR5: standard config
     (DMA-START)
 ;
+
+\ NEEDS guard: defined last so NEEDS DMA succeeds only after a full load
+: DMA ;
 
 BASE !

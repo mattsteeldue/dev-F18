@@ -49,13 +49,19 @@ NEEDS DMA
 \ arithmetic.
 \
 \ Example: allocate a small source block and copy it to a test destination.
+\
+\ CAUTION: never point DMA test transfers at $E000-$FFFF - that window is
+\ the MMU7 slot holding the heap dictionary, and writing there corrupts
+\ the word headers. We ALLOT scratch buffers in the dictionary instead:
+\ they are owned by this tutorial and safe to overwrite.
 
-$E000 CONSTANT TEST-SRC
-$E100 CONSTANT TEST-DEST
+CREATE TEST-SRC   $80 ALLOT
+CREATE TEST-DEST  $80 ALLOT
 $80   CONSTANT TEST-LEN
 
 : .DEMO-COPY
     CR
+    TEST-SRC TEST-LEN $55 FILL     \ recognizable pattern for DUMP checks
     .( Copying ) TEST-LEN . .( bytes from ) TEST-SRC HEX . DECIMAL
     .( to ) TEST-DEST HEX . DECIMAL CR
     TEST-SRC TEST-DEST TEST-LEN DMA-COPY
@@ -72,7 +78,7 @@ $80   CONSTANT TEST-LEN
 \
 \ Example: fill a test area with a pattern byte.
 
-$E200 CONSTANT FILL-DEST
+CREATE FILL-DEST  $80 ALLOT
 $80   CONSTANT FILL-LEN
 
 : .DEMO-FILL
@@ -110,7 +116,7 @@ $80   CONSTANT FILL-LEN
 \
 \ Example: read bytes from a port into memory (effects depend on port).
 
-$E300 CONSTANT IN-DEST
+CREATE IN-DEST  $10 ALLOT
 $10   CONSTANT IN-LEN
 
 : .DEMO-IN
@@ -158,7 +164,8 @@ CR
 \ Manual CSpect verification checklist (to be confirmed):
 \   1. Run DEMO on CSpect and observe that each transfer completes without
 \      error.
-\   2. Use DUMP to verify that TEST-DEST contains a copy of TEST-SRC.
+\   2. Use DUMP to verify that TEST-DEST contains a copy of TEST-SRC
+\      (both hold $55 bytes after .DEMO-COPY).
 \   3. Use DUMP to verify that FILL-DEST is filled with $AA bytes.
 \   4. Observe no crashes when DMA-OUT or DMA-IN are called (port I/O effects
 \      are hardware-dependent and not easily visible).
