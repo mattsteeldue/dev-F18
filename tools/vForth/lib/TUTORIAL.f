@@ -107,7 +107,7 @@ CREATE TUT-TABLE
     H" tutorial/054-blocks-as-assets.f" ,
     H" tutorial/055-afx-sound-board.f" ,
     H" tutorial/056-layer2-palette.f"  ,
-    H" tutorial/057-dma.f"             ,
+\   H" tutorial/057-dma.f"             ,
 
 57 CONSTANT TUT-MAX
 

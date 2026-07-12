@@ -5,7 +5,6 @@
 NEEDS FLIP
 NEEDS SPLIT
 \
-BASE @
 
 MARKER NO-COPPER      \ then you can use NO-COPPER to "forget" all the following definitions
 
@@ -62,4 +61,3 @@ $063 CONSTANT COP-WRITE      \ Copper data 16-bit write
 
 : COPPER ;
 
-BASE !
