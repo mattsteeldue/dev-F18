@@ -1,0 +1,116 @@
+Further addition to paragraph 3.20 "Dictionary memory structure" -- draft
+text for the vForth manual (.odt).
+
+Placement: paste as a NEW subsection at the very END of 3.20, after the
+"You can verify yourself" SEE/DUMP transcript and after the MMU7
+cross-reference paragraph already drafted in
+prompts/manual-par-3.20-mmu7-crossref.txt (paste this one after that one),
+and BEFORE section "4 Error messages" begins. Do NOT touch the
+build-specific tables/transcript above it -- those are regenerated
+automatically by util/gen-dict-structure.py and must stay exactly as that
+script produces them. This subsection is static hand-written prose the
+script never touches.
+
+Purpose: full intellectual-honesty record of a design discussion held
+2026-07-12 about a known, currently-latent representation ambiguity in
+`nfa`, including a concrete instance of it (the WORDS bug), a redesign
+worked out but not yet applied, a sharper instance found while auditing
+the dot-command variant, and a rejected fix -- so the manual does not
+overstate the robustness of the current heap-pointer scheme. Companion
+material: lib/CLAUDE.md ("MMU7 is a general RAM-paging gateway") and the
+auto-memory entries words-select-mmu7-bug / words-nfa-heap-pointer-
+robustness (project-internal, not part of the manual).
+Drafted 2026-07-12.
+
+======================================================================
+
+3.20.1 Known limitation: the NFA representation ambiguity
+
+Every word documented above with a `( nfa -- ... )` or `( cfa -- ... )`
+stack effect is silently ambiguous about what it actually holds: a raw
+heap-pointer (`ha`, still to be resolved with FAR) or an already-resolved
+physical address ($E000-$FFFF). Nothing in the stack comment, or in the
+value itself, states which; the two representations share the same 16-bit
+cell type. `?HEAP_PTR` / `?>HEAP` patch this with a numeric heuristic --
+a value below a fixed threshold is assumed to be a heap-pointer and is
+resolved with FAR on the spot -- rather than with an explicit tag.
+
+The threshold used throughout the core is $6300. In the launcher build
+(vForth18_DOES / forth18e.bin), this works comfortably: compiled code
+begins at ORIGIN $6366, and the heap-pointer values actually produced by
+the shipped core stay far below the threshold -- the last non-zero byte
+of ram8.bin sits at offset $0D1F (heap address $ED1F), i.e. every core
+`ha` is under $0E00. Code addresses and heap-pointers occupy disjoint,
+widely separated ranges, so the heuristic never has to work hard.
+
+This gap between "the heuristic happens to hold" and "the representation
+is actually well-defined" produced a real bug once already. WORDS reads
+the dictionary chain by resolving one entry's heap-pointer with FAR, then
+reusing that resolved physical address both to print the name (ID.,
+which performs output) and, after printing, to fetch the next entry's
+link. If output goes to a file stream, `rst $10` routes through +3DOS,
+which restores OS default banking on exit and unmaps the heap page from
+MMU7 -- so any code that dereferences a physical address on either side
+of an EMIT is trusting that nothing in between changed the page. This
+was fixed (2026-06-12) at the emission primitive: `(EMITC)` now saves the
+current MMU7 page before `rst $10` and restores it right after, so any
+word walking the heap while it prints is protected -- but the fix lives
+in a shared low-level primitive, not in WORDS itself, which still holds
+a physical address across its own printing purely on the strength of
+that shared guarantee. A redesign of WORDS that never lets a resolved
+address survive across anything that can EMIT -- fetching the next link
+immediately after FAR and before any output, and deferring all output
+(the optional CR and the name itself) until no physical address is still
+needed -- was worked out on 2026-07-12 but is not yet applied to any
+source file.
+
+Auditing the dot-command variant (vForth18_DOT) during the same
+discussion sharpened the concern considerably. Its ORIGIN is $2000, not
+$6366: compiled code occupies $2000 through roughly $3FA2 (the
+Here_Dictionary marker), entirely below the $6300 threshold, which was
+carried over unchanged when the dot-command build was forked from the
+launcher build. In that variant the threshold has no discriminating
+power at all: any genuine physical code address, tested against it,
+would always be misclassified as a heap-pointer. Measured on the shipped
+binaries, the actual heap-pointer values stay identical in size to the
+launcher build (vforth.2's last non-zero byte is at offset $0D1B, heap
+address $ED1B) -- so there is no live collision with today's core, and
+in fact no currently-live bug: the two call sites that use ?HEAP_PTR
+(ID., by way of the defensive ?>HEAP guard, and <NAME, which tests the
+"mirror" cell's content) both only ever test values that are already
+known by construction to be heap-pointer-shaped or already-resolved
+$E000+ addresses -- never a raw dot-command code address. Safety today
+is therefore a matter of convention at every call site, not a property
+of the representation, and it is markedly thinner in the dot-command
+build than in the launcher build. Notably, <NAME's own source comment
+already recorded the intended range as "a number between 0000 and 3FFF"
+-- narrower than the $6300 actually compiled -- and even that narrower,
+intended bound would not fully separate the two spaces in the
+dot-command build, since its whole code footprint already sits inside
+0000-3FFF by construction.
+
+A tagged-bit fix was considered and rejected. The idea was to reserve
+bit 0 of `ha` as a discriminating flag, on the assumption that
+heap-pointers are always even. This does not hold: dictionary entries in
+heap are stored back-to-back with no padding (length-and-flags byte,
+name bytes, LFA, CFA), so a name of even length pushes the next entry's
+NFA to an odd heap offset routinely -- heap-pointers are frequently odd
+in practice. A genuine physical address is equally free to be odd or
+even. The bit would not cleanly separate the two value-spaces even if
+heap-pointers were forced into alignment, which would itself require
+padding the heap layout -- a real structural change, not a free bit.
+
+No low-cost, complete fix is known. The two directions considered were:
+a genuine tagged/typed representation (correct, but changes the
+heap-pointer encoding itself and everything that consumes it, including
+any previously saved data that embeds the old format); or enforcing, as
+a strict convention, that anything named `nfa`/`cfa`/`lfa` in a stack
+comment is always a heap-pointer, resolved locally with FAR immediately
+before each dereference and never carried across an operation that can
+EMIT -- the direction the reworked WORDS design takes. The second is
+cheaper and can be applied incrementally, one word at a time, but it is
+still a matter of programmer discipline at each call site (-FIND,
+(FIND), <NAME, CODE/MCOD, FORGET, and any future word touching `nfa`),
+not something the system enforces. This paragraph records the tradeoff
+for transparency; it does not promise which direction, if any, will be
+taken.

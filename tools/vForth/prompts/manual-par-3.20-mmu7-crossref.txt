@@ -1,0 +1,42 @@
+Cross-reference addition for paragraph 3.20 "Dictionary memory
+structure" -- draft text for the vForth manual (.odt).
+
+Placement: paste as a NEW paragraph right after the existing sentence
+"...address $0309 can be found at $E309 proved that you fit 8K page
+#40 to MMU7." and BEFORE the "For example the two contiguous
+definitions SWAP and DUP..." paragraph that leads into the
+build-specific tables. Do NOT touch the tables or the "You can verify
+yourself" SEE/DUMP transcript that follow -- those two blocks are
+regenerated automatically by util/gen-dict-structure.py
+(/regen-doc-dict-structure skill) on every core rebuild and must stay
+exactly as that script produces them. Everything else in 3.20,
+including this new paragraph, is static hand-written prose the script
+never touches.
+
+Companion note added the same day to lib/CLAUDE.md, "Heap Memory
+Facility" section: "MMU7 is a general RAM-paging gateway, not
+heap-exclusive". This paragraph is the manual-facing cross-reference to
+that same concept, anchored to the one place in the manual (3.20) that
+already shows a live MMU7 address decode.
+Drafted 2026-07-12.
+
+======================================================================
+
+The $E000-$FFFF window used above to reach the heap is not
+heap-exclusive: it is the single gateway any code uses to page in any
+8K slot of the whole expansion RAM pool, well beyond the 64K the Z80
+addresses directly. Dictionary search (as just shown) is only one
+tenant, and only at compile time (INCLUDE / NEEDS / LOAD); once a
+definition is compiled, execution runs from its already-resolved xt
+and the dictionary is not consulted again. At run time the same window
+is used for other purposes instead -- decoding a Heap string via FAR
+(3.19, Direct Memory Access), paging the LAYER2 framebuffer (Graphics
+mode and Layer facility), or LED's row-by-row access to a large file
+(3.3) -- and whichever of these last called MMU7! (or wrote NEXTREG
+$57) is what the window currently shows. WORDS is the one core word
+that does walk the dictionary at run time, which is why it must save
+and restore the current MMU7 page around any operation that could
+itself remap it (console/file output included) -- the same discipline
+required of DMA transfers and hardware-interrupt handlers that touch
+this window; see the Heap Memory Facility section for the full
+discussion and a worked example of the bug this omission once caused.
