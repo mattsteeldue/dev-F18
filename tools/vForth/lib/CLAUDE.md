@@ -89,6 +89,38 @@ vForth provides an extended heap in the MMU7 8K page ($E000-$FFFF), growing acro
 multiple 8K pages. `HP@` tracks the current allocation frontier as a **heap-pointer**
 (`ha`).
 
+### MMU7 is a general RAM-paging gateway, not heap-exclusive
+
+The $E000-$FFFF window is not reserved for the heap: it is the single gateway any
+code uses to reach the whole 8K-page pool of expansion RAM (well beyond the 64K the
+Z80 addresses directly). Compiler internals, `lib/GRAPHICS.f`'s LAYER2 framebuffer
+paging, `lib/LED.f`'s large-file editor (pages through most of the ~2MB pool one row
+at a time) and heap strings all share it -- whichever 8K page a prior `MMU7!` (or
+`NEXTREG $57`) last selected is simply what is currently visible there. Two regimes
+use it at different times:
+
+- **Compile time** (`INCLUDE` / `NEEDS` / `LOAD`): dictionary search (`FIND`) pages
+  in whichever heap page holds the word headers being searched.
+- **Run time**: the dictionary is almost never consulted again -- normal execution
+  runs from already-resolved xt/cfa, not from a name search. MMU7 is then free for
+  whatever the running code needs: `FAR`-decoded Heap strings (see below), the
+  LAYER2 framebuffer, or `LED`'s row paging.
+
+**Exception -- words that DO walk the dictionary at run time.** `WORDS` is the
+visible counter-example: it walks the live dictionary chain via `TRAVERSE`/link
+fetch/`ID.`, reading heap pages while it runs. This caused a real bug (fixed
+2026-06-12, see `emu/test_words_stream.py`): `13 SELECT WORDS` (output redirected to
+a file stream) printed garbage and hung. `rst $10` to a file-attached stream goes
+through +3DOS, which restores OS default banking on exit and unmaps the vForth heap
+page from MMU7; because `WORDS` interleaves heap reads with `EMIT`s, every heap read
+after the first emitted character hit the wrong page. Fixed by having `(EMITC)` save
+the current MMU7 page before `rst $10` and restore it right after -- mirroring the
+save/restore `(FIND)` already did for the same reason. **Rule:** any word that
+interleaves a heap/dictionary read with an operation that might itself touch MMU7
+(console/file I/O via `rst $10`/`$08`/`$94`, another `FAR`/`HEAP` call, an interrupt
+handler, a DMA transfer) must save and restore the MMU7 page around that operation,
+or read all the heap data it needs before performing it.
+
 ### Heap-pointer format (`ha`)
 
 A heap-pointer is a single 16-bit cell:
