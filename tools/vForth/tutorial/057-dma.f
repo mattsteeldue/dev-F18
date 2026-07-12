@@ -51,16 +51,25 @@ NEEDS DMA
 \ Example: allocate a small source block and copy it to a test destination.
 \
 \ CAUTION: $E000-$FFFF is not off-limits by address - it is the MMU7
-\ window, and its content is simply whichever 8K page is currently
-\ mapped there. A DMA transfer may legitimately target it (this is in
-\ fact how DMA is used to stream data into paged RAM, e.g. loading a
-\ LAYER2 framebuffer), as long as MMU7! has selected the intended page
-\ FIRST and that page is not the one holding the heap dictionary while
-\ the dictionary is still needed - writing there while the heap page is
-\ mapped corrupts the word headers. This tutorial sidesteps the whole
-\ question by using ALLOTed scratch buffers in ordinary dictionary
-\ space, owned by the tutorial and safe to overwrite, which need no
-\ MMU7 care at all.
+\ window, the single gateway through which any code (the compiler, a
+\ library, or your own) reaches the full expansion RAM pool, well
+\ beyond the 64K the Z80 can address directly. Its content is simply
+\ whichever 8K page a prior MMU7! last selected, and that selection is
+\ not tied to one purpose: at compile time (INCLUDE/NEEDS/LOAD),
+\ dictionary search pages in the heap pages holding the word headers,
+\ but at run time the dictionary is never consulted again (execution
+\ runs from already-resolved xt/cfa), so MMU7 is then free for other
+\ jobs - paging the LAYER2 framebuffer, decoding a Heap string via FAR
+\ (as lib/TUTORIAL.f does, keeping filenames in Heap and only an array
+\ of heap-pointers in the dictionary), or, most visibly, LED (lib/LED.f)
+\ which pages through as many of the available 8K slots as the file
+\ being edited needs - MMU7 as a window onto up to about 2MB of RAM.
+\ A DMA transfer may legitimately target $E000-$FFFF, but only once you
+\ know - and control - which of these uses currently owns the page
+\ mapped there; write before repaging it and you overwrite whatever
+\ that owner still needs. This tutorial sidesteps the whole question by
+\ using ALLOTed scratch buffers in ordinary dictionary space, owned by
+\ the tutorial and safe to overwrite, which need no MMU7 care at all.
 
 CREATE TEST-SRC   $80 ALLOT
 CREATE TEST-DEST  $80 ALLOT

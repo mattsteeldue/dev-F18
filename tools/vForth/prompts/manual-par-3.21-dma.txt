@@ -35,14 +35,26 @@ it completes, and level-triggered maskable interrupts cannot fire during
 that time -- keep this in mind if DMA is used together with the ULA frame
 interrupt or a CTC channel (see 3.5 Interrupt Service Routine and, for
 the newer hardware-vectored form, the Hardware Interrupt Mode 2 section).
-$E000-$FFFF is not off-limits by address: it is the MMU7 window, and its
-content is simply whichever 8K page is currently mapped there. A DMA
-transfer may legitimately target it, provided MMU7! has selected the
-intended page first and that page is not the one holding the heap
-dictionary (the default at $E000 in ordinary use) while the dictionary is
-still needed -- writing there while the heap page is mapped corrupts the
-word headers. Tutorial 057 avoids the question entirely by using ALLOTed
-scratch buffers in ordinary dictionary space, which need no MMU7 care.
+$E000-$FFFF is not off-limits by address: it is the MMU7 window, the
+single gateway through which any code -- the compiler, this library, or
+your own -- can reach the full expansion RAM pool (well beyond the 64K
+directly addressable by the Z80). Its content is simply whichever 8K
+page a prior MMU7! (or an equivalent NEXTREG $57 write) last selected,
+and that selection is not tied to one purpose: at compile time (INCLUDE
+/ NEEDS / LOAD), dictionary search pages in the heap pages that hold the
+word headers, but at run time ordinary Forth execution never consults
+the dictionary again (it runs from already-resolved xt/cfa), so MMU7 is
+free for other jobs -- paging the LAYER2 framebuffer, decoding a Heap
+string via FAR (as the TUTORIAL library does, keeping filenames in Heap
+and only an array of heap-pointers in the dictionary), or, most visibly,
+LED (3.3), which pages through as many of the available 8K slots as the
+file being edited needs, using MMU7 as a window onto up to about 2MB of
+RAM. A DMA transfer may legitimately target $E000-$FFFF, but only once
+you know -- and control -- which of these uses currently owns the page
+mapped there; write before repaging it and you overwrite whatever that
+owner still needs. Tutorial 057 avoids the question entirely by using
+ALLOTed scratch buffers in ordinary dictionary space, which need no MMU7
+care at all.
 
 Authoritative reference: ZX Spectrum Next Developer's Guide & Reference
 Manual rev.3, section 3.3 "DMA".
@@ -106,4 +118,5 @@ sequencing verified byte by byte) but actual data movement on CSpect or
 real hardware has not yet been confirmed -- treat it as provisional until
 that verification is done.
 
-See also: 3.5 Interrupt Service Routine, Hardware Interrupt Mode 2
+See also: 3.5 Interrupt Service Routine, 3.3 DIR and LED, the Heap
+Memory Facility, Hardware Interrupt Mode 2

@@ -1,0 +1,149 @@
+Paragraph 3.22 "Hardware Interrupt Mode 2 (IM2-HW)" -- draft text for the
+vForth manual (.odt). To be pasted by hand after 3.21 Direct Memory
+Access (or wherever the two new libraries end up in the final numbering
+-- adjust the heading number to fit). Placing it right after (or as a
+subsection of) 3.5 "Interrupt Service Routine" is also reasonable, since
+it is the modern counterpart of that legacy library.
+Word-entry format follows 3.12 Beeper / 3.13 AY, and the register-map
+table follows the one already used in 3.13 for the AY chip.
+
+STATUS CAVEAT -- IMPORTANT, read before pasting: as of 2026-07-11 this is
+a REWRITE IN PROGRESS, not yet committed, not yet load-tested in the
+headless emulator, and not yet run on CSpect or real hardware. The
+previously committed version of lib/IM2-HW.f (commit 1b196c5) did not
+even compile; the design below is the corrected one from
+prompts/IM2-HW-PLAN.md, transcribed into the working tree but still
+unverified end-to-end (see prompts/REVIEW-2026-07-11.md and the
+"Verification plan" section of the plan file). Recommend NOT pasting this
+into the manual yet, or pasting it clearly marked "experimental /
+unverified" (the way 3.2's LAYER24 note is marked in CLAUDE.md), and
+revisiting once the library has been committed and confirmed.
+Drafted 2026-07-11.
+
+======================================================================
+
+3.22 Hardware Interrupt Mode 2 (IM2-HW)
+
+[EXPERIMENTAL -- unverified as of 2026-07-11, see caveat above. Do not
+publish this section until the library has been load-tested and
+confirmed on CSpect / real hardware.]
+
+The following definitions are available after you type NEEDS IM2-HW,
+which also pulls in NEEDS INTERRUPTS (3.5): the library reuses its
+ISR-DI, ISR-EI, ISR-IM2, SETIREG and ISR-OFF low-level words, and its
+small dedicated data and return stacks for interrupt-time execution. To
+forget this library from the dictionary you can type NO-IM2-HW (a MARKER
+placed at its head).
+
+This library targets the Z80N's Hardware Interrupt Mode 2, available on
+ZX Spectrum Next core 3.0 and later, which is a more structured
+alternative to the legacy software IM2 mechanism described in 3.5.
+Instead of a single shared vector table entry point for every interrupt
+source, hardware IM2 gives each source its own slot in a 32-byte,
+32-aligned vector table, dispatched through the Z80 daisy-chain priority
+order -- so a handler always knows which source triggered it without
+polling. Classic ISR-ON mode (3.5) and IM2-HW-ON mode are mutually
+exclusive: use one or the other, never both at the same time.
+
+The sixteen slots, in hardware daisy-chain priority order (0 = highest
+priority), are:
+
+     0  LINE (expansion bus)          8  CTC5
+     1  UART0 Rx                      9  CTC6
+     2  UART1 Rx                     10  CTC7
+     3  CTC0                         11  ULA (video frame, 50 Hz)
+     4  CTC1                         12  UART0 Tx
+     5  CTC2                         13  UART1 Tx
+     6  CTC3                         14  reserved
+     7  CTC4                         15  reserved
+
+Each source is individually enabled or disabled through one bit of Next
+register $C4, $C5 or $C6 (Interrupt Enable 0/1/2); the mapping is:
+
+     Slot   Source      Register  Bit
+     0      LINE            $C4    1
+     1      UART0 Rx        $C6    0
+     2      UART1 Rx        $C6    4
+     3-10   CTC 0-7         $C5   0-7  (CTC n -> bit n)
+     11     ULA             $C4    0
+     12     UART0 Tx        $C6    2
+     13     UART1 Tx        $C6    6
+
+Register $C0 (Interrupt Control) holds the top 3 bits of the vector
+table's low address byte in bits 7:5, plus the hardware-IM2 enable bit in
+bit 0. IM2-HW-ON and IM2-HW-OFF compute and write this register for you;
+there is normally no need to touch it directly.
+
+Handler contract: a handler installed with IM2-HW-HANDLER! runs with
+interrupts disabled, on the same small ISR-SP0/ISR-RP0 stacks (about 40
+cells) that 3.5's ISR-XT handlers use. Keep handlers short: no console or
+file I/O, and no MMU7 remapping without saving and restoring the current
+page (see the note on tutorial 049 in 3.5). MMU7 is the single gateway
+through which any code reaches the expansion RAM pool, and it is not
+touched automatically between one word and the next: it stays on
+whichever 8K page a prior MMU7! (or an equivalent NEXTREG $57 write)
+last selected -- the heap dictionary only while the compiler is actively
+searching it, and at other times whatever the foreground code currently
+needs there: a Heap string mid-decode via FAR (as the TUTORIAL library
+uses it), a LAYER2 framebuffer page, or a page LED (3.3) is currently
+editing. This is exactly why a handler that pages in a different page
+without restoring it can corrupt whatever the foreground code still
+needs from the one it interrupted (see the Heap Memory Facility and the
+DMA section above for the same mechanism from the data side). It is
+used in the form:
+
+     ' cccc IM2-HW-SLOT-ULA IM2-HW-HANDLER!
+     IM2-HW-ON                        \ ULA source enabled by default
+     IM2-HW-SLOT-CTC0 IM2-HW-ENABLE   \ optionally enable more sources
+     ...
+     IM2-HW-OFF
+
+
+IM2-HW-SLOT-LINE / IM2-HW-SLOT-UART0RX / IM2-HW-SLOT-UART1RX /
+IM2-HW-SLOT-CTC0 .. IM2-HW-SLOT-CTC7 / IM2-HW-SLOT-ULA /
+IM2-HW-SLOT-UART0TX / IM2-HW-SLOT-UART1TX             ---     n
+Fourteen constants naming the vector-table slots listed in the priority
+table above (slots 14 and 15 are reserved and have no constant). Pass one
+of these to IM2-HW-HANDLER!, IM2-HW-HANDLER@, IM2-HW-ENABLE or
+IM2-HW-DISABLE.
+
+
+IM2-HW-HANDLER!                       xt slot   ---
+Install xt as the handler for the given slot. Every slot defaults to
+NOOP. See "Handler contract" above for what the handler may safely do.
+
+
+IM2-HW-HANDLER@                       slot      ---     xt
+Return the xt currently installed for the given slot.
+
+
+IM2-HW-ENABLE                         slot      ---
+Enable the interrupt source for the given slot: read-modify-write the
+single bit of Interrupt Enable register $C4, $C5 or $C6 that corresponds
+to it (see the register-map table above), leaving every other bit of
+that register untouched. Slots 14 and 15 (reserved) are a no-op.
+
+
+IM2-HW-DISABLE                        slot      ---
+Clear the interrupt source's enable bit; the mirror of IM2-HW-ENABLE.
+
+
+IM2-HW-ON                             ---
+Enter hardware IM2 mode. Disables interrupts; programs $C4/$C5/$C6 so
+that only the ULA source is initially enabled (its dispatch stub carries
+an extra RST $38 that keeps the ROM's 50 Hz housekeeping -- keyboard
+scan, FRAMES counter -- alive under hardware IM2, so ordinary words like
+KEY keep working); sets the Z80 I register to the vector table's page;
+writes register $C0 with the table address's top bits and the enable
+bit; selects Z80 interrupt mode 2; and re-enables interrupts. Enable
+further sources afterwards with slot IM2-HW-ENABLE.
+
+
+IM2-HW-OFF                            ---
+Leave hardware IM2 mode. Disables interrupts; clears $C0 (hardware IM2
+off); restores $C4 to its power-on default ($81: expansion bus + ULA);
+clears $C5 and $C6; then calls ISR-OFF (3.5) to restore interrupt mode 1
+and the default I register value.
+
+
+See also: 3.5 Interrupt Service Routine, Direct Memory Access (DMA)
