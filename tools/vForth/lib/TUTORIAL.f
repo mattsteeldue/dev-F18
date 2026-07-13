@@ -29,12 +29,15 @@
 .( TUTORIAL )
 
 NEEDS VIEW-FILE-PAD
+NEEDS ?ESCAPE
 
 CR
 CR .( Use:  n TUTORIAL ) 
 CR .(   Import tutorial 'n'.)
 CR .(  or:  n VIEW )
 CR .(   List source, [EDIT] pause listing.)
+CR .(  or:  TUTORIALS )
+CR .(   List all tutorial file names, [EDIT] pause, [BREAK] stop.)
 CR
 
 \ ---------------------------------------------------------------------------
@@ -109,7 +112,7 @@ CREATE TUT-TABLE
     H" tutorial/056-layer2-palette.f"  ,
 \   H" tutorial/057-dma.f"             ,
 
-57 CONSTANT TUT-MAX
+56 CONSTANT TUT-MAX
 
 
 \ ---------------------------------------------------------------------------
@@ -150,6 +153,24 @@ CREATE TUT-TABLE
         ." TUTORIAL: cannot open file" CR  EXIT
     THEN
     F_INCLUDE ;
+
+\ ---------------------------------------------------------------------------
+\ TUTORIALS  ( -- )
+\ list every tutorial file name straight from TUT-TABLE: each cell holds a
+\ heap-pointer (ha) to a counted-string, so FAR COUNT TYPE is all it takes.
+\ [EDIT] pauses the listing, [BREAK] stops it -- same technique as DIR-LIST
+\ in lib/DIR.f
+\ ---------------------------------------------------------------------------
+
+: TUTORIALS ( -- )
+    TUT-TABLE  TUT-MAX 1+ CELLS +   \ limit  = TUT-TABLE + (TUT-MAX+1) cells
+    TUT-TABLE  2+                   \ index  = TUT-TABLE + 1 cell (skip entry 0)
+    DO
+        BEGIN ?ESCAPE NOT UNTIL
+        ?TERMINAL IF LEAVE THEN
+        I @  FAR  COUNT  TYPE  CR
+    2 +LOOP
+;
 
 ' LOAD-TUTORIAL 
 ' TUTORIAL >BODY !
