@@ -1,5 +1,5 @@
 \
-\ l0-xor.f
+\ L0-xor.f
 \
 \ pixel operator: XOR a pattern byte onto a screen byte (used to "xor" pixels)
 \

@@ -1,0 +1,96 @@
+Manual insertion point: chapter 3.2 "Graphics mode and Layer facility", as new
+subparagraph 3.2.4, placed after the existing 3.2.3 "Colors & Attributes" and
+before 3.3 "DIR and LED". Plain text below is ready to paste into the .odt by
+hand and reformat with the same paragraph/heading styles used by 3.2.1-3.2.3.
+This file is a drafting aid only; it is NOT loaded or referenced by the build.
+
+------------------------------------------------------------------------------
+
+3.2.4 LAYERxx-GRAPHICS - the modular alternative to GRAPHICS
+
+Everything described in 3.2, 3.2.1, 3.2.2 and 3.2.3 is also available in a
+modular form, split into one file per Graphic-Mode plus a shared core:
+
+  GRAPHICS-COMMON  - color constants, LAYER!, coordinate check, the vectored
+                      (DEFER) primitives PIXELADD / PIXELATT / PLOT / XPLOT /
+                      POINT / EDGE / XY-RATIO, the LAYER: defining word, and
+                      the layer-independent high-level words DRAW-LINE,
+                      CIRCLE, PAINT, .INK, .PAPER, .BORDER and the rest of
+                      the color-attribute set.
+
+  LAYER0-GRAPHICS   - Layer 0, Standard Spectrum (ULA) mode
+  LAYER10-GRAPHICS  - Layer 1,0, LoRes (Enhanced ULA) mode
+  LAYER11-GRAPHICS  - Layer 1,1, Standard Res (Enhanced ULA) mode
+  LAYER12-GRAPHICS  - Layer 1,2, Timex HiRes (Enhanced ULA) mode
+  LAYER13-GRAPHICS  - Layer 1,3, Timex HiColour (Enhanced ULA) mode
+  LAYER2-GRAPHICS   - Layer 2, 256 w x 192 h pixels, 256 colors
+  LAYER22-GRAPHICS  - Layer 2 high resolution, 320 w x 256 h pixels, 256 colors
+  LAYER24-GRAPHICS  - Layer 2 high resolution, 640 w x 256 h pixels, 16 colors
+
+Each LAYERxx-GRAPHICS file automatically pulls in GRAPHICS-COMMON (via NEEDS)
+and immediately activates its mode, so a program only ever loads the modes it
+actually uses:
+
+     NEEDS LAYER2-GRAPHICS      \ pulls in GRAPHICS-COMMON, switches to Layer 2
+
+This is the key difference from the monolithic GRAPHICS library: NEEDS
+GRAPHICS loads every mode and every low-level definition for all six classic
+Graphic-Modes in one block, whereas NEEDS LAYERxx-GRAPHICS loads only the one
+mode named, plus the shared core. On a memory-constrained system this can
+save a substantial amount of dictionary space; it also keeps a program's
+NEEDS list self-documenting about which modes it actually relies on.
+
+Once loaded, every high-level word behaves exactly as documented in 3.2.1,
+3.2.2 and 3.2.3: PLOT, POINT, PIXELADD, PIXELATT, DRAW-LINE, CIRCLE, PAINT,
+ATTRIB, .INK, .PAPER, .BORDER, .BRIGHT, .FLASH, .INVERSE, .OVER and the
+LAYER! mode selector are all identical, because they are the same shared
+definitions in GRAPHICS-COMMON - only the low-level PIXELADD/PLOT/POINT/XPLOT/
+EDGE/XY-RATIO implementations, and the resolution (V-RANGE/H-RANGE), differ
+per mode. A program is free to load more than one LAYERxx-GRAPHICS module and
+switch between them at run time with LAYER0, LAYER10, LAYER11, LAYER12,
+LAYER13 or LAYER2 - the same defining words described in 3.2, now living one
+per file instead of all together.
+
+To switch to Layer 2 320x256 or Layer 2 640x256 (see below), use the LAYER22
+or LAYER24 word defined by the corresponding module; these two modes are
+not reachable through the numeric LAYER! selector, since they require an
+extra NextReg $70 resolution switch on top of the base Layer 2 mode 20.
+
+Unloading a single mode does not disturb the others or the shared core:
+
+     NO-LAYER2-GRAPHICS         \ or FORGET LAYER2-GRAPHICS
+                                 \ removes only the Layer 2 mode
+
+     NO-GRAPHICS-COMMON         \ or FORGET GRAPHICS-COMMON
+                                 \ removes the shared core (and with it every
+                                 \ LAYERxx-GRAPHICS module built on top of it)
+
+LAYER22-GRAPHICS and LAYER24-GRAPHICS - high resolution Layer 2
+
+These two modules extend Layer 2 beyond the classic 256 w x 192 h, one-colour-
+per-pixel mode, using 80K of RAM (five 16K banks = ten 8K MMU7 pages) laid
+out in vertical bands of 32 (LAYER22) or 32 byte- (LAYER24) columns each:
+
+  - LAYER22-GRAPHICS: 320 w x 256 h pixels, 256 colors, one colour per pixel.
+
+  - LAYER24-GRAPHICS: 640 w x 256 h pixels, 16 colors, 4 bits per pixel (two
+    pixels packed per byte). Byte layout is identical to LAYER22; only the
+    pixel addressing halves the horizontal coordinate and PLOT/POINT/XPLOT
+    work on a single nibble. The "4" in the name recalls 4bpp / 16 colours.
+
+In both modes the coordinate convention of the rest of this library is
+preserved: x is vertical (0..255), y is horizontal (0..319 for LAYER22,
+0..639 for LAYER24); PLOT/POINT/... take ( x y ) exactly as in every other
+Graphic-Mode.
+
+Warning: both modes assume the five 16K banks starting at the Layer 2 active
+bank (NextReg $12) are free. NextZXOS allocates only three banks (48K) for
+the standard 256x192 Layer 2, so the two extra banks must not be in use by
+anything else (BASIC BANK allocations, other libraries, ...).
+
+Warning: LAYER24-GRAPHICS is experimental. It has been verified in the
+headless emulator but shows an unexpected 256-pixel horizontal shift under
+CSpect; it has not yet been verified on real hardware. LAYER22-GRAPHICS does
+not show this issue.
+
+------------------------------------------------------------------------------

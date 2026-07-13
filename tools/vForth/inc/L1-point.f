@@ -1,5 +1,5 @@
 \
-\ l1-point.f
+\ L1-point.f
 \
 \ POINT (per-pixel attribute) for Layer 1,0 and Layer 2
 \

@@ -1,5 +1,5 @@
 \
-\ l0-pixelatt.f
+\ L0-pixelatt.f
 \
 \ Layer 0 / Layer 1,1 PIXELATT
 \ convert Display File address into Attribute address

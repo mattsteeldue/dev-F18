@@ -1,5 +1,5 @@
 \
-\ l0-set.f
+\ L0-set.f
 \
 \ pixel operator: OR a pattern byte onto a screen byte (used to "set" pixels)
 \

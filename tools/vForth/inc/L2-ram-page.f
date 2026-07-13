@@ -1,5 +1,5 @@
 \
-\ l2-ram-page.f
+\ L2-ram-page.f
 \
 \ Layer 2 active RAM page: the first 8K MMU7 page of the Layer 2
 \ framebuffer, computed once at load time from NextReg $12 (the Layer 2

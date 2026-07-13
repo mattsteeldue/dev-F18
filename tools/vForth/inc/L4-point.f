@@ -1,5 +1,5 @@
 \
-\ l4-point.f
+\ L4-point.f
 \
 \ POINT for Layer 2 640x256 4bpp: return the 4-bit colour (0..15) of a
 \ pixel, selecting the proper nibble from the parity of y.

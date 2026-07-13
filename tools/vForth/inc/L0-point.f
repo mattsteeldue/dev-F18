@@ -1,5 +1,5 @@
 \
-\ l0-point.f
+\ L0-point.f
 \
 \ POINT - fetch color/status of pixel x,y (Layer 0 / 1,1 / 1,2 / 1,3)
 \

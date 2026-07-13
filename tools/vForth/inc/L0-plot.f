@@ -1,5 +1,5 @@
 \
-\ l0-plot.f
+\ L0-plot.f
 \
 \ PLOT - set pixel x,y to color/status kept by ATTRIB
 \ COORD-CHECK, PIXELADD and PIXELATT are vectorized via DEFER..IS

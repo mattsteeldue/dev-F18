@@ -1,5 +1,5 @@
 \
-\ l4-plot.f
+\ L4-plot.f
 \
 \ PLOT for Layer 2 640x256 4bpp (16 colours, 2 pixels per byte).
 \ Read-modify-write of a single nibble so the neighbouring pixel sharing

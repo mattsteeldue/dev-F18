@@ -1,5 +1,5 @@
 \
-\ l4-xplot.f
+\ L4-xplot.f
 \
 \ XPLOT for Layer 2 640x256 4bpp: XOR-invert only the pixel's own nibble,
 \ leaving the neighbouring pixel sharing the same byte untouched.

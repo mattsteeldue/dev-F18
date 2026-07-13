@@ -1,5 +1,5 @@
 \
-\ l1-xplot.f
+\ L1-xplot.f
 \
 \ XPLOT for one-colour-per-pixel modes (Layer 1,0 and Layer 2 320x256):
 \ invert the per-pixel colour byte.

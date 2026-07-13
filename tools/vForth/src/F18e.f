@@ -4464,7 +4464,7 @@ CHAR . C,  CHAR . C,  CHAR . C,  CHAR . C,
 
 \ 721Dh
 .( CODE )
-: mcod  ( -- cccc )
+: code  ( -- cccc )
     -find       \ cfa b tf | ff
     If          \ cfa b 
         drop    \ cfa
@@ -6555,7 +6555,7 @@ RENAME   dliteral       DLITERAL
 RENAME   literal        LITERAL
 RENAME   [compile]      [COMPILE]
 RENAME   create         CREATE
-RENAME   mcod           CODE        \ be careful on this
+RENAME   code           CODE        \ be careful on this
 RENAME   id.            ID.
 RENAME   error          ERROR
 RENAME   (abort)        (ABORT)

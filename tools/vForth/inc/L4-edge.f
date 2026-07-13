@@ -1,5 +1,5 @@
 \
-\ l4-edge.f
+\ L4-edge.f
 \
 \ EDGE rule for Layer 2 640x256 4bpp.  POINT returns a 4-bit colour
 \ (0..15), so the comparison masks ATTRIB to its low nibble as well.

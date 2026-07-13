@@ -1,5 +1,5 @@
 \
-\ l4-pixeladd.f
+\ L4-pixeladd.f
 \
 \ Layer 2 640x256 4bpp PIXELADD.
 \ Identical vertical-band layout as L22-PIXELADD (320x256), but two pixels

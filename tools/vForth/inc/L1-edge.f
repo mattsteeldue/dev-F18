@@ -1,5 +1,5 @@
 \
-\ l1-edge.f
+\ L1-edge.f
 \
 \ EDGE rule for Layer 1,0 and Layer 2 (per-pixel attribute compare)
 \

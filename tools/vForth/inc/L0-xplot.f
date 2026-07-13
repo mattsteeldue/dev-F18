@@ -1,5 +1,5 @@
 \
-\ l0-xplot.f
+\ L0-xplot.f
 \
 \ XPLOT - unset/invert pixel x,y
 \ COORD-CHECK and PIXELADD are vectorized via DEFER..IS

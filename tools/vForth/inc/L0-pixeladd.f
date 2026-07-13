@@ -1,5 +1,5 @@
 \
-\ l0-pixeladd.f
+\ L0-pixeladd.f
 \
 \ Display File pixel address for Layer 0 / Layer 1,1 / Layer 1,3.
 \ This word exploits the new "pixelad" Z80-N op-code.
