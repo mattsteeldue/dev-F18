@@ -174,6 +174,11 @@ CR
 - Preferred: prefix characters in source: `$FF`  `%11111111`  `#255`
 - Normal usage: global base switch for output only: `255 HEX . DECIMAL`
 - Discouraged: global base switch during compilation or file loading.
+- **Never use `HEX` or `DECIMAL` to switch base while a source file is being
+  compiled/loaded.** Express each literal in the base you want with its prefix
+  instead: `$` for hex (`$FF`), `%` for binary (`%11111111`). The `#` prefix forces
+  decimal (`#255`); it is superfluous (decimal is the assumed default) but acceptable
+  as a reinforcing, self-documenting marker when the surrounding code is hex-heavy.
 - `NEEDS BINARY` / `NEEDS OCTAL` at interpreter level only, never inside a definition.
 - Sign after prefix: `#-33` correct; `-#33` wrong.
 - Double literals: any punctuation in a number makes it double (32-bit).
