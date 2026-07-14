@@ -1,6 +1,6 @@
 ---
 name: release-rebuild
-description: Pipeline completa di rilascio vForth a parita' di sorgente core, per timbrare una nuova build (es. introduzione di nuove librerie come LAYER22). Accetta YYYYMMDD. Gate iniziale bloccante: verifica esistenza .odt/.pdf E che contengano la data nuova ma NON quella precedente (.odt via content.xml, .pdf via pdftotext); poi bump-build (compila DOES+DOT + aggiorna i riferimenti data), genera automaticamente il dump !Blocks txt via perl blocks2txt.pl, sync (sync-cspect sull'immagine CSpect), rilascio pubblico (new-version/new-build.bat) e aggiornamento di HISTORY.txt nel repo pubblico. NON tocca mai .odt/.pdf. Usare quando l'utente chiede /release-rebuild o un rilascio completo a binario sostanzialmente invariato.
+description: Pipeline completa di rilascio vForth a parita' di sorgente core, per timbrare una nuova build (es. introduzione di nuove librerie come LAYER22). Accetta YYYYMMDD. PRIMA di iniziare, avvisa l'utente che doc/<PFX>YYYYMMDD.odt e .pdf devono gia' esistere (preparati a mano): se mancano, lo skill si ferma al gate del passo 1 (verifica esistenza E che contengano la data nuova ma NON quella precedente, .odt via content.xml, .pdf via pdftotext). Poi bump-build (compila DOES+DOT + aggiorna i riferimenti data), genera automaticamente il dump !Blocks txt via perl blocks2txt.pl, sync (sync-cspect sull'immagine CSpect), rilascio pubblico (new-version/new-build.bat) e aggiornamento di HISTORY.txt nel repo pubblico (entry separate da due righe vuote). NON tocca mai .odt/.pdf. Usare quando l'utente chiede /release-rebuild o un rilascio completo a binario sostanzialmente invariato.
 ---
 
 # release-rebuild: pipeline completa di rilascio vForth
@@ -19,6 +19,13 @@ Da essa si deriva la forma con trattini `YYYY-MM-DD`. Lavorare da `tools/vForth/
 > La documentazione la prepara l'utente a mano (vedi gate). Lo skill si limita a
 > **verificare che esista** la documentazione con la nuova data, e a fermarsi se
 > manca.
+
+> ⚠️ **AVVISO PRELIMINARE da dare all'utente prima di iniziare qualunque lavoro:**
+> `doc/<PFX>YYYYMMDD.odt` e `doc/<PFX>YYYYMMDD.pdf` devono esistere **gia'** (con
+> la data interna corretta, non solo rinominati) prima di invocare questo skill.
+> Sono l'unica parte che l'utente prepara a mano e lo skill non puo' generarli.
+> Se l'utente chiede /release-rebuild senza aver ancora preparato questi due
+> file, digliele subito -- non aspettare di scoprirlo al gate del passo 1.
 
 ## 0. Validazione argomento
 
@@ -191,18 +198,29 @@ Repo pubblico: `c:\Zx\GitHub\vforth-next`. I `.bat` stanno in
 
 3. **Aggiorna `HISTORY.txt` del repo pubblico** (`c:\Zx\GitHub\vforth-next\HISTORY.txt`).
    `new-build.bat` **non** lo tocca: va accodato a mano la voce di questo build,
-   rispettando la formattazione del file. Convenzioni rilevate: **CRLF**, solo
-   ASCII 7-bit, entry separate da **una riga vuota**, header `\ build YYYYMMDD`
-   seguito da testo libero (poche righe ~80 col). Per un rilascio a sorgente
-   invariato conviene dire esplicitamente che il core-binary non cambia (come la
-   entry `20260419`). Esempio di append (preserva CRLF/ASCII, non sovrascrive):
+   rispettando la formattazione del file. Convenzioni: **CRLF**, solo ASCII
+   7-bit, entry separate da **due righe vuote** (non una -- confermato
+   dall'utente 2026-07-14), header `\ build YYYYMMDD` seguito da testo libero
+   (poche righe ~80 col). Per un rilascio a sorgente invariato conviene dire
+   esplicitamente che il core-binary non cambia (come la entry `20260419`).
+   Esempio di append (preserva CRLF/ASCII, non sovrascrive):
    ```powershell
    $f='C:\Zx\GitHub\vforth-next\HISTORY.txt'; $nl="`r`n"
-   $lines=@('', '\ build YYYYMMDD', '<riga 1 delle novita''>', '<riga 2>', '...')
+   $lines=@('', '', '\ build YYYYMMDD', '<riga 1 delle novita''>', '<riga 2>', '...')
    [System.IO.File]::AppendAllText($f, ($lines -join $nl)+$nl, [System.Text.Encoding]::ASCII)
    ```
    Le novita' descrivono cosa cambia in QUESTO build (es. la famiglia
    `LAYERxx-GRAPHICS` e il nuovo `LAYER22`).
+
+   **Verifica sempre con `git diff -- HISTORY.txt` subito dopo l'append.**
+   Il 2026-07-14 un append e' apparso scritto correttamente (verificato con
+   `tail`), ma un secondo controllo poco dopo mostrava la voce sparita e righe
+   vuote raddoppiate in punti vecchi del file -- causato dall'utente che stava
+   editando HISTORY.txt in parallelo (sua "cleansing" di righe precedenti), non
+   da un bug dello script. Se il diff dopo l'append non mostra ESATTAMENTE le
+   righe attese (nient'altro sopra o sotto), non fidarsi e ricontrollare con
+   `Read`/`git diff` prima di andare avanti: l'utente potrebbe avere il file
+   aperto in editing concorrente.
 
 ## 5. Riepilogo finale
 
