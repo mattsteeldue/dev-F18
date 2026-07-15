@@ -61,6 +61,22 @@ $SyncBlocksFile = '!Blocks-64.bin'
 $SyncDotSource = Join-Path $SyncSource 'dot'
 $SyncDotDest   = 'W:\dot'
 
+# --- Guardia "emulatore in esecuzione" ---------------------------------------
+# Sia CSpect che MAME (core Next) possono avere in uso la medesima immagine SD /
+# lo stesso file !Blocks-64.bin: non devono MAI essere in esecuzione insieme, ne'
+# individualmente durante mount/smount/sync dell'immagine.
+$SyncBlockingProcessNames = @('CSpect*', 'mame*')
+
+# Elenco dei processi bloccanti attualmente in esecuzione (CSpect e/o MAME).
+# Vuoto se nessuno e' attivo.
+function Get-RunningBlockingEmulators() {
+    $found = @()
+    foreach ($pattern in $SyncBlockingProcessNames) {
+        $found += @(Get-Process -Name $pattern -ErrorAction SilentlyContinue)
+    }
+    return $found
+}
+
 # --- Guardia "timestamp azzerato da CSpect" ----------------------------------
 # Quando si editano i BLOCK (o altri file) da dentro CSpect, l'emulatore riscrive
 # il file sull'immagine SD ma ne AZZERA il timestamp FAT, che diventa 1980-01-01.

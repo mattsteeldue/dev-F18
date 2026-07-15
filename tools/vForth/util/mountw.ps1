@@ -8,7 +8,7 @@
 # imdisk richiede privilegi di amministratore: questo script lo lancia con
 # Start-Process -Verb RunAs, quindi compare il popup UAC.
 #
-# Exit code: 0 = ok (o gia' nello stato richiesto), 1 = errore, 2 = CSpect attivo.
+# Exit code: 0 = ok (o gia' nello stato richiesto), 1 = errore, 2 = emulatore attivo (CSpect o MAME).
 
 param(
     [switch]$Dismount,
@@ -19,11 +19,12 @@ param(
 
 if (-not $Image) { $Image = $SyncImage }
 
-# Mai toccare l'immagine mentre CSpect la sta usando: rischio corruzione.
-$cspect = Get-Process -Name 'CSpect*' -ErrorAction SilentlyContinue
-if ($cspect) {
-    Write-Host "ERRORE: CSpect e' in esecuzione (PID $($cspect.Id -join ', '))." -ForegroundColor Red
-    Write-Host "Chiudi CSpect prima di montare o smontare l'immagine."
+# Mai toccare l'immagine mentre un emulatore (CSpect o MAME) la sta usando: rischio corruzione.
+$blocking = Get-RunningBlockingEmulators
+if ($blocking) {
+    $names = ($blocking | ForEach-Object { "$($_.ProcessName) (PID $($_.Id))" }) -join ', '
+    Write-Host "ERRORE: emulatore in esecuzione: $names." -ForegroundColor Red
+    Write-Host "Chiudi CSpect e MAME prima di montare o smontare l'immagine."
     exit 2
 }
 

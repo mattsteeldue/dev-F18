@@ -25,12 +25,13 @@ param(
 
 . (Join-Path $PSScriptRoot 'sd-sync.config.ps1')
 
-# CSpect in esecuzione → lock sull'immagine SD → impossibile montare/smontare.
-$cspect = Get-Process -Name 'CSpect*' -ErrorAction SilentlyContinue
-if ($cspect) {
-    Write-Host "ERRORE: CSpect e' in esecuzione (PID $($cspect.Id -join ', '))." -ForegroundColor Red
-    Write-Host "L'immagine SD non puo' essere montata/smontata mentre CSpect la usa."
-    Write-Host "Chiudi CSpect, poi rilancia lo script."
+# CSpect o MAME in esecuzione -> lock sull'immagine SD / !Blocks-64.bin -> impossibile sincronizzare.
+$blocking = Get-RunningBlockingEmulators
+if ($blocking) {
+    $names = ($blocking | ForEach-Object { "$($_.ProcessName) (PID $($_.Id))" }) -join ', '
+    Write-Host "ERRORE: emulatore in esecuzione: $names." -ForegroundColor Red
+    Write-Host "L'immagine SD non puo' essere sincronizzata mentre CSpect o MAME la usano."
+    Write-Host "Chiudi l'emulatore, poi rilancia lo script."
     exit 2
 }
 

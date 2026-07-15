@@ -11,13 +11,18 @@ via imdisk). Tutta la configurazione (percorsi, esclusioni, immagine) sta in
 
 ## ⚠️ Prerequisito critico
 
-**CSpect DEVE essere chiuso.** L'emulatore ha un lock esclusivo sull'immagine SD:
-se CSpect è in esecuzione, l'immagine non può essere montata né smontata su W:,
-e il sync fallirà. Lo script verifica lo stato all'avvio e si ferma con un messaggio
-esplicito se CSpect è attivo.
+**CSpect e MAME DEVONO essere entrambi chiusi.** CSpect ha un lock esclusivo
+sull'immagine SD montata su W:; MAME (core Next) puo' avere aperto lo stesso
+file `!Blocks-64.bin` in parallelo. I due emulatori non devono mai essere
+in esecuzione insieme -- ne' l'uno ne' l'altro devono esserlo durante il sync.
+Se uno dei due e' attivo, l'immagine non può essere montata né smontata su W:,
+e il sync fallirà. Gli script (`mountw.ps1`, `sync2sd.ps1`, via
+`Get-RunningBlockingEmulators` in `sd-sync.config.ps1`) verificano entrambi i
+processi (`CSpect*`, `mame*`) all'avvio e si fermano con un messaggio esplicito
+se uno dei due e' attivo.
 
-**Se lo skill aborisce con "CSpect in esecuzione":** chiudi l'emulatore, attendi 2-3 secondi,
-poi rilancialo.
+**Se lo skill aborisce con "emulatore in esecuzione":** chiudi CSpect e/o MAME,
+attendi 2-3 secondi, poi rilancialo.
 
 ## Argomenti opzionali
 
@@ -65,11 +70,12 @@ sovrascrivendo: il risultato finale e' lo stesso.
 
 ## Procedura
 
-1. **VERIFICA CRITICA: CSpect deve essere CHIUSO** (`Get-Process -Name 'CSpect*'`).
-   L'immagine SD rimane LOCKED finche' CSpect è attivo.
-   Se CSpect è in esecuzione:
+1. **VERIFICA CRITICA: CSpect e MAME devono essere CHIUSI** (`Get-RunningBlockingEmulators`,
+   controlla `Get-Process -Name 'CSpect*'` e `-Name 'mame*'`).
+   L'immagine SD / `!Blocks-64.bin` rimane LOCKED finche' uno dei due e' attivo.
+   Se CSpect o MAME sono in esecuzione:
    - FERMATI immediatamente
-   - Comunica all'utente: **"CSpect deve essere chiuso prima di sincronizzare"**
+   - Comunica all'utente: **"CSpect e MAME devono essere chiusi prima di sincronizzare"**
    - Exit code 2
    (Gli script sync2sd.ps1 e mountw.ps1 fanno questo controllo all'inizio.)
 
