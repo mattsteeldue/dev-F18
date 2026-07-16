@@ -27,8 +27,8 @@ CODE F_STAT ( a1 buf -- f )
     3E C, 2A C,         \  ldn     a'|   $2A N,   \ a = '*' (default drive)
 
     \ for dot-command compatibility  
-    E5 C,               \  push  hl| 
-    DD C, E1 C,         \  pop   ix|
+    E5 C,               \  push  ix| 
+    DD C, E1 C,         \  pop   hl|
 
     F3 C,               \  di
     CF C, AC C,         \  rst     08|   $AC C,
