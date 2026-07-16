@@ -35,7 +35,7 @@ CODE F_STAT ( a1 buf -- f )
     FB C,               \  ei
 
     C1 C,               \  pop     bc|
-    E1 C,               \  pop     de|            \ de = RSP restored
+    D1 C,               \  pop     de|            \ de = RSP restored
     DD C, E1 C,         \  pop     ix|
 
     ED C, 62 C,         \  sbchl   hl|
