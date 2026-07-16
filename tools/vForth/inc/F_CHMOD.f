@@ -31,8 +31,8 @@ CODE F_CHMOD ( a1 attr mask -- f )
     4D C,               \  ld      c'|  l|  \ c = mask
 
     \ for dot-command compatibility  
-    E5 C,               \  push  hl| 
-    DD C, E1 C,         \  pop   ix|
+    DD C, E5 C,         \  push  ix|
+    E1 C,               \  pop   hl|
 
     3E C, 2A C,         \  ldn     a'|   $2A N,   \ a = '*' (default drive)
     F3 C,               \  di
