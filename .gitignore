@@ -17,12 +17,9 @@ nextzxos/
 /tools/vForth/version/
 /tools/vForth/version/2???????/
 /tools/xxx_vForth/
-tools/vForth/doc/vForth1.8-core-en-20251111.odt
 tools/vForth/version/20260101/inc/ASK.f
 tools/vForth/__pycache__/emulator.cpython-312.pyc
-tools/vForth/doc/.~lock.vForth1.8-core-en-20260531.odt\#
 .claude/worktrees/z80-canonical-fix/
 .claude/worktrees/claude-md-base-note/
-tools/vForth/doc/ZX Spectrum Next Manual Color ONLINE Edition.txt
 tools/vForth/doc/Starting-FORTH.pdf
 tools/vForth/doc/zx-next-dev-guide-r3.pdf
