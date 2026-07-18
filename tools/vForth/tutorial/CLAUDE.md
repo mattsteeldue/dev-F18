@@ -519,3 +519,59 @@ Rule: always `ERASE` a struct right after `ALLOT` unless every field is stored.
 - Screen 409's palette write (`18 40 REG!` + `E3 41 REG!`) is Derek Bolli's ULA
   "paper bright 0" background tweak (see `forum/next-sprite-test.f`) -- it has
   nothing to do with sprite colours.
+
+
+## 17. Dot-command relocation discipline: three correct forms, and how a
+    missing one hides (demo/parser.dot.f)
+
+Analysis performed 2026-07-18 while writing tutorial 057 section 11's gotcha,
+then used to fix the demo itself (comments now in the file point back here).
+Every CALL/JP target embedded inside a dot command's own code must be
+translated from "wherever it sits in the live dictionary right now" to
+"where it will actually run at $2000" (tutorial 057 section 3). Auditing
+`demo/parser.dot.f` turned up **three different, equally correct mechanisms**
+for doing that translation, plus **two call sites where none of them had
+been used** -- a real, silent bug.
+
+**The three correct mechanisms**, all present in the same file:
+
+1. **`rel-AA,` / `rel-NN,` shorthand** -- applies `DOT-RELATIVE` and the
+   matching commaer in one step. Used by `parse`'s call to `parse-string`
+   and by `help`'s `ldx hl| ... rel-NN,` load of its message address.
+2. **Manual `dot-relative ... AA,`** -- the identical translation, spelled
+   out in two words instead of the shorthand. Used by `main`'s conditional
+   jump to `help`. Functionally identical to (1), just a different style.
+3. **Direct post-hoc patch** -- `entry-point`'s placeholder `jp 0 AA,` is
+   fixed up after the fact by poking the translated address straight into
+   dictionary memory (`' main dot-relative org @ 1+ !`), bypassing the
+   assembler's `AA,` emission entirely.
+
+**The bug this hid (found and fixed 2026-07-18):** two CALLs used plain
+`AA,` with none of the three mechanisms above -- `main`'s
+`call ' parse AA,` and `help`'s `call ' print AA,`. Plain `AA,` embeds the
+address the target word has *right now, in the live dictionary*. That
+address is meaningless once vForth is gone and the saved file is running
+standalone at `$2000` (tutorial 057 section 1): **both** of the file's two
+runtime branches (with-arguments -> `parse`, no-arguments -> `help` ->
+`print`) would crash once genuinely relocated, even though every CODE
+definition compiled cleanly and every interactive test passed.
+
+**Why interactive testing never caught it:** the file's own `tester` word
+(tutorial 057 section 6's TESTER pattern) calls `main` in place, before any
+relocation has happened -- at that moment the "wrong" addresses embedded by
+plain `AA,` still happen to equal the real ones, so `TESTER` reports
+success. The failure exists only in the copy written to `C:/DOT/`, running
+at `$2000`, which -- per tutorial 057 section 10 -- can only be verified on
+CSpect or real hardware, never from inside the vForth session that built
+it. General lesson: a missing `REL-AA,`/`REL-NN,` is invisible at every
+stage of in-session testing and manifests only after the file leaves
+vForth.
+
+**Rule of thumb when auditing a dot command for this class of bug:** grep
+every `AA,`/`NN,` between the `VARIABLE ORG` capture and the `SAVE-BYTES`
+call; each one must be either operating on a value that is already
+position-independent (rare) or be one of the three mechanisms above --
+never plain. `demo/parser.dot.f` now carries an inline comment at every
+relocation point naming which of the three it uses, plus one at `tester`'s
+`call ' main AA,` explaining why plain `AA,` is *correct* there (it runs
+in place, never relocated).
