@@ -575,3 +575,19 @@ never plain. `demo/parser.dot.f` now carries an inline comment at every
 relocation point naming which of the three it uses, plus one at `tester`'s
 `call ' main AA,` explaining why plain `AA,` is *correct* there (it runs
 in place, never relocated).
+
+**Audit of the other three `demo/*.dot.f` files (2026-07-19):** applying the
+same grep found no bug elsewhere.
+
+- `demo/echo.dot.f` has zero `AA,`/`NN,` in the whole file -- its single
+  `CODE echo` never embeds a CALL/JP or a stored address, only a PC-relative
+  `Back,` loop and immediate byte constants, so there is nothing to
+  relocate. Now says so in an inline comment.
+- `demo/savebank.dot.f` was already fully correct: every CALL/JP to another
+  word and every reference to its `v-*` variables (which live inside the
+  relocated `[org, Here)` span, so they need translating too) already used
+  `rel-AA,`/`rel-NN,`. The only plain `AA,` occurrences are the same two
+  legitimate exceptions as `parser.dot.f` -- `entry-point`'s placeholder
+  (direct post-hoc patch) and `tester`'s in-place call to `main`. Inline
+  comments matching `parser.dot.f`'s style were added purely for
+  documentation consistency; no logic changed.

@@ -388,7 +388,7 @@ C;
 CR .(   UNLINK c:/dot/hello ) CR
 CR .(   PAD" c:/dot/hello"  ORG @ HERE OVER -  SAVE-BYTES ) CR
 CR .( (left commented out here so loading this tutorial has no ) CR
-CR .(  side effect on your SD card -- run them yourself.) CR
+CR ."  side effect on your SD card -- run them yourself)." CR
 
 \ UNLINK c:/dot/hello
 \ PAD" c:/dot/hello"  ORG @ HERE OVER -  SAVE-BYTES

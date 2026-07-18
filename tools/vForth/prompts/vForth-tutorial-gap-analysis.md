@@ -1,6 +1,7 @@
 \
 \ vForth Tutorial / Demo / Screen-Corpus -- Three-Axis Gap Analysis
-\ Snapshot: dev-F18/main, June 2026. Subject to drift after Claude Code sessions.
+\ Snapshot: dev-F18/main, updated 2026-07-19 (through commit c4c2af3).
+\ Subject to drift after Claude Code sessions.
 \ All code/doc in English per project convention.
 
 # vForth Teaching Material -- Gap Analysis
@@ -54,8 +55,21 @@ large standalone programs.
 - **Block-as-data (054)**: the BLOCK-as-binary-asset technique (LOAD2BLOCK + the
   AFX sound library), appended after the hardware track because it cross-refers
   tutorial 050 (AFXframe).
+- **Dot commands (057). [CLOSED 2026-07-18]** `057-dot-commands.f` (462 lines)
+  now covers standalone NextZXOS `.command` creation: what a dot command is
+  (fixed $2000 origin, 8K max, esxDOS/NextZXOS ABI), the CODE-word-ends-in-RET
+  vs NEXT calling-convention distinction, the DOT-RELATIVE address-translation
+  technique with its three equally-correct forms (`REL-AA,`/`REL-NN,` shorthand,
+  manual `DOT-RELATIVE ... AA,`, and direct post-hoc patch), the TESTER pattern
+  for exercising the code in-place before relocation, and SAVE-BYTES/PAD"/
+  UNLINK to write the file to `C:/DOT/`. It extracts the technique from the
+  four `demo/*.dot.f` worked examples (helloworld, echo, parser, savebank)
+  rather than duplicating them, and is registered in `lib/TUTORIAL.f`'s
+  `TUT-TABLE` (`TUT-MAX` 56 -> 57). This closes former Axis-1 gap #3 below.
+  The old placeholder slot for a DMA tutorial was renumbered `057-dma.f` ->
+  `058-dma.f` to make room (still unwritten; see Open Questions).
 
-All are dense (136-275 lines); none are stubs.
+All are dense (136-462 lines); none are stubs.
 
 ### Coverage gaps (capability present in the system, absent from tutorials)
 
@@ -79,11 +93,22 @@ All are dense (136-275 lines); none are stubs.
    40/80 col, 1-bit vs 4-bit tile defs, base address overlapping the display
    file). No tutorial. Also present as screen studies (Scr# 340, 420-436
    "TILEMAP study").
-3. **`.dot` command creation.** The pattern for producing standalone NextZXOS
-   `.command` executables (assembler + save-bytes + `$2000`-relative addressing)
-   exists as `demo/echo|helloworld|parser|savebank.dot.f` and screens (286, 357,
-   581, 940-941). No tutorial. High value: it is the bridge from "I write Forth"
-   to "I ship a system command".
+3. **`.dot` command creation. [CLOSED 2026-07-18]** Now covered by
+   **057-dot-commands.f**, which extracts the pattern (assembler + relocation
+   + save-bytes + `$2000`-relative addressing) shared by
+   `demo/echo|helloworld|parser|savebank.dot.f`, using `helloworld.dot.f` as
+   the running example and pointing to the other three for further reading.
+   Screens (286, 357, 581, 940-941) remain as a cross-reference. Writing the
+   tutorial also surfaced a real bug in `demo/parser.dot.f`: two call sites
+   (`main`'s call to `parse`, `help`'s call to `print`) used plain `AA,`
+   instead of a relocating form, embedding the live-dictionary address
+   instead of the `$2000` one -- invisible to interactive testing because
+   `TESTER` calls `MAIN` in place, before relocation, and would only crash
+   once the saved file actually ran standalone. Fixed in both call sites;
+   the three valid relocation mechanisms (`REL-AA,`/`REL-NN,` shorthand,
+   manual `DOT-RELATIVE ... AA,`, direct post-hoc patch) are now named at
+   every relocation point in the file via inline comments, and the general
+   pattern/pitfall is documented in `tutorial/CLAUDE.md` section 17.
 4. **Fixed-point (Q8.8 / 12.4).** Screens 590-595 ("Product routine for 12:4
    fixed point") exist; the Q8.8 work is not yet a tutorial. The `*/` 32-bit
    intermediate trick and `SPLIT` belong here.
@@ -171,7 +196,7 @@ array), and the AFX banks at Scr# 2200+ that 054 draws on directly.
 |------|---------|-------|
 | `brot.f` | Layer2-applied tutorial | Already Next-like (layer2 + `rrrgggbb` palette). Near-ready: integer Mandelbrot. Lowest effort, high payoff. |
 | `Fedora.f` | Vector + trig tutorial | Layer0 vector draw + sin-table /10000. Add note on Perl/Python table generation. |
-| `*.dot.f` | Command-creation tutorial | Closes Axis-1 gap #3. |
+| `*.dot.f` | Command-creation tutorial | **DONE (057-dot-commands.f, 2026-07-18)** -- closed Axis-1 gap #3; also fixed a latent relocation bug the writing surfaced (see gap #3 above). |
 | `Layer3-demo*` | Tilemap tutorial | Closes Axis-1 gap #2. |
 
 **Promote to "canonical example" (stays in `demo/`, referenced from tutorials):**
@@ -214,12 +239,15 @@ path outside `tutorial/`.
 
 ## Open questions for the author
 
-1. **Numbering [PARTLY SETTLED 2026-06-21]**: the hybrid was adopted -- the core
-   BLOCK items were *inserted* in the two empty slots (028 BLOCK mechanism, 029
-   EDIT) right after the core backbone, while the block-as-data piece was
-   *appended* at 054 because it cross-refers the hardware-track AFXframe (050).
-   Still open for the remaining gaps (tilemap, dot-command, Q8.8, chomp-capstone):
-   append at 055+ or insert?
+1. **Numbering [PARTLY SETTLED 2026-06-21, further precedent 2026-07-18]**: the
+   hybrid was adopted -- the core BLOCK items were *inserted* in the two empty
+   slots (028 BLOCK mechanism, 029 EDIT) right after the core backbone, while
+   the block-as-data piece was *appended* at 054 because it cross-refers the
+   hardware-track AFXframe (050). The dot-command tutorial followed the same
+   append precedent: written at **057** (after 055-afx-sound-board and
+   056-layer2-palette), pushing the still-unwritten DMA placeholder from
+   `057-dma.f` to `058-dma.f`. Still open for the remaining gaps (tilemap,
+   Q8.8, chomp-capstone): append at 059+ or insert?
 2. **AFX assets [PARTLY ANSWERED]**: 054 now formally documents `LOAD2BLOCK` and
    names the Scr# 2200+ AFX banks as its worked example, pinning the `tutorial/afx/`
    tree to tutorials 050+054. The repo-inflation question (relocate under
@@ -236,8 +264,9 @@ path outside `tutorial/`.
 ## Summary (TL;DR)
 
 - Dense tutorials cover core (001-027), block storage/editing (028-029), Next
-  hardware (030-053), and block-as-data (054). The system is far past "needs more
-  tutorials"; it needs a **map** and a few **bridges**.
+  hardware (030-053), block-as-data (054), AFX sound (055), Layer2 palette (056),
+  and dot commands (057). The system is far past "needs more tutorials"; it
+  needs a **map** and a few **bridges**.
 - The Brodie screen track (800-905) is a **parallel, independent reference**, not
   a rewrite of the tutorials and not a backbone to verify against -- same concepts,
   different definitions. Use it as a cross-reference; the wiki and
@@ -246,11 +275,14 @@ path outside `tutorial/`.
   It now spans Brodie Ch.1-11: Ch.10 was completed to Scr# 895 and Ch.11 added at
   896-905, so the once-missing compilation/defining-word counterparts exist.
 - Axis-1 coverage gaps: **BLOCK is now closed** (028 mechanism, 029 EDIT, 054
-  block-as-data). Remaining: **Tilemap/Layer3, .dot commands, Q8.8 fixed point,
-  ZAP/standalone workflow** -- each already has working code in `demo/` or the
-  screen corpus, so promotion (not invention) is the task.
-- `demo/`: promote brot/Fedora/.dot/Layer3 to tutorials; keep cosmic-conquest,
-  lift-challenge, raycast, term10, color-picker as referenced canonical examples.
+  block-as-data), and **`.dot` commands are now closed** (057, which also
+  surfaced and fixed a real relocation bug in `demo/parser.dot.f` -- see
+  `tutorial/CLAUDE.md` section 17). Remaining: **Tilemap/Layer3, Q8.8 fixed
+  point, ZAP/standalone workflow** -- each already has working code in `demo/`
+  or the screen corpus, so promotion (not invention) is the task.
+- `demo/`: promote brot/Fedora/Layer3 to tutorials (`.dot.f` already promoted,
+  see above); keep cosmic-conquest, lift-challenge, raycast, term10,
+  color-picker as referenced canonical examples.
 - **chomp-chomp**: the legacy/Next-like split is a video *data-model* rewrite, not
   a reskin; turn it into a before/after capstone, the tutorial being the diff.
 - Resolve three author decisions: numbering scheme, AFX asset placement, and
