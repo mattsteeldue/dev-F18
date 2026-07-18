@@ -113,9 +113,10 @@ CREATE TUT-TABLE
     H" tutorial/056-layer2-palette.f"  ,
     H" tutorial/057-dot-commands.f"    ,
     H" tutorial/058-layer3-tilemap.f"  ,
-\   H" tutorial/059-dma.f"             ,
+    H" tutorial/059-standalone-executables.f" ,
+\   H" tutorial/060-dma.f"             ,
 
-58 CONSTANT TUT-MAX
+59 CONSTANT TUT-MAX
 
 
 \ ---------------------------------------------------------------------------
