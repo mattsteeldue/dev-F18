@@ -386,6 +386,23 @@ Canonical example from `inc/2constant.f`:
 \ DOES> pushes PFA as TOS; 2@ fetches both cells from PFA.
 ```
 
+## CHAR vs [CHAR]: interpret-state vs compile-state
+
+Same pairing as `'` (tick) vs `[']` (bracket-tick): one word for interpreted code,
+one compile-only immediate word for use inside a colon-definition body.
+
+- **`CHAR`** -- interpretive: parses the next word and pushes its first character
+  code immediately. Use at the interpreter level -- outside any colon-definition,
+  e.g. initializing a `VARIABLE` right after creating it.
+- **`[CHAR]`** -- compile-only immediate: parses the next word at compile time and
+  compiles code that pushes the character literal when the enclosing definition
+  later runs. Use only inside a colon-definition body.
+
+Using `[CHAR]` where plain `CHAR` belongs (top-level/interpreted code) is a mistake
+even if it happens to not visibly misbehave in a quick check -- e.g. `lib/DIR.f` had
+`VARIABLE DIR-DRIVE  [CHAR] C DIR-DRIVE C!` (top-level, interpreted) where it should
+have been `CHAR C DIR-DRIVE C!`.
+
 ## Known Bugs
 
 ### `INCLUDE` / `NEEDS`
