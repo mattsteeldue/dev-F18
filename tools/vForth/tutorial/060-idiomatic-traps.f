@@ -43,6 +43,7 @@ CR
 
 NEEDS [']
 NEEDS DEPTH
+NEEDS PAD"
 
 \ =============================================================================
 \ 1. Interpret-state vs compile-state parsing words: '  vs  [']
@@ -278,6 +279,56 @@ $FF . %11111111 . #255 . CR    \ => 255 255 255 -- three spellings, one value
 
 
 \ =============================================================================
+\ 6bis. PAD is a single shared buffer -- not scoped to one string
+\ =============================================================================
+\
+\ PAD" (inc/PAD~.f) is the RIGHT way to defuse the FAR/HEAP volatility trap
+\ above: at run time it decodes the heap string and immediately CMOVEs it
+\ into PAD, before any further FAR/HEAP call can remap MMU7 out from under
+\ it. PAD" itself is not the trap here -- it is the idiomatic fix. But it
+\ trades one volatility for another: PAD is ONE global scratch buffer,
+\ shared by everything that happens to write through it -- WORD, FILENAME
+\ (lib/TUTORIAL.f), DIR-PAD (lib/DIR.f), PAD" itself, and any word calling
+\ any of those, often several calls deep with no hint in its name that it
+\ touches PAD at all. Whatever a PAD" left there is only valid until the
+\ NEXT such write, from anywhere, for any reason -- exactly the same "no
+\ error, just a silently wrong value" shape as the FAR/HEAP trap, just
+\ against a different resource.
+\
+\ (A second, smaller trap inside the trap: PAD" leaves a Z-STRING in PAD --
+\ text then a single $00 terminator, no leading length byte, per >ZPAD in
+\ inc/}ZPAD.f -- exactly what F_OPEN/LOAD-BYTES expect as a filename, but
+\ NOT a counted string. PAD COUNT TYPE would misread the first character of
+\ the text as a bogus length byte. .ZSTRING below just walks bytes to the
+\ $00, the correct way to print what PAD" produces.)
+
+: .ZSTRING  ( a -- )
+    BEGIN
+        DUP C@
+    WHILE
+        DUP C@ EMIT  1+
+    REPEAT
+    DROP
+;
+
+\   PAD" alpha"  PAD .ZSTRING     => alpha   (fine: read right away)
+\
+\   PAD" alpha"                      \ stash "alpha" in PAD
+\   PAD" beta"                       \ ANY further PAD-writer silently wins
+\   PAD .ZSTRING                     => beta, not alpha -- no error, ever
+\
+\ Rule: treat a string PAD" parks in PAD exactly like a freshly FAR-decoded
+\ heap address -- read it, or copy it elsewhere, immediately, before calling
+\ anything else -- not "eventually, once I'm done with other work."
+
+PAD" alpha"  PAD .ZSTRING CR          \ => alpha
+
+PAD" alpha"
+PAD" beta"
+PAD .ZSTRING CR                        \ => beta -- alpha silently lost
+
+
+\ =============================================================================
 \ 7. OPEN< is interpretation-only
 \ =============================================================================
 \
@@ -356,6 +407,8 @@ $FF . %11111111 . #255 . CR    \ => 255 255 255 -- three spellings, one value
 \                                 during compilation
 \   5.  EMIT vs EMITC            -- 7-bit-masked vs full-byte output
 \   6.  FAR / HEAP                -- decoded heap addresses are volatile
+\   6bis. PAD                       -- one shared buffer; PAD" strings are
+\                                      volatile against ANY next PAD-writer
 \   7.  OPEN<                       -- interpretation-only
 \   8.  FLOATING / NO-FLOATING       -- global INTERPRET patch; always pair them
 \   9.  INCLUDE / NEEDS               -- last two file bytes must not be " \n"

@@ -41,6 +41,15 @@ corrisponde quindi a BLOCK [2*S1, 2*S2+1]:
 Screen 12 .. 98  ->  BLOCK 24 .. 197
 ```
 
+**Il numero di BLOCK e' 1-based sul file.** Confermato nel core
+(`project/vForth18_DOES/source/L3.asm`, parola `R/W`: fa `1-` sul numero di
+blocco prima di chiamare `BLK-SEEK`, che poi calcola `n * B/BUF`): BLOCK n
+vive a byte-offset **`(n-1)*512`**, non `n*512`. BLOCK 1 sono quindi i primi
+512 byte del file (coerente con la nota di CLAUDE.md: "The first 512 bytes
+of !Blocks.txt are BLOCK 1"). `util/blank-blocks.ps1` applica gia' questa
+formula -- non riscriverla altrove con `n*512`, e' un bug gia' commesso una
+volta (Screen successivo intaccato, primo BLOCK dell'intervallo mancato).
+
 ## Preset "persistence"
 
 Gli intervalli usati da `lib/PERSISTENCE.f` (vedi commento in testa al file
@@ -60,8 +69,22 @@ e parola `PERSISTENCE`/`CLEAR-BLOCKS`), variante normale e dot-command:
 2. **Verificare git status pulito** su `!Blocks-64.bin` prima di iniziare
    (`git status -- "!Blocks-64.bin"`), cosi' un eventuale `git diff` dopo
    riflette solo questa operazione.
-3. **Eseguire** lo script, passando tutti gli intervalli in un colpo solo
-   (uno script singolo, non uno per intervallo) da `tools/vForth/`:
+3. **Controllo preliminare (obbligatorio, non scrive nulla)**: eseguire lo
+   script con `-CheckOnly` PRIMA di qualunque scrittura, per sapere quali
+   BLOCK tra quelli richiesti sono gia' blank e quali contengono dati reali
+   che verrebbero distrutti:
+   ```powershell
+   powershell -File util/blank-blocks.ps1 -File "!Blocks-64.bin" -Ranges "24-197,32000-32040,32048-32175,32200-32240,32248-32375" -CheckOnly
+   ```
+   Un BLOCK conta come "gia' blank" se ogni byte e' `0x20` (spazio) **o**
+   `0x00` (NUL) -- e' ammissibile che ci siano caratteri `0x00` inerti
+   mescolati tra gli spazi, non invalida il fatto che il BLOCK sia blank.
+   Riportare all'utente l'elenco dei BLOCK NON gia' blank (se presenti)
+   prima di procedere: sono quelli che l'operazione modifichera' davvero.
+4. **Eseguire la scrittura**, stessi intervalli in un colpo solo (uno
+   script singolo, non uno per intervallo), senza `-CheckOnly`, da
+   `tools/vForth/` (lo script ristampa comunque il pre-check come log,
+   poi scrive):
    ```powershell
    powershell -File util/blank-blocks.ps1 -File "!Blocks-64.bin" -Ranges "24-197,32000-32040,32048-32175,32200-32240,32248-32375"
    ```
@@ -70,19 +93,22 @@ e parola `PERSISTENCE`/`CLEAR-BLOCKS`), variante normale e dot-command:
    script e' PowerShell nativo (`[System.IO.File]`) apposta: **non usare
    python3** per questa operazione -- in questo ambiente non e' installato
    (solo lo stub Windows Store che fallisce).
-4. **Verificare**:
+5. **Verificare**:
    - Dimensione file invariata: `ls -la "!Blocks-64.bin"` deve mostrare
      ancora 16777216 byte.
-   - Un campione dei BLOCK toccati e' tutto spazi: ad es. per BLOCK 24,
+   - Un campione dei BLOCK toccati e' tutto spazi: ad es. per BLOCK 24
+     (BLOCK 1-based, offset `(n-1)*512` -- vedi sopra),
      ```powershell
-     $fs=[System.IO.File]::OpenRead("!Blocks-64.bin"); $fs.Seek(24*512,'Begin')|Out-Null
+     $fs=[System.IO.File]::OpenRead("!Blocks-64.bin"); $fs.Seek((24-1)*512,'Begin')|Out-Null
      $buf=New-Object byte[] 512; $fs.Read($buf,0,512)|Out-Null; $fs.Close()
      ($buf | Sort-Object -Unique)
      ```
      deve stampare solo `32` (0x20 decimale).
+   - Ripetere lo `-CheckOnly` del passo 3: ora deve riportare 0 BLOCK non
+     blank sull'intero intervallo.
    - `git diff --stat -- "!Blocks-64.bin"` per confermare che solo questo
      file e' cambiato.
-5. **Non committare** automaticamente: riportare all'utente l'esito e
+6. **Non committare** automaticamente: riportare all'utente l'esito e
    lasciare a lui la decisione di commit (l'utente committa tramite GitHub
    Desktop, non da CLI).
 
