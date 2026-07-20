@@ -13,7 +13,11 @@ NEEDS .PAD
 NEEDS HEAP
 NEEDS ?ESCAPE
 NEEDS SHOW-PROGRESS
-NEEDS WILDCARD?
+NEEDS WILDCARD
+\ shadow the core F_OPENDIR/F_READDIR with the wildcard-enabled pair --
+\ NEEDS would skip them (name already in dictionary), so force with INCLUDE.
+INCLUDE inc/f_opendir.f
+INCLUDE inc/f_readdir.f
 
 \
 \ emit a date given a MSDOS format date-number: 16 bits are used this way
@@ -70,7 +74,6 @@ VARIABLE DIR-SAVE-DP \ DP value berore DIR
 VARIABLE DIR-BYTES 0 ,  
 VARIABLE DIR-GAP
 VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
-CREATE   DIR-WC  32 ALLOT                  \ wildcard filespec (counted string)
 
 .( .)
 
@@ -173,53 +176,29 @@ CREATE   DIR-WC  32 ALLOT                  \ wildcard filespec (counted string)
     .PAD CR
 ;
 
-\ accept an optional second word (the wildcard filespec, e.g. *.F) from the
-\ same input line and keep it in DIR-WC; default to * (match all) if the
-\ line has nothing left, so plain "DIR name" still lists everything.
-: DIR-GET-WC ( -- )
-    BL WORD COUNT                   \ txt-a n
-    DUP 0= IF
-        2DROP
-        1 DIR-WC C!
-        [CHAR] * DIR-WC 1+ C!
-    ELSE
-        DUP DIR-WC C!
-        DIR-WC 1+ SWAP CMOVE
-    THEN
-;
-
-\ given a directory-entry record address (attribute byte first, as written
-\ by F_READDIR), return the address and length of its name text.
-: DIR-NAME ( a -- name-a name-n )
-    1+ DUP SKIP-NAME OVER -
-;
-
 \ This operation requires at least 8K available in HEAP.
-\ given a path-name in PAD, open such directory and put in HEAP
-\ each entry matching DIR-WC, Pointers are put at HERE and DP is advanced.
+\ given a path-name in PAD, open such directory and put in HEAP each entry
+\ matching WILDCARD-SPEC (filtered by NextZXOS itself, see f_opendir.f).
+\ Pointers are put at HERE and DP is advanced.
 \ This will form a dynamic array starting from DIR-SAVE-DP to HERE -2
 : DIR-TO-HEAP ( -- )
     HP@  DIR-SAVE-HP !              \ save HP for future forget/restore
     HERE DIR-SAVE-DP !              \ save DP for future forget/restore
     PAGE-WATERMARK SKIP-HP-PAGE     \ ensure to be at a new 8k page...
-    PAD F_OPENDIR 43 ?ERROR >R      \ keep filehandle in R@
+    PAD WILDCARD-SPEC F_OPENDIR 43 ?ERROR >R  \ keep filehandle in R@
     BEGIN
         HERE                        \ use dictionary as temp area
-        PAD                         \ wildcard ignored (kept for API compat)
+        WILDCARD-SPEC                \ same pattern given at F_OPENDIR time
         R@ F_READDIR 46 ?ERROR
-    WHILE
-        HERE DIR-NAME                   \ name-a name-n
-        DIR-WC COUNT 2SWAP WILDCARD?    \ flag
-        IF
-            HERE DUP                    \ a a
-            1+ SKIP-NAME                \ a a+n
-            HERE - 10 +                 \ a m
-            DUP HEAP                    \ a m hp
-            DUP >R                      \ a m hp
-            FAR SWAP                    \ a a2 m
-            CMOVE
-            R> ,                        \ append to array
-        THEN
+    WHILE                            \ NextZXOS already filtered by pattern
+        HERE DUP                    \ a a
+        1+ SKIP-NAME                \ a a+n
+        HERE - 10 +                 \ a m
+        DUP HEAP                    \ a m hp
+        DUP >R                      \ a m hp
+        FAR SWAP                    \ a a2 m
+        CMOVE
+        R> ,                        \ append to array
     REPEAT
     R>  F_CLOSE DROP
 ;
@@ -233,7 +212,6 @@ CREATE   DIR-WC  32 ALLOT                  \ wildcard filespec (counted string)
 \ forward definition to be called by DIR.
 : DIR-CCCC
     DIR-PAD
-    DIR-GET-WC
     DIR-TO-HEAP
     DIR-SHELL-SORT
     DIR-LIST

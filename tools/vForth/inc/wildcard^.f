@@ -19,16 +19,12 @@ VARIABLE WC-S           \ string index
 VARIABLE WC-STARP       \ pattern index of last '*' seen (-1 = none)
 VARIABLE WC-STARS       \ string index at that '*'
 
-: WC-UPPER ( c -- c )
-    DUP [CHAR] a < NOT  OVER [CHAR] z > NOT  AND IF $20 - THEN
-;
-
 : WC-PC@ ( i -- c )  WC-PA @ + C@ ;
 : WC-SC@ ( i -- c )  WC-SA @ + C@ ;
 
 \ do pattern char at pi and string char at si match (case-insensitive) ?
 : WC-EQ? ( pi si -- flag )
-    WC-SC@ WC-UPPER  SWAP WC-PC@ WC-UPPER  =
+    WC-SC@ UPPER  SWAP WC-PC@ UPPER  =
 ;
 
 \ retry from the last '*' if one was seen, else fail
