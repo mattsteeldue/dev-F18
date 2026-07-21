@@ -27,8 +27,7 @@ CHAR * WILDCARD-SPEC C!             \ default: match-all
     BL WORD COUNT                   \ a n
     DUP 0= IF
         2DROP
-        [CHAR] * WILDCARD-SPEC C!
-        0 WILDCARD-SPEC 1+ C!
+        [CHAR] * WILDCARD-SPEC !
     ELSE
         DUP >R                       \ a n              R: n
         WILDCARD-SPEC SWAP CMOVE     \ a WILDCARD-SPEC n  copy text     R: n

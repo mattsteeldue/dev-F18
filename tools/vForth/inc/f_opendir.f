@@ -37,6 +37,7 @@ CODE F_OPENDIR  ( a wc -- fh f )
     EB C,               \ ex      de,hl       de = wc
     06 C, 30 C,         \ ld      b,$30       lfn_only | use_wildcards
     3E C, 43 C,         \ ld      a,'C'       default drive
+    00 C,               \ nop                 for safe use of !
     F3 C,               \ di
     CF C, A3 C,         \ rst     $08 / $A3   F_OPENDIR syscall
     5F C,               \ ld      e,a         e = handle / errcode

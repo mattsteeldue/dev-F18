@@ -17,7 +17,6 @@ NEEDS WILDCARD
 \ shadow the core F_OPENDIR/F_READDIR with the wildcard-enabled pair --
 \ NEEDS would skip them (name already in dictionary), so force with INCLUDE.
 INCLUDE inc/f_opendir.f
-INCLUDE inc/f_readdir.f
 
 \
 \ emit a date given a MSDOS format date-number: 16 bits are used this way
@@ -74,6 +73,8 @@ VARIABLE DIR-SAVE-DP \ DP value berore DIR
 VARIABLE DIR-BYTES 0 ,  
 VARIABLE DIR-GAP
 VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
+\ ' F_OPENDIR 9 + C@ CHAR C -  #14 ?ERROR   
+\ ' F_OPENDIR 9 + CONSTANT DIR-DRIVE
 
 .( .)
 
@@ -152,8 +153,10 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
                 I 2+ !  I  ! 
                 DROP 0   \ flag sorted false
             THEN
+            ?TERMINAL IF LEAVE THEN
         2 +LOOP
         IF LEAVE THEN   \ leave outer loop if flag is true
+        ?TERMINAL IF LEAVE THEN
         I show-progress \ 8 AND IF [CHAR] . EMIT 8 EMITC THEN \ flashing dot
     LOOP                       \ uses flag-sorted
 ;
@@ -190,6 +193,7 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
         HERE                        \ use dictionary as temp area
         WILDCARD-SPEC                \ same pattern given at F_OPENDIR time
         R@ F_READDIR 46 ?ERROR
+        ?TERMINAL NOT AND
     WHILE                            \ NextZXOS already filtered by pattern
         HERE DUP                    \ a a
         1+ SKIP-NAME                \ a a+n
