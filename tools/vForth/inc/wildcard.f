@@ -16,6 +16,12 @@
 \
 \     WILDCARD *.F  DIR MYDIR
 \
+\ STICKY BY DESIGN: the pattern is not scoped to that one DIR call -- it
+\ stays in effect for every later DIR, on any line, until WILDCARD is
+\ called again. Reset to match-all with a bare WILDCARD (no following
+\ word):
+\
+\     WILDCARD
 
 BASE @ DECIMAL
 

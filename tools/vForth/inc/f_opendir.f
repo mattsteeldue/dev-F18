@@ -10,8 +10,9 @@
 \ Adds a wildcard parameter and requests esx_mode_use_wildcards ($20) on
 \ top of the core's esx_mode_lfn_only ($10), so NextZXOS filters directory
 \ entries itself. The SAME wildcard z-string must then be passed as a2 to
-\ F_READDIR on every call (see f_readdir.f) -- no Forth-side WILDCARD?
-\ matching needed anymore.
+\ the core F_READDIR on every call -- the core word already threads a2
+\ into DE correctly for the syscall, so no shadow redefinition of
+\ F_READDIR is needed, and no Forth-side WILDCARD? matching either.
 \
 \ Self-contained: does not jr into the core's shared F_Open_Exit/F_Read_Exit
 \ (their addresses are internal to the compiled core, not safely
@@ -37,7 +38,6 @@ CODE F_OPENDIR  ( a wc -- fh f )
     EB C,               \ ex      de,hl       de = wc
     06 C, 30 C,         \ ld      b,$30       lfn_only | use_wildcards
     3E C, 43 C,         \ ld      a,'C'       default drive
-    00 C,               \ nop                 for safe use of !
     F3 C,               \ di
     CF C, A3 C,         \ rst     $08 / $A3   F_OPENDIR syscall
     5F C,               \ ld      e,a         e = handle / errcode

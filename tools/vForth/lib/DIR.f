@@ -14,8 +14,10 @@ NEEDS HEAP
 NEEDS ?ESCAPE
 NEEDS SHOW-PROGRESS
 NEEDS WILDCARD
-\ shadow the core F_OPENDIR/F_READDIR with the wildcard-enabled pair --
-\ NEEDS would skip them (name already in dictionary), so force with INCLUDE.
+\ shadow the core F_OPENDIR with the wildcard-enabled version --
+\ NEEDS would skip it (name already in dictionary), so force with INCLUDE.
+\ F_READDIR needs no shadow: the core word already threads a2 (the same
+\ wildcard z-string) into DE correctly, see inc/f_opendir.f header.
 INCLUDE inc/f_opendir.f
 
 \
