@@ -74,9 +74,7 @@ VARIABLE DIR-SAVE-HP \ HP value before DIR
 VARIABLE DIR-SAVE-DP \ DP value berore DIR
 VARIABLE DIR-BYTES 0 ,  
 VARIABLE DIR-GAP
-VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
-\ ' F_OPENDIR 9 + C@ CHAR C -  #14 ?ERROR   
-\ ' F_OPENDIR 9 + CONSTANT DIR-DRIVE
+VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE !    \ drive letter used by DIR
 
 .( .)
 
@@ -84,7 +82,7 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
 \ emit one line for current directory entry.
 \ Usually a lies in heap zone.
 : DIR-LIST-ITEM ( a -- )
-    DECIMAL                     \ a
+    CR                          \ a
     DUP 1+                      \ a a+1
     SKIP-NAME  DUP   >R         \ a a+n         R: a+n
     1+         DUP @ >R         \ a a+n+1       R: a+n time 
@@ -102,7 +100,7 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
     R> .FAT-DATE SPACE          \ a             R: a+n time  
     R> .FAT-TIME SPACE SPACE    \ a             R: a+n 
     1+ R>                       \ a+1 a+n
-    OVER - TYPE CR
+    OVER - TYPE 
 ;
 
 \
@@ -110,13 +108,14 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
 \ each pointing a Heap area containing a directory entry, previously loaded.
 \ emit the complete content of directory
 : DIR-LIST ( -- )
-    BASE @
+    BASE @ DECIMAL
     0 0  DIR-BYTES 2!
     HERE DIR-SAVE-DP @ DO
         BEGIN ?ESCAPE NOT UNTIL
         ?TERMINAL IF LEAVE THEN
         I @  FAR  DIR-LIST-ITEM        
     2 +LOOP
+    CR
     DIR-BYTES 2@ .FILE-SIZE 
     ."  Bytes  "
     HERE  DIR-SAVE-DP @ - 2/ . 
@@ -128,7 +127,7 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
 : DIR-SHELL-SORT ( -- )
     HERE 2-  DIR-SAVE-DP @  
     2DUP - DIR-GAP 2+ !
-    DO
+    ?DO
         DIR-GAP @ 
         DUP DUP + + 2 RSHIFT    
         $FFFE AND 
@@ -168,35 +167,36 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
 \ accept the following text (without quotes) as the path to be examined
 \ this path-name is termporarily kept in PAD
 : DIR-PAD ( -- cccc )
-    PAD C/L BLANK
-    67 ALLOT                        \               
-    0 C, HERE                       \ a1            -- now HERE is PAD
-    DIR-DRIVE C@ C,                 \ a1            -- start with <drive>:
-    BL WORD DUP C@ 1+ ALLOT         \ a1 a3         -- append cccc
-    >R                              \ a1     R: a3  
-    0 C,                            \ a1            -- append 0x00
-    1- HERE OVER - OVER C!          \ a0            -- fix length byte
-    [CHAR] : R> C!                  \ a0     R:     -- put : after C
-    HERE - 67 - ALLOT               
-    .PAD CR
+    HERE                        \ dp
+    PAD C/L BLANK               \ dp -- useful for .PAD later
+    PAD DP !                    \ dp                          
+    DIR-DRIVE C@ C,             \ dp
+    BL WORD                     \ dp a
+    C@ 1+ ALLOT                 \ dp  
+    0 C,                           \ dp    
+    DP !
+    [CHAR] : PAD 1+ C!
 ;
 
 \ This operation requires at least 8K available in HEAP.
-\ given a path-name in PAD, open such directory and put in HEAP each entry
+\ given a path-name in a, open such directory and put in HEAP each entry
 \ matching WILDCARD-SPEC (filtered by NextZXOS itself, see f_opendir.f).
 \ Pointers are put at HERE and DP is advanced.
 \ This will form a dynamic array starting from DIR-SAVE-DP to HERE -2
-: DIR-TO-HEAP ( -- )
-    HP@  DIR-SAVE-HP !              \ save HP for future forget/restore
-    HERE DIR-SAVE-DP !              \ save DP for future forget/restore
-    PAGE-WATERMARK SKIP-HP-PAGE     \ ensure to be at a new 8k page...
-    PAD WILDCARD-SPEC F_OPENDIR 43 ?ERROR >R  \ keep filehandle in R@
+: DIR-TO-HEAP ( a -- )
+    WILDCARD-SPEC F_OPENDIR         \ fh f 
+    43 ?ERROR >R                    \    -- keep filehandle in R@
+    HP@  DIR-SAVE-HP !              \    -- save HP for future forget/restore
+    HERE DIR-SAVE-DP !              \    -- save DP for future forget/restore
+    PAGE-WATERMARK SKIP-HP-PAGE     \    -- ensure to be at a new 8k page...
     BEGIN
-        HERE                        \ use dictionary as temp area
-        WILDCARD-SPEC                \ same pattern given at F_OPENDIR time
-        R@ F_READDIR 46 ?ERROR
-        ?TERMINAL NOT AND
-    WHILE                            \ NextZXOS already filtered by pattern
+\       here show-progress
+        HERE                        \ a  -- use dictionary as temp area
+        WILDCARD-SPEC               \ a a2 -- same pattern given to F_OPENDIR 
+        R@ F_READDIR 
+        46 ?ERROR      \ n
+        ?TERMINAL NOT AND           \ f
+    WHILE                           \    -- NextZXOS already filtered by pattern
         HERE DUP                    \ a a
         1+ SKIP-NAME                \ a a+n
         HERE - 10 +                 \ a m
@@ -215,14 +215,30 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE C!    \ drive letter used by DIR
     DIR-SAVE-DP @ DP !
 ;
 
-\ forward definition to be called by DIR.
-: DIR-CCCC
-    DIR-PAD
+\ given address filespec, process directory
+\ It seems that the drive-letter must be always specified 
+: DIR-SPEC ( a -- )
+    .PAD SPACE
     DIR-TO-HEAP
-    DIR-SHELL-SORT
-    DIR-LIST
+    HERE DIR-SAVE-DP @ - 
+    IF 
+        DIR-SHELL-SORT
+        SPACE DIR-LIST 
+    ELSE
+        #43 MESSAGE
+    THEN        
     DIR-FREE
+    WILDCARD-SPEC 32 -TRAILING TYPE 
+    SPACE
 ;
+
+\ forward definition to be called by DIR.
+: DIR-CCCC ( -- cccc )
+    DIR-PAD
+    PAD 
+    DIR-SPEC
+;
+
 
 \ this allows FORGET DIR to remove this whole package
 

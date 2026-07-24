@@ -11,7 +11,7 @@
 \
 \ Independent of DIR (lib/dir.f): DIR keeps parsing only the path that
 \ follows it in the input stream, exactly as today. WILDCARD-SPEC defaults
-\ to "*" (match all) until WILDCARD is called; call it separately, anywhere
+\ to "*.*" (match all) until WILDCARD is called; call it separately, anywhere
 \ earlier on the same input line, to change the pending pattern:
 \
 \     WILDCARD *.F  DIR MYDIR
@@ -25,20 +25,27 @@
 
 BASE @ DECIMAL
 
+CREATE WILDCARD-ALL ," *.*"
 CREATE WILDCARD-SPEC  32 ALLOT      \ null-terminated pattern buffer
-CHAR * WILDCARD-SPEC C!             \ default: match-all
-0 WILDCARD-SPEC 1+ C!
+
+: WILDCARD-DEFAULT ( -- )
+    WILDCARD-ALL COUNT 1+
+    WILDCARD-SPEC SWAP CMOVE
+;
+
+\ initialization for WILDCARD-SPEC
+WILDCARD-SPEC 32 BLANK              
+WILDCARD-DEFAULT
 
 : WILDCARD  ( -- )
-    BL WORD COUNT                   \ a n
-    DUP 0= IF
-        2DROP
-        [CHAR] * WILDCARD-SPEC !
-    ELSE
-        DUP >R                       \ a n              R: n
-        WILDCARD-SPEC SWAP CMOVE     \ a WILDCARD-SPEC n  copy text     R: n
-        0 WILDCARD-SPEC R> + C!      \ terminate at WILDCARD-SPEC+n
+    WILDCARD-SPEC 32 BLANK       \      -- useful for .PAD
+    BL WORD COUNT >R             \ a    R: n
+    WILDCARD-SPEC R@ CMOVE       \  
+    0 WILDCARD-SPEC R> + C!      \      -- terminate at WILDCARD-SPEC+n
+    WILDCARD-SPEC C@ 0= IF
+        WILDCARD-DEFAULT
     THEN
 ;
+
 
 BASE !
