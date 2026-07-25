@@ -146,10 +146,30 @@ A heap-pointer is a single 16-bit cell:
 
 ### Usage rules
 
-**Use `H"` (not `S"`) for persistent heap strings at interpret time.** `S"` at interpret
-time returns a raw `$E000+` address that becomes invalid as soon as a subsequent `FAR` or
-`HEAP` call maps a different page. `H"` returns a heap-pointer `ha` that remains valid
-indefinitely; decode it with `FAR` immediately before use.
+**Rule of thumb: prefer `S"` inside definitions, prefer `H"` when interpreting.**
+`S"` (`inc/s~.f`) is state-sensitive and, at interpret time, is built directly on top
+of `H"`:
+
+```forth
+: S"  ( -- a n )
+    STATE @
+    IF      COMPILE (H")  H" COMPILE,      \ compiling: see below
+    ELSE    H" FAR COUNT                   \ interpreting: allocate + decode now
+    THEN
+; IMMEDIATE
+```
+
+- **Inside a colon-definition** (compile state), `S"` compiles a call to `(H")`
+  followed by an inline `ha` cell -- the string is parsed and allocated on the heap
+  once, at compile time. Every time the defined word *runs*, `(H")` decodes that `ha`
+  via `FAR` fresh and hands back a real addr+len, safe to use right after the `S"`
+  call -- this is the normal, safe case, and the one to reach for by default.
+- **At the interpreter** (interpret state), `S"` reduces to `H" FAR COUNT`: it
+  allocates a *new* heap string on every line executed and decodes it via `FAR`
+  immediately, so the returned address goes stale as soon as any other `FAR`/`HEAP`
+  call remaps MMU7 (and each re-run leaks another heap allocation). Prefer calling
+  `H"` directly instead: keep the stable `ha` around, and decode it with `FAR` only
+  immediately before use.
 
 **Pattern for a string table in heap:**
 
