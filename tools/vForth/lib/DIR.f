@@ -14,11 +14,6 @@ NEEDS HEAP
 NEEDS ?ESCAPE
 NEEDS SHOW-PROGRESS
 NEEDS WILDCARD
-\ shadow the core F_OPENDIR with the wildcard-enabled version --
-\ NEEDS would skip it (name already in dictionary), so force with INCLUDE.
-\ F_READDIR needs no shadow: the core word already threads a2 (the same
-\ wildcard z-string) into DE correctly, see inc/f_opendir.f header.
-INCLUDE inc/f_opendir.f
 
 \
 \ emit a date given a MSDOS format date-number: 16 bits are used this way
@@ -180,11 +175,12 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE !    \ drive letter used by DIR
 
 \ This operation requires at least 8K available in HEAP.
 \ given a path-name in a, open such directory and put in HEAP each entry
-\ matching WILDCARD-SPEC (filtered by NextZXOS itself, see f_opendir.f).
+\ matching WILDCARD-SPEC (filtered by NextZXOS itself via F_READDIR's a2 --
+\ F_OPENDIR just requests wildcard mode).
 \ Pointers are put at HERE and DP is advanced.
 \ This will form a dynamic array starting from DIR-SAVE-DP to HERE -2
 : DIR-TO-HEAP ( a -- )
-    WILDCARD-SPEC F_OPENDIR         \ fh f 
+    F_OPENDIR                       \ fh f 
     43 ?ERROR >R                    \    -- keep filehandle in R@
     HP@  DIR-SAVE-HP !              \    -- save HP for future forget/restore
     HERE DIR-SAVE-DP !              \    -- save DP for future forget/restore
@@ -192,7 +188,8 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE !    \ drive letter used by DIR
     BEGIN
 \       here show-progress
         HERE                        \ a  -- use dictionary as temp area
-        WILDCARD-SPEC               \ a a2 -- same pattern given to F_OPENDIR 
+        WILDCARD-SPEC               \ a a2 -- pattern read by F_READDIR
+                                     \ (NextZXOS applies the filter here)
         R@ F_READDIR 
         46 ?ERROR      \ n
         ?TERMINAL NOT AND           \ f
