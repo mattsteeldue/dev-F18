@@ -1,0 +1,271 @@
+Additions for section 5.1 "The 'core' dictionary" (alphabetical dictionary
+entries) and for the "NextZXOS" word-family table (the chart that already
+lists File hook / Directory hook / +3DOS hook / Other columns, found in the
+same area as the DIR/LED narrative). To be pasted by hand: the 16
+dictionary entries below go into their correct alphabetical slots among
+the existing 5.1 entries; the table addition goes into the NextZXOS chart,
+as a new "General hook" column plus three more rows in the existing File
+hook and Directory hook columns.
+
+Word-entry format follows the existing F_CLOSE/F_OPEN/F_FGETPOS entries in
+5.1 (name, compact stack effect, prose mentioning the RST 8 service
+number, closing "This definition is available after NEEDS cccc" sentence
+per the 5.1 introductory note).
+
+STATUS CAVEAT -- read before pasting: as of 2026-07-29, only M_DOSVERSION
+has been exercised on real hardware (confirmed returning $0208 for
+NextZXOS v2.08). F_MKDIR, F_RMDIR, DOSVER and the twelve words below
+(F_CHDIR, F_FTRUNCATE, F_GETCWD, F_RENAME, F_REWINDDIR, F_SEEKDIR,
+F_TELLDIR, F_TRUNCATE, F_UNLINK, M_GETDATE, M_GETSETDRV, M_SETCAPS) have
+only passed source-level checks (7-bit ASCII, correct hex encoding) -- none
+have been load-tested in the headless emulator or run on CSpect / real
+hardware yet. Recommend pasting this text, but keep an eye out for
+corrections once each word has actually been exercised.
+
+======================================================================
+
+5.1 dictionary entries (insert alphabetically):
+
+
+DOSVER                                                              ---
+
+Prints the NextZXOS API version, eg "NextZXOS v. : 02.08" (major.minor
+in BCD). Built on top of M_DOSVERSION. This definition is available
+after NEEDS DOSVER.
+
+
+F_CHDIR                                                        a --- f
+
+Given a null-terminated path a, changes the working directory of the
+default drive ('*') to it, unless a includes a drive letter. Flag f is
+0 for OK. This is just a wrapper around NextZXOS API via RST 8 call
+followed by $A9 service number. This definition is available after
+NEEDS F_CHDIR.
+
+
+F_FTRUNCATE                                                h d --- f
+
+Given an open file handle h and a new size d (double), truncates or
+extends the file to exactly d bytes; extended parts are zero-filled
+unless M_SETCAPS has disabled it. The file position is unaffected.
+Flag f is 0 for OK. This is just a wrapper around NextZXOS API via
+RST 8 call followed by $A2 service number. This definition is
+available after NEEDS F_FTRUNCATE.
+
+
+F_GETCWD                                                    buf --- f
+
+Given a buffer address buf, stores the current working directory of
+the default drive as a null-terminated path. Flag f is 0 for OK. This
+is just a wrapper around NextZXOS API via RST 8 call followed by $A8
+service number. This definition is available after NEEDS F_GETCWD.
+
+
+F_MKDIR                                                        a --- f
+
+Given a null-terminated path a, creates a directory. Drive defaults to
+'*' (current drive) unless a includes a drive letter. Flag f is 0 for
+OK. This is just a wrapper around NextZXOS API via RST 8 call followed
+by $AA service number. This definition is available after NEEDS
+F_MKDIR.
+
+
+F_RENAME                                              src dest --- f
+
+Given two null-terminated filespecs src and dest, renames/moves the
+file. Only the base file is renamed, not any associated +3DOS metadata
+file (use M_P3DOS's DOS_RENAME call for that). Flag f is 0 for OK.
+This is just a wrapper around NextZXOS API via RST 8 call followed by
+$B0 service number. This definition is available after NEEDS F_RENAME.
+
+
+F_REWINDDIR                                                    h --- f
+
+Given an open directory handle h, rewinds its position back to the
+start of the directory. Flag f is 0 for OK. This is just a wrapper
+around NextZXOS API via RST 8 call followed by $A7 service number.
+This definition is available after NEEDS F_REWINDDIR.
+
+
+F_RMDIR                                                        a --- f
+
+Given a null-terminated path a, removes a directory. Drive defaults to
+'*' (current drive) unless a includes a drive letter. Flag f is 0 for
+OK. This is just a wrapper around NextZXOS API via RST 8 call followed
+by $AB service number. This definition is available after NEEDS
+F_RMDIR.
+
+
+F_SEEKDIR                                                  h d --- f
+
+Given an open directory handle h and a double-cell offset d as
+previously returned by F_TELLDIR, sets the current directory position.
+Flag f is 0 for OK. This is just a wrapper around NextZXOS API via
+RST 8 call followed by $A6 service number. This definition is
+available after NEEDS F_SEEKDIR.
+
+
+F_TELLDIR                                                  h --- d f
+
+Given an open directory handle h, returns its current position as a
+double-cell offset d, usable with F_SEEKDIR. Flag f is 0 for OK. This
+is just a wrapper around NextZXOS API via RST 8 call followed by $A5
+service number. This definition is available after NEEDS F_TELLDIR.
+
+
+F_TRUNCATE                                                 a d --- f
+
+    Given a null-terminated filespec a (unopened file) and a new size d
+    (double), truncates or extends the file to exactly d bytes; extended
+    parts are zero-filled unless M_SETCAPS has disabled it. Flag f is 0
+    for OK. This is just a wrapper around NextZXOS API via RST 8 call
+    followed by $AE service number. This definition is available after
+    NEEDS F_TRUNCATE.
+
+
+F_UNLINK                                                       a --- f
+
+Given a null-terminated filespec a, deletes the file. Drive defaults
+to '*' (current drive) unless a includes a drive letter. Only the
+base file is deleted, not any associated +3DOS metadata file. Flag f
+is 0 for OK. This is just a wrapper around NextZXOS API via RST 8 call
+followed by $AD service number. This definition is available after
+NEEDS F_UNLINK. See also UNLINK, a friendlier wrapper that parses a
+filename from the input stream.
+
+
+M_DOSVERSION                                            --- ver lang
+
+Returns the NextZXOS API version ver (BCD, eg $0208 for v2.08) and a
+packed language-code pair lang (eg the two characters of "en"); decode
+both with SPLIT. This is just a wrapper around NextZXOS API via RST 8
+call followed by $88 service number. This definition is available
+after NEEDS M_DOSVERSION. See also DOSVER, which prints the version
+directly.
+
+
+M_GETDATE                                          --- date time hs f
+
+Returns the current date and time from the Real Time Clock, if
+present: date and time in MS-DOS format, and hs a packed cell of
+seconds (high byte) and 100ths of a second (low byte) -- decode with
+SPLIT. Flag f is 0 for OK (RTC present and valid); on error date and
+time are both 0. This is just a wrapper around NextZXOS API via RST 8
+call followed by $8E service number. This definition is available
+after NEEDS M_GETDATE.
+
+
+M_GETSETDRV                                               a --- a2 f
+
+Gets (a=0) or sets (a<>0, drive letter in bits 7..3) the default drive
+used by NextZXOS/esxDOS API calls; does not affect NextBASIC's own
+LOAD/SAVE drives. Returns the resulting default drive a2 and flag f, 0
+for OK. This is just a wrapper around NextZXOS API via RST 8 call
+followed by $89 service number. This definition is available after
+NEEDS M_GETSETDRV.
+
+
+M_SETCAPS                                               a --- prev f
+
+Sets NextZXOS capability flags a (bit 7 = skip zero-filling new space
+in F_TRUNCATE/F_FTRUNCATE); returns the previous capabilities prev, to
+be restored later with another M_SETCAPS call. Flag f is 0 for OK
+(available from NextZXOS v1.98M+). This is just a wrapper around
+NextZXOS API via RST 8 call followed by $91 service number. This
+definition is available after NEEDS M_SETCAPS.
+
+
+======================================================================
+
+NextZXOS word-family table -- add a new "General hook" column, and add
+three more entries to the existing File hook and Directory hook columns:
+
+File hook     (existing: F_SEEK F_CLOSE F_SYNC F_FGETPOS F_READ F_WRITE
+               F_OPEN F_FSTAT TOUCH UNLINK)
+              add: F_TRUNCATE F_FTRUNCATE F_RENAME
+
+Directory hook (existing: F_OPENDIR F_READDIR DIR PWD CD)
+              add: F_MKDIR F_RMDIR F_GETCWD F_CHDIR F_TELLDIR F_SEEKDIR
+                   F_REWINDDIR
+
++3DOS hook    (unchanged: M_P3DOS)
+
+General hook  (new column)
+              M_DOSVERSION DOSVER M_GETSETDRV M_SETCAPS M_GETDATE
+
+Other         (unchanged: R# LP HANDLER ZAP VIEW)
+
+
+======================================================================
+
+Addendum (2026-07-29): F_STAT, F_FSTAT, F_GETFREE were created in an
+earlier session (before this text file existed) and are already
+functional in inc/, but were never documented anywhere in the manual
+either -- same gap as the sixteen words above. Insert alphabetically:
+F_FSTAT slots between F_CHDIR and F_FTRUNCATE above; F_GETFREE slots
+between F_GETCWD and F_MKDIR; F_STAT slots between F_SEEKDIR and
+F_TELLDIR. Add F_STAT, F_FSTAT and F_GETFREE to the "File hook" column
+of the word-family table too.
+
+
+F_STAT                                                   a1 buf --- f
+
+Given a null-terminated filespec a1 (an unopened file, not a handle)
+and an 11-byte buffer buf, gets file information/status. The buffer
+holds: +0(1) '*', +1(1) $81, +2(1) file attributes (MS-DOS format),
++3(2) timestamp (MS-DOS format), +5(2) datestamp (MS-DOS format),
++7(4) file size in bytes. Flag f is 0 for OK. This is just a wrapper
+around NextZXOS API via RST 8 call followed by $AC service number.
+This definition is available after NEEDS F_STAT. See also F_FSTAT,
+the same information for an already-open file handle.
+
+
+F_FSTAT                                                  a fh --- f
+
+Given an open file handle fh and an 11-byte buffer a, gets file
+information/status -- same buffer layout as F_STAT (see above). Flag
+f is 0 for OK. This is just a wrapper around NextZXOS API via RST 8
+call followed by $A1 service number. This definition is available
+after NEEDS F_FSTAT.
+
+
+F_GETFREE                                                  b --- d f
+
+Given a drive specifier b ('*'=default, '$'=system, or a drive
+letter), returns the free space on that drive as a double-cell count
+d of 512-byte blocks. Flag f is 0 for OK. This is just a wrapper
+around NextZXOS API via RST 8 call followed by $B1 service number.
+This definition is available after NEEDS F_GETFREE.
+
+
+======================================================================
+
+Other NextZXOS-related documentation gaps found while auditing (2026-
+07-29), NOT yet drafted -- say the word if you want passages for these
+too:
+
+- F_CHMOD (inc/F_CHMOD.f, hook $AF, ( a1 attr mask -- f )): modifies
+  file attributes. Completely undocumented (0 hits anywhere in the
+  manual).
+
+- The whole lib/IDE_PATH.f family: IDE_PATH itself, plus its
+  PATH>PAD/PATH_OP helpers and its SETCD/GETCD/MAKEDIR/REMOVEDIR
+  entry points, are undocumented (0 hits) even though two OTHER
+  wrappers built on the very same library -- CD and PWD -- already
+  have entries in the "DIR and LED" narrative section. MAKEDIR and
+  REMOVEDIR in particular now functionally duplicate F_MKDIR/F_RMDIR
+  (see the M_P3DOS-vs-RST8 analysis from earlier this session).
+
+- IDE_RTC (inc/IDE_RTC.f, ( -- 100ths time date ), via M_P3DOS call
+  $01CC): undocumented (0 hits). Note it overlaps with the new
+  M_GETDATE (direct RST 8 hook $8E) added above -- same information,
+  heavier call path.
+
+- STALE TEXT, not just a gap: the existing "DIR and LED" section's
+  UNLINK entry still reads "you must specify the drive[...] Beware,
+  there is no way to recovery. At this moment, you must specify the
+  driv[e]" -- this describes the OLD inc/unlink.f behaviour (hardcoded
+  drive 'C', no fallback). Since this session's fix, F_UNLINK falls
+  back to '*' (current default drive) when no drive letter is given,
+  so this sentence is now inaccurate and needs rewording, independent
+  of any new-word additions.

@@ -45,6 +45,12 @@ DUP 4 RSHIFT SWAP #15 AND SWAP . 8 EMITC
 0 <# # # # #> TYPE 
 CR 
 
+\ display NextZXOS Version number
+NEEDS DOSVER
+CR #11 EMITC
+DOSVER
+CR
+
 \ display CPU speed 3.5, 7.0, 14.0 or 28.0 MHz
 ." CPU Speed   : " 
 #35                  

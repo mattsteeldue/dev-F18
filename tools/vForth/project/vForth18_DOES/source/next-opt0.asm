@@ -223,7 +223,7 @@ F_Open_Exit:
                 push    de                  // Save Return Stack pointer
                 push    bc                  // Save Instruction pointer
                 ld      b, $30              // lfn_only | use_wildcards
-                ld      a, "C"
+                ld      a, "*"
                 di
                 rst     $08     
                 db      $A3
