@@ -198,14 +198,30 @@ Repo pubblico: `c:\Zx\GitHub\vforth-next`. I `.bat` stanno in
 
 3. **Aggiorna `HISTORY.txt` del repo pubblico** (`c:\Zx\GitHub\vforth-next\HISTORY.txt`).
    `new-build.bat` **non** lo tocca: va accodato a mano la voce di questo build,
-   rispettando la formattazione del file. Convenzioni: **CRLF**, solo ASCII
-   7-bit, entry separate da **due righe vuote** (non una -- confermato
+   rispettando la formattazione del file. Convenzioni: **LF (Unix)** -- il blob
+   in `HEAD` e' salvato a soli LF, anche se il working tree del clone locale
+   puo' apparire in CRLF per conto suo (vecchio checkout, `core.autocrlf`
+   pregresso: irrilevante, cio' che conta e' non introdurre CR nuovi) -- solo
+   ASCII 7-bit, entry separate da **due righe vuote** (non una -- confermato
    dall'utente 2026-07-14), header `\ build YYYYMMDD` seguito da testo libero
    (poche righe ~80 col). Per un rilascio a sorgente invariato conviene dire
    esplicitamente che il core-binary non cambia (come la entry `20260419`).
-   Esempio di append (preserva CRLF/ASCII, non sovrascrive):
+
+   > ⚠️ **NON usare `` `r`n `` (CRLF) come separatore di riga, MAI.** Il file e'
+   > Unix (LF). Un append con `` $nl="`r`n" `` scrive correttamente le righe
+   > nuove ma, unito al fatto che .NET `AppendAllText` non tocca i byte
+   > preesistenti, lascia il file con newline **miste**: le righe vecchie
+   > restano LF, quelle nuove sono CRLF. Se poi qualcosa (editor, un comando
+   > successivo) normalizza l'intero file su quel CRLF "vincente", l'intero
+   > file passa a DOS -- il tipo di modifica silenziosa e diffusa che si nota
+   > solo con `file HISTORY.txt` (dice `CRLF line terminators` quando non
+   > dovrebbe) o con un diff a sorpresa enorme (vedi sotto). Capitato e
+   > corretto il 2026-08-01: causa era `$nl="`r`n"` nello script di questo
+   > stesso passo. Usa **sempre** `$nl="`n"`.
+
+   Esempio di append (preserva LF/ASCII, non sovrascrive):
    ```powershell
-   $f='C:\Zx\GitHub\vforth-next\HISTORY.txt'; $nl="`r`n"
+   $f='C:\Zx\GitHub\vforth-next\HISTORY.txt'; $nl="`n"
    $lines=@('', '', '\ build YYYYMMDD', '<riga 1 delle novita''>', '<riga 2>', '...')
    [System.IO.File]::AppendAllText($f, ($lines -join $nl)+$nl, [System.Text.Encoding]::ASCII)
    ```
@@ -213,14 +229,27 @@ Repo pubblico: `c:\Zx\GitHub\vforth-next`. I `.bat` stanno in
    `LAYERxx-GRAPHICS` e il nuovo `LAYER22`).
 
    **Verifica sempre con `git diff -- HISTORY.txt` subito dopo l'append.**
-   Il 2026-07-14 un append e' apparso scritto correttamente (verificato con
-   `tail`), ma un secondo controllo poco dopo mostrava la voce sparita e righe
-   vuote raddoppiate in punti vecchi del file -- causato dall'utente che stava
-   editando HISTORY.txt in parallelo (sua "cleansing" di righe precedenti), non
-   da un bug dello script. Se il diff dopo l'append non mostra ESATTAMENTE le
-   righe attese (nient'altro sopra o sotto), non fidarsi e ricontrollare con
-   `Read`/`git diff` prima di andare avanti: l'utente potrebbe avere il file
-   aperto in editing concorrente.
+   Due possibili cause, entrambe da escludere prima di considerare l'append
+   riuscito:
+   - **Editing concorrente dell'utente.** Il 2026-07-14 un append e' apparso
+     scritto correttamente (verificato con `tail`), ma un secondo controllo
+     poco dopo mostrava la voce sparita e righe vuote raddoppiate in punti
+     vecchi del file -- causato dall'utente che stava editando HISTORY.txt in
+     parallelo (sua "cleansing" di righe precedenti), non da un bug dello
+     script.
+   - **Mismatch di line-ending (CRLF vs LF).** Se il diff mostra l'INTERO file
+     come cambiato (non solo le righe nuove in coda), prima di allarmarsi
+     verifica se e' solo un problema di `\r`: confronta le versioni
+     normalizzate, `git show HEAD:HISTORY.txt | tr -d '\r'` contro
+     `cat HISTORY.txt | tr -d '\r'` (o l'equivalente PowerShell). Se il diff
+     normalizzato mostra ESATTAMENTE le righe nuove attese, il contenuto e'
+     giusto ma il file ha newline miste/sbagliate: **non lasciarlo cosi'**,
+     fai ripristinare il file all'utente (`git checkout -- HISTORY.txt` /
+     discard) e ripeti l'append con `$nl="`n"`.
+
+   In ogni caso, se il diff dopo l'append non mostra ESATTAMENTE le righe
+   attese (nient'altro sopra o sotto, stesso line-ending del resto del file),
+   non fidarsi e ricontrollare con `Read`/`git diff` prima di andare avanti.
 
 ## 5. Riepilogo finale
 
