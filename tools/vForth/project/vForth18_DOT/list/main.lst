@@ -6,7 +6,7 @@
    5  0000              //
    6  0000              //  v-Forth 1.8 NextZXOS version
    7  0000              //  DOT-command version
-   8  0000              //  build 20260726
+   8  0000              //  build 20260801
    9  0000              //
   10  0000              //  Direct-Threaded version.
   11  0000              //
@@ -451,14 +451,14 @@
   66+ E01B 76 65 72 73
   66+ E01F 69 6F 6E 20
   66+ E023 0D
-  67+ E024 20 44 6F 74                  db      " Dot-command - build 2026-07-26 ", $0D  // 33
+  67+ E024 20 44 6F 74                  db      " Dot-command - build 2026-08-01 ", $0D  // 33
   67+ E028 2D 63 6F 6D
   67+ E02C 6D 61 6E 64
   67+ E030 20 2D 20 62
   67+ E034 75 69 6C 64
   67+ E038 20 32 30 32
-  67+ E03C 36 2D 30 37
-  67+ E040 2D 32 36 20
+  67+ E03C 36 2D 30 38
+  67+ E040 2D 30 31 20
   67+ E044 0D
   68+ E045 20 4D 49 54                  db      " MIT License ", 127                         // 14
   68+ E049 20 4C 69 63
@@ -3502,7 +3502,7 @@
  231++23F7 D5                           push    de                  // Save Return Stack pointer
  232++23F8 C5                           push    bc                  // Save Instruction pointer
  233++23F9 06 30                        ld      b, $30              // lfn_only | use_wildcards
- 234++23FB 3E 43                        ld      a, "C"
+ 234++23FB 3E 2A                        ld      a, "*"
  235++23FD F3                           di
  236++23FE CF                           rst     $08
  237++23FF A3                           db      $A3

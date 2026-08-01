@@ -17,16 +17,8 @@ BASE @
 \   H,L='e','n'/'e','s'   language code (English/Spanish)
 \   A=0 (Z set) if running in NextZXOS mode; A<>0 (Z reset) in 48K mode
 \
-\ Only version and language are returned here as two plain cells,
-\ meant to be decoded with SPLIT; signature, mode flag and error
-\ carry are not captured.
-\ ver  = D,E as one cell (BCD major/minor, decode with SPLIT)
-\ lang = language pair, byte-swapped so that SPLIT followed by two
-\        EMIT prints the two characters in the correct reading order
-\        (eg "en", "es")
-\
 ( M_DOSVERSION  via RST 08 hook code $88 )
-CODE M_DOSVERSION ( -- ver lang )
+CODE M_DOSVERSION ( -- ver )
 
     HEX
     DD C, E5 C,     \  push  ix|
@@ -44,11 +36,6 @@ CODE M_DOSVERSION ( -- ver lang )
     D9 C,           \  exx                   \ bring version/lang back
 
     D5 C,           \  push  de|             \ ver = NextZXOS version, BCD
-
-    7C C,           \  ld    a'|   h|        \ swap h,l so SPLIT+EMIT+EMIT
-    65 C,           \  ld    h'|   l|        \ prints the language code in
-    6F C,           \  ld    l'|   a|        \ the correct reading order
-    E5 C,           \  push  hl|             \ lang = language pair
 
     D9 C,           \  exx                   \ restore true ip/rp to view
 

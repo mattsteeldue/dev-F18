@@ -5,10 +5,10 @@
 BASE @
 
 \ Get or set the default drive.
-\ a = 0 to get the current default drive
-\ a <> 0 to set the default drive; bits 7..3 = drive letter (0=A...15=P),
-\        bits 2..0 are ignored (use 1 to ensure a is non-zero)
-\ a2 = default drive, encoded as bits 7..3 = drive letter, bits 2..0 = 0
+\ b1 = 0 to get the current default drive
+\ b1 <> 0 to set the default drive; bits 7..3 = drive letter (0=A...15=P),
+\         bits 2..0 are ignored (use 1 to ensure a is non-zero)
+\ b2 = default drive, encoded as bits 7..3 = drive letter, bits 2..0 = 0
 \ return 0 on success, True flag on error
 \
 \ NOTE: setting the default drive here does not change NextBASIC's own
@@ -16,10 +16,10 @@ BASE @
 \ '*' (default) or '$' (system) directly and do not require this call.
 \
 ( M_GETSETDRV  via RST 08 hook $89 )
-CODE M_GETSETDRV ( a -- a2 f )
+CODE M_GETSETDRV ( b1 -- b2 f )
 
     HEX
-    E1 C,               \  pop   hl|              \ hl = a
+    E1 C,               \  pop   hl|              \ hl = byte b1
     DD C, E5 C,         \  push  ix|
     D5 C,               \  push  de|              \ save Return Stack Pointer
     C5 C,               \  push  bc|              \ save Instruction Pointer

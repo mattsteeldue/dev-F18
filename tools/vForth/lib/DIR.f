@@ -14,47 +14,9 @@ NEEDS HEAP
 NEEDS ?ESCAPE
 NEEDS SHOW-PROGRESS
 NEEDS WILDCARD
-
-\
-\ emit a date given a MSDOS format date-number: 16 bits are used this way
-\ day :  bits 0-4, values between 1 and 31.
-\ month: bits 5-8, values between 1 and 12.
-\ year:  bits 9-15, must add 1980.
-: .FAT-DATE ( n -- )
-    <#  DUP $1F AND 1 MAX 0 # # [CHAR] - HOLD  2DROP \ day
-        5 RSHIFT
-        DUP $0F AND 1 MAX 12 MIN 0 # # [CHAR] - HOLD  2DROP \ month
-        4 RSHIFT
-        1980 + 0 # # # #  \ year
-     #> TYPE
-;
-
-\
-\ emit a time given a MSDOS format time-number
-\ seconds : bits 0-4, values between 0 and 58, even values only
-\ minutes : bits 5-10, values between 0 and 59.
-\ hours   : bits 11-15, values between 0 and 23
-: .FAT-TIME ( n -- )
-    <# \ DUP $1F AND 2* 59 MIN 0 # # [CHAR] : HOLD  2DROP  \ seconds
-        5 RSHIFT  
-        DUP $3F AND 59 MIN 0 # # [CHAR] : HOLD  2DROP  \ minutes
-        6 RSHIFT
-        0 # #  \ hours
-     #> TYPE
-;
-
-
-\ display number d using seven digit if it is less than 1048576
-\ or in KB otherwise.
-: .FILE-SIZE ( d -- )
-    DUP $10 < IF            \ d       ( less than 1MB )
-        7 D.R               \         ( display up to 7 digits )
-    ELSE                    \ d
-        $400 UM/MOD NIP 0   \ d       ( divide by 1024 )
-        5 D.R SPACE         \ 
-        [CHAR] K EMIT       \ 
-    THEN                    \ 
-;
+NEEDS .FAT-DATE
+NEEDS .FAT-TIME
+NEEDS .FILE-SIZE
 
 \
 \ skip filename
@@ -69,7 +31,7 @@ VARIABLE DIR-SAVE-HP \ HP value before DIR
 VARIABLE DIR-SAVE-DP \ DP value berore DIR
 VARIABLE DIR-BYTES 0 ,  
 VARIABLE DIR-GAP
-VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE !    \ drive letter used by DIR
+\ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE !    \ drive letter used by DIR
 
 .( .)
 
@@ -86,7 +48,7 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE !    \ drive letter used by DIR
     IF                          \ a a+n+3
         ."       d" DROP        \ a
     ELSE                        \ a a+n+3
-        2+ 2@ SWAP           \ a d
+        2+ 2@ SWAP              \ a d
         2DUP DIR-BYTES 2@       \ a d d dt
         D+   DIR-BYTES 2!       \ a d
         .FILE-SIZE              \ a
@@ -164,13 +126,14 @@ VARIABLE DIR-DRIVE  CHAR C DIR-DRIVE !    \ drive letter used by DIR
 : DIR-PAD ( -- cccc )
     HERE                        \ dp
     PAD C/L BLANK               \ dp -- useful for .PAD later
-    PAD DP !                    \ dp                          
-    DIR-DRIVE C@ C,             \ dp
+    PAD 1- DP !                 \ dp                          
+\   PAD DP !                    \ dp                          
+\   DIR-DRIVE C@ C,             \ dp
     BL WORD                     \ dp a
     C@ 1+ ALLOT                 \ dp  
-    0 C,                           \ dp    
+    0 C,                        \ dp    
     DP !
-    [CHAR] : PAD 1+ C!
+\   [CHAR] : PAD 1+ C!
 ;
 
 \ This operation requires at least 8K available in HEAP.
