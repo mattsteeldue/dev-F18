@@ -3528,8 +3528,8 @@
  232++6757
  233++6757              //  ______________________________________________________________________
  234++6757              //
- 235++6757              // f_readdir    a1 a2 b -- u f
- 236++6757              // open a file
+ 235++6757              // f_readdir    a1 a2 fh -- n f
+ 236++6757              // read the next dir entry into a1; a2 = wildcard pattern NextZXOS filters on
  237++6757                              New_Def F_READDIR, "F_READDIR", is_code, is_normal
  237++6757             >
  237++6757             >Dict_Ptr        defl    $
@@ -3586,7 +3586,7 @@
  239++675A E1                            pop     hl
  240++675B 7D                            ld      a, l
  241++675C D1                            pop     de
- 242++675D DD E3                         ex      (sp), ix            // filespec nul-terminated
+ 242++675D DD E3                         ex      (sp), ix            // wildcard spec nul-terminated
  243++675F D9                           exx
  244++6760 D5                           push    de                  // Save Return Stack pointer
  245++6761 C5                           push    bc                  // Save Instruction pointer

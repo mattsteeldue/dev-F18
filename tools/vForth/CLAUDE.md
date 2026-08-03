@@ -69,6 +69,20 @@ The project has three codebases in order of priority:
 | Alignment cadence | -- | Immediate (on each core change) | Maintained by hand! |
 | Bootstrap-verifiable | Yes | No | Possible but not required |
 
+## Building and Testing (quick reference)
+
+- **Assemble a variant**: `/build DOES` or `/build DOT` (SjASMPlus at
+  `c:/Zx/sjasmplus/sjasmplus.exe`; full command line, the DOT two-part binary
+  concatenation step and the deploy rules are in `.claude/commands/build.md`).
+- **Headless emulator REPL**: `python emu/repl.py` boots the DOES binaries to the
+  `ok` prompt; `printf '.quit\n' | python emu/repl.py` is the smoke test (the
+  SPLASH banner must show the current build date). Docs in `emu/README.md`;
+  Python regression scripts are `emu/test_*.py`. If bare `python` resolves to the
+  WindowsApps stub, use the explicit `C:\Users\matteo\anaconda3\python.exe`.
+- **Forth test suite**: runs inside vForth (emulator or CSpect) via
+  `INCLUDE TEST/CORE-TESTS.f` etc. -- structure and `{...}T` notation in
+  `test/CLAUDE.md`.
+
 ## Architecture
 
 ### Compilation Model: Direct Threading
@@ -281,6 +295,7 @@ project/
   DIRECT_RP/    -- Variant
   INDIRECT/     -- Indirect-threaded (legacy)
 dot/          -- Dot-command binaries at repo root (vforth, term0)
+emu/          -- Headless Z80/Z80N + vForth emulator in Python (see emu/README.md)
 lib/          -- Library modules loaded via NEEDS (GRAPHICS.f, MOUSE.f, AY.f, ...)
 inc/          -- Single-word definitions loaded via NEEDS (256+ files)
   doc/        -- Reference-only copies of core words (never loaded by NEEDS)
@@ -290,6 +305,7 @@ demo/         -- Example programs and games
 tutorial/     -- Guided tutorials
 doc/          -- PDF reference manual
 util/         -- Perl scripts (blocks2txt.pl, putscr.pl)
+version/      -- Historical build snapshots (never modify, see build number convention)
 prompts/      -- Plans, analyses, and design docs produced while discussing
 ```
 
@@ -401,7 +417,9 @@ one compile-only immediate word for use inside a colon-definition body.
 Using `[CHAR]` where plain `CHAR` belongs (top-level/interpreted code) is a mistake
 even if it happens to not visibly misbehave in a quick check -- e.g. `lib/DIR.f` had
 `VARIABLE DIR-DRIVE  [CHAR] C DIR-DRIVE C!` (top-level, interpreted) where it should
-have been `CHAR C DIR-DRIVE C!`.
+have been `CHAR C DIR-DRIVE C!`. (Historical example: `DIR-DRIVE` no longer exists --
+`DIR` now leaves the drive to the NextZXOS default `'*'`, so the drive letter is
+simply written in the path when needed. The `CHAR`/`[CHAR]` rule is unaffected.)
 
 ## Known Bugs
 

@@ -1,8 +1,23 @@
 # F_OPENDIR: abilitare il filtro wildcard NextZXOS (mode $30)
 
-**Status**: Design Plan (non ancora implementato)
+**Status**: ATTUATO -- tutti e 6 i punti, commit `a4661f2` (2026-07-26), con
+rebuild di entrambe le varianti. Documento conservato come storia della
+decisione; non c'e' nulla da rieseguire.
 **Author**: Matteo Vitturi (con Claude)
 **Date**: 2026-07-25 (revisionato dopo verifica su hardware/emulatore reale)
+
+> **Superato in due punti da lavoro successivo** (verifica del 2026-08-03):
+> - `db48c4b` ("nextzxos"): il drive passato in `A` e' diventato `"*"` (default
+>   NextZXOS) invece di `"C"` fisso, in entrambe le varianti.
+> - `efe06af` ("filesystem utilities"): di conseguenza `VARIABLE DIR-DRIVE` e il
+>   prefisso `<drive>:` sono stati commentati in `lib/DIR.f` -- il drive si
+>   specifica ora nel path, altrimenti vale il default.
+>
+> **Il passo di verifica in emulatore headless (sotto) non e' valido**:
+> `emu/emulator.py` non modella il filtro wildcard ne' il record dirent di
+> NextZXOS -- vedi `emu/README.md`, "Known Limitations" punto 5. `DIR` e
+> `WILDCARD` si verificano solo su CSpect o hardware, con
+> `test/DIR-WILDCARD-MANUAL.f`.
 
 ---
 

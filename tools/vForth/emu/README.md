@@ -162,6 +162,14 @@ The heap dictionary lives at $E000-$FFFF in an MMU7 page. The emulator simulates
 2. **Block I/O**: Screens/blocks are not yet integrated
 3. **Debugging**: Limited to instruction trace and register inspection
 4. **Performance**: Emulator is fast (1.2M instr/sec) but still 50-100x slower than real hardware
+5. **Directory listing (`DIR` / `WILDCARD`) is not modelled**: `handle_f_opendir`
+   ignores the mode byte in `B` (so `esx_mode_use_wildcards`, the `$30` the core
+   passes, has no effect) and `handle_f_readdir` ignores the pattern in `DE` and
+   returns the bare entry name + NUL, not the NextZXOS record (attributes, time,
+   date, size) that `lib/DIR.f`'s `DIR-LIST-ITEM` decodes. A headless
+   `WILDCARD *.F` + `DIR` therefore proves nothing: the filter is a no-op and the
+   listing is misparsed. **`DIR` and `WILDCARD` can only be verified on CSpect or
+   real hardware** (see `test/DIR-WILDCARD-MANUAL.f`).
 
 ## Building & Maintenance
 
