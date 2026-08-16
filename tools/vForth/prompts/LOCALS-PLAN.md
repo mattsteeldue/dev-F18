@@ -622,6 +622,19 @@ L'installazione della catena deve essere **l'ultima cosa compilata**: se
 i binding venissero dopo, sarebbe un valore salvato -- non l'indirizzo
 della catena -- a trovarsi in cima quando scatta l'`EXIT`.
 
+**La versione statica, per confronto: `lib/doc/LOCALS-static.f`.** Il primo
+impianto non e' mai finito in un commit (`59d15e9` registro' solo le
+tabelle in `lib/CLAUDE.md` e `test/CLAUDE.md`; i sorgenti entrano in
+`c31543b` gia' rientranti), quindi non e' recuperabile da git. Quel file e'
+una **ricostruzione** fatta a partire dall'attuale `lib/LOCALS.f` togliendo
+esattamente quanto descritto qui sopra: niente `(LOC-BIND)`, `(LOC-POP)`,
+`(LOC-CHAIN)`, `(LOC-EXIT)`, `LOC-ENTRY`, ciclo di binding con `COMPILE !`
+e nessuna deviazione dell'`EXIT`. Serve a leggere il costo della rientranza
+in termini di codice; non e' una libreria mantenuta, definisce gli stessi
+nomi di `lib/LOCALS.f` (`MARKER NO-LOCALS` compreso) quindi le due non
+convivono in una sessione, e `test/LOCALS-TESTS.f` e il tutorial 061 non
+girano contro di essa perche' usano `RECURSE`.
+
 ### 11.4 Il prezzo, misurato
 
 **Return stack.** `4+4n` byte per attivazione oltre all'indirizzo di
