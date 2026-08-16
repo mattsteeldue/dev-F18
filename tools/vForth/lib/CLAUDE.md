@@ -77,9 +77,20 @@ Two facts worth carrying into any `lib/` work, not just into LOCALS:
 - **`:` resets `CONTEXT`** (`CURRENT @ CONTEXT !`), so a search-order change made before
   the definition does not survive into its body -- hence the second word, `LOCALS`.
 
-Storage is **static**, one permanent cell per local: a word with locals is neither
-recursive nor re-entrant, and that includes being called from an ISR while already
-running. Maximum 8 locals per scope. Design notes and the rejected alternatives are in
+A local is one permanent cell, not a frame slot, but the word is still **re-entrant**:
+`LOCALS` compiles a save of each cell's previous content onto the return stack, and
+diverts the definition's `EXIT` into a chain of restore steps by pushing that chain's
+address above the caller's return address. Recursion (`RECURSE`) therefore works, and
+every exit path -- including an early `EXIT` inside `IF` -- unwinds, without `EXIT`, `;`
+or `:` being redefined. Two consequences worth remembering:
+
+- Each activation costs `4+4n` bytes on the 160-byte return stack shared with the TIB.
+  Measured: one local survives 15 recursion levels and corrupts the system at 20.
+- `ABORT` and `THROW` bypass the chain, leaving inner values in the cells. Harmless
+  only because every entry re-binds all the locals before the body runs -- do not
+  build anything that reads a local outside its own definition.
+
+Maximum 8 locals per scope. Design notes and the rejected alternatives are in
 `prompts/LOCALS-PLAN.md`; tests in `test/LOCALS-TESTS.f`; tutorial 061.
 
 ### Other conventions
