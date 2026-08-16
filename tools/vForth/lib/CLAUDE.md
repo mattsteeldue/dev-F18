@@ -56,6 +56,32 @@ In tutorials that use FLOATING, `MARKER NEWTASK` is replaced with:
 `NEWTASK` in tutorial 024 only restores integer mode -- it does not unload the
 floating-point vocabulary. Reload via `024 TUTORIAL` from a clean session for a full reset.
 
+### LOCALS (named local variables)
+
+`lib/LOCALS.f` adds `VALUE`-like named locals. Unlike FLOATING and ASSEMBLER above it
+**patches nothing and redefines no core word**, so `MARKER NO-LOCALS` unloads it cleanly
+and loading it cannot disturb already-compiled code. Two words, declaration first:
+
+```forth
+3 LOCALS-FOR MULADD  A B C        \ interpretation state, one line, before the ':'
+: MULADD  ( a b c -- n )  LOCALS  A B *  C + ;
+```
+
+Two facts worth carrying into any `lib/` work, not just into LOCALS:
+
+- **You cannot `CREATE` a word while a colon definition is being compiled.** `CREATE`
+  writes at `HERE`, and inside a definition `HERE` *is* the thread being generated, so
+  the new word's header lands in the middle of the code and the IP later runs into it.
+  This is why the locals are declared *before* the `:` rather than inside it. Anything
+  else that wants to define words at compile time hits the same wall.
+- **`:` resets `CONTEXT`** (`CURRENT @ CONTEXT !`), so a search-order change made before
+  the definition does not survive into its body -- hence the second word, `LOCALS`.
+
+Storage is **static**, one permanent cell per local: a word with locals is neither
+recursive nor re-entrant, and that includes being called from an ISR while already
+running. Maximum 8 locals per scope. Design notes and the rejected alternatives are in
+`prompts/LOCALS-PLAN.md`; tests in `test/LOCALS-TESTS.f`; tutorial 061.
+
 ### Other conventions
 
 - **NEEDS for dependencies**: always use `NEEDS` to pull in prerequisites -- never assume
