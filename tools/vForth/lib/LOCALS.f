@@ -7,7 +7,7 @@
 \
 \ Used in the form
 \
-\       : SUM3   { A B C }   A B + C + ;
+\       : SUM3   { X Y Z }   X Y + Z + ;
 \
 \ { is IMMEDIATE and must be the first word of the definition: it declares
 \ the local names, in the order in which the caller pushed them, and
@@ -17,8 +17,8 @@
 \
 \ The older two-part form is still supported, and is what { is built on:
 \
-\       3 LOCALS-FOR SUM3   A B C
-\       : SUM3   LOCALS   A B + C + ;
+\       3 LOCALS-FOR SUM3   X Y Z
+\       : SUM3   LOCALS   X Y + Z + ;
 \
 \ LOCALS-FOR runs in interpretation state, BEFORE the colon definition,
 \ and takes the count of locals, the name of the definition that follows,
@@ -27,9 +27,9 @@
 \ { ... } : it cannot get the count wrong, and nothing has to stay
 \ adjacent to anything else.
 \
-\ A local pushes its value; write it with TO :
+\ X local pushes its value; write it with TO :
 \
-\       12 TO A
+\       12 TO X
 \
 \ DELIBERATE DEVIATION from the Forth-2012 locals wordset: a local is a
 \ permanent cell, not a frame slot. Re-entrancy is obtained by SHALLOW
@@ -49,7 +49,7 @@
 \ -- reveals it with SMUDGE, and then opens the body as an anonymous
 \ :NONAME definition whose xt is written into the slot. So
 \
-\       : FOO   { A }  ... ;
+\       : FOO   { X }  ... ;
 \
 \ compiles two words: FOO, which is just  ( call body ) EXIT , and the
 \ nameless body that binds the locals and runs the code. The point of the
@@ -90,10 +90,13 @@
 \       #59  LOCALS: scope not adjacent.
 \       #60  LOCALS: misplaced { or }.
 \
+
+FORTH DEFINITIONS   \ Force this library as part of Forth definitions
+
 MARKER NO-LOCALS
 
 NEEDS TO
-NEEDS :NONAME
+\ NEEDS :NONAME
 
   8 CONSTANT MAXLOCALS
 
@@ -171,8 +174,8 @@ CREATE (LOC-EXIT)
     HERE LOC-SLOT !
     COMPILE NOOP                    \ placeholder: harmless if never patched
     COMPILE EXIT
-    SMUDGE                          \ reveal the outer word
-;
+\   SMUDGE                          \ reveal the outer word
+    ;
 
 \ (LOC-CLOSE) also makes the local names visible and compiles, at the head
 \ of the body, the code that binds them: last declared first, that is the
@@ -180,7 +183,13 @@ CREATE (LOC-EXIT)
 \ the EXIT of the body finds on top of the return stack.
 
 : (LOC-CLOSE) ( -- )
-    :NONAME                         \ ( -- xt )  the body; LATEST is now it
+    \ :NONAME                       \ ( -- xt )  the body; LATEST is now it
+    HERE                            \ xt
+
+    $CD C,                          \ compile CALL op-code
+    [ ' ' >BODY CELL- @ ]   
+    LITERAL ,                       \ colon-definition CFA address to jump to    
+    
     LOC-SLOT @ !                    \ the outer word calls the body
     !CSP
 
@@ -256,7 +265,7 @@ IMMEDIATE
 \ ----------------------------------------------------------------------
 \ {  ccc1 ... cccn  }   -- IMMEDIATE, first thing in the definition
 \
-\       : SUM3   { A B C }   A B + C + ;
+\       : SUM3   { X Y Z }   X Y + Z + ;
 \
 \ Declaration and use in one place: no count to keep in step, no separate
 \ LOCALS-FOR to keep adjacent to the definition. It is the trampoline that
@@ -271,7 +280,7 @@ IMMEDIATE
 \ NOOP EXIT : the error is raised after (LOC-OPEN) has already revealed it.
 
 : }  ( -- )
-    1 #60 ?ERROR                    \ misplaced: } without {
+    #60 ERROR                       \ misplaced: } without {
 ;
 
 : {  ( -- )
@@ -294,3 +303,5 @@ IMMEDIATE
     (LOC-CLOSE)                     \ body as :NONAME, bind, divert EXIT
 ;
 IMMEDIATE
+
+FORTH DEFINITIONS
