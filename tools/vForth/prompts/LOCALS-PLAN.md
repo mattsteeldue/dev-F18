@@ -2,7 +2,12 @@
 
 Stato: **implementato** in `lib/LOCALS.f`, verificato sull'emulatore
 headless (`emu/repl.py`). Vedi sezione 9.
-Ultima revisione: 2026-08-16 -- **i locali sono ora rientranti**, vedi
+Ultima revisione: 2026-08-17 -- la sintassi inline `{ ... }` e' stata
+**implementata** col trampolino (sezione 13) e subito dopo semplificata
+togliendo la dipendenza da `:NONAME` (sezione 14). Le due sezioni
+ribaltano il verdetto della sezione 10 e correggono le misure di 11.4 e
+11.5: leggerle prima di fidarsi dei numeri.
+Revisione precedente: 2026-08-16 -- **i locali sono ora rientranti**, vedi
 sezione 11: e' la modifica piu' importante dopo il primo impianto e
 cambia quello che dicono le sezioni 6 e 10.
 La sezione 12 studia i **locali in uscita** (risultati nominati): e' solo
@@ -25,6 +30,15 @@ deliberatamente scaricata sul programmatore.
 ---
 
 ## 1. Sintassi
+
+> **Aggiornamento 2026-08-17.** Questa sezione descrive la forma in due
+> tempi, che e' quella su cui il design e' stato costruito e che resta
+> supportata. La forma **preferita** e' oggi quella inline `{ ... }`,
+> costruita sopra questa: vedi sezione 13.
+>
+> ```forth
+> : FOO   { A B C }   ... A ... B ... C ... ;
+> ```
 
 ```forth
 3 LOCALS-FOR FOO  A B C       \ in interpretazione, PRIMA della definizione
@@ -309,7 +323,7 @@ Registrate perche' sembrano tutte ragionevoli finche' non si guarda il core.
 | Creare i locali **a compile-time** dentro la definizione | Splicing nel thread (2.1). |
 | **`BRANCH` di scavalco** sopra gli header spliciati | Funziona (4 byte, offset relativo, `L0.asm:233` + `THEN` in `L3.asm:848`) ma lascia dati dentro il thread: `SEE` decodifica spazzatura. |
 | **Rinomina degli header** nell'heap (pool di slot) | Tecnicamente possibile, ma il rischio e' corruzione ritardata del dizionario. Scartata come troppo pericolosa. |
-| Trampolino **`NOOP`+`EXIT`** + corpo `:NONAME` (stile `inc/defer.f`) | Funziona, ma `:NONAME` (`inc/_noname.f`) costa 6 byte di heap e **si aggancia alla catena di `CURRENT`** come voce fantasma; e il preambolo separato e' piu' grande e piu' lento degli store inline. Reso inutile dallo spostamento in interpretazione. |
+| Trampolino **`NOOP`+`EXIT`** + corpo `:NONAME` (stile `inc/defer.f`) | ~~Funziona, ma `:NONAME` (`inc/_noname.f`) costa 6 byte di heap e **si aggancia alla catena di `CURRENT`** come voce fantasma; e il preambolo separato e' piu' grande e piu' lento degli store inline. Reso inutile dallo spostamento in interpretazione.~~ **RIPESCATA e adottata** per implementare `{ ... }` (sezione 13): il trampolino non serviva a `LOCALS-FOR`, ma e' l'unica cosa che libera `HERE` per i `CREATE` dei locali **dentro** la definizione. L'obiezione sui 6 byte e sulla voce fantasma e' poi caduta con la sezione 14, che costruisce a mano la CFA del corpo anonimo invece di chiamare `:NONAME`. |
 | Locali come **viste sullo stack** (`PICK`) | L'offset dal TOS cambia a ogni push/pop e il compilatore non lo traccia attraverso `IF`/`LOOP`. E i valori andrebbero poi tolti **da sotto** i risultati. |
 | Terminatore di lista + rewind di `>IN` | Reso inutile dal conteggio implicito di `LOCALS-FOR`. |
 | Parsing **fino a fine riga** | Non portabile sotto `LOAD` (2.4). |
@@ -504,6 +518,18 @@ non e' piu' preclusa**: resta solo il Prezzo 1 (`SEE`) a decidere.
 
 ### Verdetto
 
+> **SUPERATO il 2026-08-17 -- vedi sezione 13.** `{ ... }` e' stata
+> implementata, e per la strada che questa sezione non aveva considerato:
+> non lo **scavalco** con `BRANCH`, ma il **trampolino** (che la sezione 5
+> aveva scartato per un'altra ragione, ormai decaduta). E' stata scelta
+> proprio la "terza via" qui sotto: le due forme convivono, `{ ... }` e'
+> costruita sopra `LOCALS-FOR`/`LOCALS` e non le sostituisce.
+>
+> Del Prezzo 1 resta la parte che riguarda il trampolino, e si e'
+> avverata: `SEE FOO` mostra solo lo stub di due celle (misura in 14.4).
+> Non si e' invece mai materializzata la spazzatura da scavalco descritta
+> sopra, perche' lo scavalco non e' stato usato.
+
 Con la nota dell'autore sopra, il Prezzo 2 si riduce a due righe in due
 file di help gia' esistenti. **Resta quindi solo `SEE` a decidere**: se
 non serve decompilare le word con locali, il cambio conviene -- meno
@@ -645,6 +671,17 @@ ritorno, su 160 byte condivisi col TIB (2.5). Misurato sull'emulatore con
 corrompe il dizionario **senza messaggio d'errore**. Regola pratica:
 ~15 livelli con 1 locale, ~6 con 4, ~3 con 8.
 
+> **Da rimisurare dopo il 2026-08-17.** I numeri qui sopra sono presi su
+> build 2026-08-01, quando la definizione con locali era una sola word e
+> non c'era trampolino. Con `{ ... }` (13) ogni attivazione paga in piu'
+> l'indirizzo di ritorno del trampolino, e dalla sezione 14 quel costo
+> ricade su **ogni livello di ricorsione**, non piu' solo sull'ingresso:
+> `RECURSE` rientra dalla word esterna, quindi due `Enter_Ptr` per
+> livello invece di uno. Delta: **+1 cella (2 byte) per livello**, cioe'
+> `6+4n` invece di `4+4n` quando la ricorsione passa da `RECURSE`. La
+> regola pratica va quindi letta al ribasso finche' non si rifa' la
+> misura di 11.5 sui binari correnti.
+
 Notare che un frame vero sarebbe costato meno (2n byte invece di 4n): la
 meta' della spesa e' l'indirizzo della cella, che sta li' solo perche' la
 catena di ripristino e' condivisa fra tutte le definizioni. Una catena
@@ -693,6 +730,13 @@ Il caso `SEE` e' quello che decide fra questo design e la sintassi inline
 quindi il decompilatore resta intatto. La sezione 10 va riletta con
 questo in mano -- il suo "Prezzo 1" e' ancora l'unico argomento
 in gioco, e la rientranza non lo cambia.
+
+> **Corretto il 2026-08-17.** La riga `SEE` e il paragrafo qui sopra
+> valgono solo per la forma `LOCALS-FOR`/`LOCALS` **senza** trampolino.
+> Da quando `LOCALS` passa anch'essa da `(LOC-OPEN)`/`(LOC-CLOSE)` (13),
+> `SEE` su una word con locali mostra lo stub, non il corpo: misura in
+> 14.4. Il resto della tabella e' invariato, e la ricorsione e' stata
+> ri-verificata sui binari correnti dopo la sezione 14 (sempre 14.4).
 
 ---
 
@@ -981,3 +1025,201 @@ considerarlo fatto:
 | `DEPTH` prima e dopo | coerente con l'effetto dichiarato |
 | `SEE` su una word con uscite | thread leggibile, solo codice |
 | `NO-LOCALS` e ricarica | pulito |
+
+---
+
+## 13. `{ ... }` (2026-08-17) -- implementata col trampolino
+
+La sezione 10 aveva lasciato la decisione a `SEE`, valutando **un'unica**
+strada implementativa: lo scavalco con `BRANCH`, che mette gli header dei
+locali dentro il thread. `{ ... }` e' stata invece implementata per la
+strada che la sezione 5 aveva scartato -- il **trampolino** -- e con essa
+il Prezzo 1 cambia forma: `SEE` non stampa spazzatura, stampa poco.
+
+### 13.1 Il vincolo, ancora quello di 2.1
+
+Il problema non e' cambiato: `CREATE` dentro una colon-definition scrive
+a `HERE`, e dentro una definizione `HERE` **e'** il thread che si sta
+generando. Un locale e' un `CREATE`, quindi dichiararlo dentro la
+definizione e' impossibile finche' la definizione e' aperta.
+
+Lo scavalco aggirava il problema lasciando gli header nel thread e
+saltandoci sopra. Il trampolino lo **elimina**: chiude la definizione
+prima di creare i locali, e riapre il corpo dopo. Fra i due momenti
+`HERE` e' fuori da qualunque definizione pendente -- l'unico stato in cui
+`CREATE` e' di nuovo legittimo. Questa e' la ragione per cui la riga della
+tabella di sezione 5 e' stata ripescata: l'obiezione registrata li'
+(":NONAME costa 6 byte e lascia una voce fantasma; reso inutile dallo
+spostamento in interpretazione") era corretta **per `LOCALS-FOR`**, dove
+il trampolino non serviva a niente. Per `{ ... }` e' l'abilitatore.
+
+### 13.2 La forma
+
+`: FOO { A B C } corpo ;` compila **due** word:
+
+```
+FOO         ( slot ) EXIT          <- la word visibile, due celle
+<anonima>   binding dei locali, poi il corpo                 <- dove sta il codice
+```
+
+- `(LOC-OPEN)` chiude la word esterna dopo uno slot (`COMPILE NOOP`,
+  segnaposto innocuo se non venisse mai patchato) e un `EXIT`, e registra
+  l'indirizzo dello slot in `LOC-SLOT`.
+- il ciclo di parsing legge i nomi con la **sbirciata di `>IN`** gia'
+  descritta in sezione 10: `>IN @ BL WORD`, confronto con `}`, e se non e'
+  il terminatore si riavvolge `>IN` e si lascia che `0 CONSTANT` riparsi
+  lo stesso nome. Ogni nome viene quindi letto due volte.
+- `(LOC-CLOSE)` apre il corpo, ne scrive l'xt nello slot, rende visibili i
+  nomi (`LOC-VOC CONTEXT !`) e compila il preambolo di binding e
+  l'aggancio alla catena di ripristino di 11.2.
+
+`LOCALS` (forma vecchia) e' stata riscritta in termini delle stesse due
+word, dopo le sue guardie di 3.3: le due sintassi condividono tutto tranne
+il punto in cui i nomi vengono dichiarati.
+
+### 13.3 Il ghost word di fine riga
+
+Il ciclo di parsing incontra il quirk noto di `BL WORD`: a fine riga non
+restituisce `count = 0` ma una parola fantasma lunga 1 byte il cui unico
+carattere e' `0x00`. Per questo la guardia e' doppia:
+
+```forth
+DUP C@ 0=  OVER 1+ C@ 0= OR #60 ?ERROR
+```
+
+il primo termine copre la lunghezza nulla, il secondo il fantasma. Senza
+il secondo, `: OOPS { A B ;` (nessun `}` sulla riga) non darebbe `#60` ma
+proseguirebbe dichiarando un locale che si chiama `0x00`.
+
+E' la stessa ragione per cui **tutti i nomi e il `}` devono stare sulla
+stessa riga del `{`**: il vincolo non e' estetico, e' che il ciclo non ha
+modo di chiedere la riga successiva.
+
+### 13.4 Cosa resta e cosa cade
+
+- Le **guardie di 3.3** (`SCOPE-LINK`, adiacenza, freschezza di
+  `#LOCALS`) restano, ma servono solo alla forma `LOCALS-FOR`. Per
+  `{ ... }` l'intera classe di bug di appaiamento svanisce per
+  costruzione, come la sezione 10 aveva previsto.
+- Il **Prezzo 2** (collisione dei nomi `{` e `}` con i file di help di
+  `<` e `>` nella mappatura FAT) e' stato risolto come nella nota
+  dell'autore: grafia letterale, help condivisi.
+- Il **Prezzo 1** si e' avverato nella sua forma attenuata: `SEE FOO`
+  mostra lo stub, non il corpo (14.4). Non c'e' spazzatura, c'e'
+  reticenza.
+
+---
+
+## 14. Via `:NONAME` e `SMUDGE` (2026-08-17, "LOCALS v.4")
+
+Il trampolino di 13 usava `:NONAME` (`inc/_noname.f`) per aprire il corpo
+anonimo. La v.4 lo toglie, e con esso l'ultima obiezione registrata nella
+tabella di sezione 5.
+
+### 14.1 La CFA costruita a mano
+
+Di `:NONAME` serviva una cosa sola: un code field fatto come quello di una
+colon-definition, cioe' `CALL Enter_Ptr`. `(LOC-CLOSE)` se lo scrive da
+solo:
+
+```forth
+    HERE                            \ xt
+    $CD C,                          \ op-code CALL
+    [ ' ' >BODY CELL- @ ] LITERAL , \ indirizzo di Enter_Ptr
+```
+
+`'` e' una colon-definition (`src/F18e.f:5781`), `>BODY` e' `3 +` (CFA di
+3 byte), quindi `CELL-` cade esattamente sull'operando a 16 bit della sua
+`CALL`, che e' `Enter_Ptr`. Le parentesi quadre fanno tutto questo **una
+volta sola**, quando si compila `(LOC-CLOSE)`; a runtime resta un `,`.
+
+Non e' un trucco nuovo: la riga e' **identica** a quella di
+`inc/_noname.f:44-45`, cioe' proprio dentro il `:NONAME` che si e' smesso
+di chiamare. La fragilita' implicita -- se un giorno `'` diventasse una
+word `CODE`, `>BODY CELL- @` restituirebbe spazzatura in silenzio -- non
+e' introdotta qui: e' preesistente e condivisa con una word di `inc/`.
+Nel repo non esiste un modo piu' diretto di esporre `Enter_Ptr`.
+
+Guadagno: spariscono i 6 byte di heap e la voce fantasma nella catena di
+`CURRENT` che la sezione 5 imputava a `:NONAME`, e cade una dipendenza
+(`NEEDS :NONAME`).
+
+### 14.2 Perche' cade anche `SMUDGE`
+
+`:` chiama `SMUDGE` su `CREATE` per **nascondere** la word mentre la si
+compila; il `SMUDGE` che stava in `(LOC-OPEN)` serviva a rivelarla subito,
+perche' poi `:NONAME` spostava `LATEST` sul corpo anonimo e il `;` finale
+avrebbe rivelato **quello**, non la word esterna.
+
+Senza `:NONAME` nessuno sposta piu' `LATEST`: resta la word esterna per
+tutta la compilazione, quindi e' il `;` finale a rivelarla, ed e' giusto
+che `(LOC-OPEN)` non tocchi piu' niente. Le due rimozioni sono la stessa
+decisione vista da due lati.
+
+### 14.3 Conseguenza: `RECURSE` ripassa dal trampolino
+
+`RECURSE` e' `LATEST PFA CFA ,` (`inc/recurse.f`). Con `:NONAME`, `LATEST`
+era il corpo e la ricorsione lo rientrava direttamente. Ora `LATEST` e' la
+word esterna, quindi **`RECURSE` compila una chiamata al trampolino**: due
+`Enter_Ptr` per livello invece di uno, e `Enter_Ptr` spinge sempre l'IP sul
+return stack.
+
+Funziona (14.4), ma costa: la cella del trampolino, che nella forma
+precedente si pagava una volta sola all'ingresso, ora si paga **a ogni
+livello**. Vedi la nota aggiunta in 11.4.
+
+### 14.4 Verifiche sull'emulatore (build 2026-08-17)
+
+Su `emu/repl.py`, binari correnti. Nessuna modifica al core: **non serve
+un nuovo build number**.
+
+| Caso | Atteso | Esito |
+|---|---|---|
+| `NEEDS LOCALS` | carica | ok |
+| `: SUM2 { Q R } Q R + ;` / `3 4 SUM2 .` | `7` | ok |
+| `2 LOCALS-FOR SUM2B U V` / `: SUM2B LOCALS U V + ;` / `30 40 SUM2B .` | `70` | ok |
+| `111 3 4 SUM2 . .` (argomenti consumati, sotto intatto) | `7 111` | ok |
+| `: FCT { N } N 1 > IF N 1- RECURSE N * ELSE 1 THEN ;` / `7 FCT .` | `5040` | ok |
+| `333 5 FCT . .` | `120 333` | ok |
+| `: SQ2 { N } N N * ;` / `5 SQ2 .` | `25` | ok |
+| `SEE SQ2` | stub | mostra una cella senza nome (l'xt del corpo anonimo, stampato come spazzatura) e `EXIT` |
+
+**`test/LOCALS-TESTS.f` non e' eseguibile sull'emulatore**, e non per
+colpa di LOCALS: un `NEEDS` annidato dentro un file gia' `INCLUDE`d
+termina in silenzio il file esterno. Ridotto al minimo:
+
+```forth
+CR .( START ) CR
+NEEDS RECURSE
+CR .( AFTER-NEEDS ) CR
+```
+
+stampa `START`, carica, e `AFTER-NEEDS` non compare mai. Colpisce tutte le
+suite di `test/`, che iniziano tutte con un blocco di `NEEDS`. La suite va
+quindi fatta girare su CSpect o su macchina vera; sull'emulatore si
+possono solo precaricare le dipendenze al prompt.
+
+### 14.5 Punti aperti
+
+**Un `{` malformato lascia una word orfana e invisibile.** `{` chiama
+`(LOC-OPEN)` **prima** del ciclo di parsing. Se il ciclo solleva `#57` o
+`#60` -- casi documentati e attesi, per esempio `: OOPS { A B ;` -- si
+finisce in `ERROR` -> `QUIT`, che non tocca il bit di smudge e non fa mai
+eseguire il `;`. La word esterna resta nel dizionario **nascosta**, non
+piu' raggiungibile da `'`, `-FIND` o `FORGET`. Prima della v.4 sopravviveva
+come `NOOP EXIT` cercabile: e' una piccola regressione, e rende falso il
+commento in coda a `lib/LOCALS.f` ("the error is raised after `(LOC-OPEN)`
+has already revealed it"). Rimedio: rimettere un `SMUDGE` in `(LOC-OPEN)`
+-- ora innocuo, perche' `LATEST` non si sposta piu' -- oppure smudgiare
+esplicitamente nei rami d'errore di `{`.
+
+**La guardia su `MAXLOCALS` in `{` scatta un nome troppo tardi.** Il ciclo
+fa `(LOC-MAKE)` e **poi** `#LOCALS @ MAXLOCALS > #57 ?ERROR`, mentre
+`(LOC-MAKE)` scrive in `LOCAL-PFAS` all'indice `#LOCALS @` prima di
+incrementarlo. Col nono nome l'indice e' 8 e `LOCAL-PFAS` ha 8 celle: la
+scrittura cade **una cella oltre l'array**, cioe' sul code field della
+definizione che segue, prima che l'errore venga sollevato. `LOCALS-FOR`
+non ha il problema perche' controlla il conteggio *prima* del ciclo.
+Rimedio: spostare la guardia sopra `(LOC-MAKE)`, come
+`#LOCALS @ MAXLOCALS = #57 ?ERROR`. Da verificare sull'emulatore col caso
+`: OOPS { 9 nomi } ;` gia' elencato in `test/LOCALS-TESTS.f`.
