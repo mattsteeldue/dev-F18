@@ -5,6 +5,8 @@ headless (`emu/repl.py`). Vedi sezione 9.
 Ultima revisione: 2026-08-16 -- **i locali sono ora rientranti**, vedi
 sezione 11: e' la modifica piu' importante dopo il primo impianto e
 cambia quello che dicono le sezioni 6 e 10.
+La sezione 12 studia i **locali in uscita** (risultati nominati): e' solo
+uno studio, non implementato, e non tocca nulla di quanto precede.
 
 Obiettivo: variabili locali caricabili con `NEEDS LOCALS` (nuovo `lib/LOCALS.f`),
 **senza modificare il core assembly** e **senza ridefinire nessuna word del core**.
@@ -691,3 +693,291 @@ Il caso `SEE` e' quello che decide fra questo design e la sintassi inline
 quindi il decompilatore resta intatto. La sezione 10 va riletta con
 questo in mano -- il suo "Prezzo 1" e' ancora l'unico argomento
 in gioco, e la rientranza non lo cambia.
+
+---
+
+## 12. Locali in uscita (2026-08-16) -- studio, non implementato
+
+Domanda posta a rientranza chiusa: si possono dichiarare locali che
+all'uscita **vengono spinti sullo stack come risultati**, invece di essere
+soltanto ripristinati? Qui sotto: dove si aggancerebbero, che cosa
+costringerebbero a cambiare nel design attuale, e che cosa si guadagna
+davvero. **Nessun codice scritto**: gli schizzi Forth di questa sezione non
+sono mai stati compilati ne' provati.
+
+### 12.1 Due letture, una sola interessante
+
+**(a) Parametro per riferimento** (l'`out`/`var` di Ada e Pascal): il
+chiamante passa l'indirizzo di una cella e la definizione ci scrive dentro.
+Non richiede nulla di nuovo -- si passa un indirizzo come qualunque altro
+argomento, lo si tiene in un locale e si usa `!`. Non e' un problema di
+locali, e non se ne parla oltre.
+
+**(b) Risultato nominato**: un locale che non viene caricato dal chiamante
+ma **consegnato al chiamante**, in modo che la definizione dichiari il
+proprio effetto di uscita invece di costruirlo a mano sullo stack.
+
+```forth
+2 LOCALS-FOR /MOD2  A B -- Q R        \ sintassi ipotetica, vedi 12.5
+: /MOD2  ( a b -- q r )
+    LOCALS
+    A B /  TO Q
+    A B MOD TO R
+;
+```
+
+E' la lettura studiata qui.
+
+### 12.2 La baseline: oggi si fa gia', a mano
+
+Va detto subito, perche' ridimensiona tutto il resto: **il risultato
+nominato e' gia' ottenibile senza aggiungere niente**. Basta nominare il
+locale come ultima cosa della definizione:
+
+```forth
+: /MOD2  LOCALS  A B / TO Q  A B MOD TO R   Q R ;
+```
+
+Ed e' **corretto**, non un caso fortunato: `Q R` spinge i valori mentre le
+celle contengono ancora quelli dell'attivazione in corso; solo dopo l'`EXIT`
+la catena di 11.2 ci rimette i valori del chiamante. L'ordine e' quello
+giusto per costruzione.
+
+La domanda quindi non e' *se si puo'*, ma se **renderlo dichiarativo** vale
+la macchineria. Vedi il verdetto in 12.8.
+
+### 12.3 Il vincolo che decide tutto: spingere prima di ripristinare
+
+Il valore di un locale in uscita va letto dalla cella **prima** che la
+catena la riscriva col valore del chiamante. Quindi non si puo' fare
+"prima tutti i ripristini, poi le spinte": sarebbero i valori del
+chiamante a finire sullo stack, silenziosamente e con l'aria di funzionare
+(il caso peggiore -- alla prima chiamata, con le celle a 0, il bug si
+maschera).
+
+Lettura e ripristino di uno stesso locale devono stare **nella stessa
+word**, cioe' serve una variante di `(LOC-POP)` che prima spinge e poi
+ripristina:
+
+```forth
+: (LOC-EPOP)  ( -- x )              \ R: old a --
+    R> R> R>                        \ ( ret old a )
+    DUP @                           \ ( ret old a x )
+    ROT ROT !                       \ ripristina: ( ret x )
+    SWAP >R                         \ ( x )
+;
+```
+
+Nient'altro cambia sul return stack: un locale in uscita costa le stesse
+due celle (`old`, `a`) di uno in ingresso, e la coppia porta gia' con se'
+l'indirizzo, quindi la catena **non ha bisogno di conoscere staticamente
+quali celle siano di uscita** -- deve solo sapere, per ogni passo, se
+quello e' un `(LOC-POP)` o un `(LOC-EPOP)`.
+
+Vale la pena fissare la corrispondenza, che qui e' tutto: `LOCALS` compila
+i binding **al contrario** (indice `n-1` per primo, 3.2), quindi sul return
+stack la coppia dell'indice 0 finisce in cima, e la catena la incontra per
+prima. **Il passo `j` della catena corrisponde al locale dichiarato in
+posizione `j`.** Di conseguenza le spinte avvengono in ordine di
+dichiarazione: il primo locale di uscita dichiarato finisce piu' in basso,
+l'ultimo in cima -- che e' esattamente la lettura naturale di `( -- q r )`.
+
+### 12.4 Conseguenza strutturale: la catena diventa per scope
+
+La catena condivisa di 11.2 non regge questa forma. Oggi e' lineare --
+otto `(LOC-POP)` piu' `EXIT`, e una definizione con `n` locali ci entra
+`MAXLOCALS - n` celle piu' avanti. Con due tipi di passo servirebbe una
+catena `[k EPOP][n-k POP][EXIT]`, e **non esiste un punto di ingresso
+unico** in una tabella lineare che dia contemporaneamente il numero giusto
+di passi dell'uno e dell'altro tipo: entrando a `MAXLOCALS-k` si
+otterrebbero i `k` EPOP giusti e poi tutti e otto i POP. Servirebbe una
+tabella bidimensionale (~64 ingressi) o un salto calcolato.
+
+La via pulita e' **una catena per scope**, costruita da `LOCALS-FOR` --
+che gira in interpretazione, quindi puo' usare `,` liberamente (dentro
+`LOCALS` non si potrebbe: `,` scriverebbe nel thread della definizione,
+trappola 2.1):
+
+```forth
+\ dentro LOCALS-FOR, in coda: una cella per locale, nell'ordine di
+\ dichiarazione, piu' l'EXIT finale
+    HERE  LOC-THREAD !
+    #LOCALS @ 0 DO
+        I OUT? IF  ' (LOC-EPOP) ,  ELSE  ' (LOC-POP) ,  THEN
+    LOOP
+    ' EXIT ,
+```
+
+e `LOCALS` compila `COMPILE LIT  LOC-THREAD @ ,  COMPILE >R` invece di
+`#LOCALS @ LOC-ENTRY ,`.
+
+Effetti collaterali, tutti buoni tranne l'ultimo:
+
+- spariscono `(LOC-CHAIN)`, `(LOC-EXIT)`, `LOC-ENTRY` e l'aritmetica
+  `MAXLOCALS SWAP - CELLS`: il modulo si accorcia;
+- **i locali di uscita possono stare in qualunque posizione** della
+  dichiarazione, non solo in fondo, perche' la forma della catena e'
+  decisa nome per nome;
+- costo permanente aggiuntivo: `2n+2` byte di dizionario per scope, contro
+  i 18 byte della tabella condivisa risparmiati una volta sola. Pareggio
+  intorno agli otto scope; oltre, si spende. E' coerente con il costo
+  permanente per scope gia' accettato in sezione 6, ma va scritto.
+
+**Alternativa scartata -- marcare l'indirizzo.** Si potrebbe conservare la
+catena condivisa spingendo l'indirizzo della cella con il bit 0 a 1 quando
+il locale e' di uscita, e far decidere a `(LOC-POP)` a runtime. Scartata
+per due motivi: i PFA delle `CONSTANT` non hanno allineamento garantito
+(l'heap e il code space non promettono indirizzi pari), e il test si
+pagherebbe **su ogni ripristino di ogni locale**, anche nelle definizioni
+che non usano uscite.
+
+**Alternativa scartata -- tabella di indirizzi.** Un solo passo
+`LIT tbl (LOC-EMIT)` in testa alla catena, che spinge i valori leggendo una
+tabella statica di indirizzi, seguito dalla catena condivisa invariata.
+Funziona, ma la catena condivisa non e' raggiungibile per caduta da un
+altro thread: servirebbe chiudere il prologo con `LIT entry >R EXIT`, cioe'
+6 celle per scope e un secondo livello di deviazione da spiegare. La catena
+per scope costa uguale (`n+1` celle) ed e' leggibile.
+
+### 12.5 Sintassi -- tre opzioni
+
+**Opzione 1 -- due conteggi.** `ni no LOCALS-FOR nome  in... out...`.
+Immediata da implementare (nessun parsing nuovo), ma rompe la sintassi
+esistente: andrebbero aggiornati `test/LOCALS-TESTS.f`, `tutorial/061`,
+`help/locals-for.txt` e `lib/CLAUDE.md`. E due numeri di seguito si
+scambiano facilmente.
+
+**Opzione 2 -- declaratore addizionale.** `3 LOCALS-FOR FOO A B C` seguito
+da `2 OUTPUTS Q R`. Retrocompatibile, ma la catena la costruisce l'ultimo
+declaratore che gira, quindi quella gia' emessa da `LOCALS-FOR` resta
+abbandonata a HERE: `2n+2` byte sprecati per ogni scope che usa `OUTPUTS`.
+Recuperarli richiederebbe un rewind di `DP` che non e' piu' sicuro, perche'
+`OUTPUTS` ha nel frattempo creato le proprie `CONSTANT`.
+
+**Opzione 3 -- separatore nella lista (preferita).**
+
+```forth
+4 LOCALS-FOR /MOD2   A B -- Q R
+```
+
+Il conteggio resta uno solo e conta **i nomi**, `--` escluso. Il ciclo di
+creazione sbircia il token prima di ogni `0 CONSTANT`: se e' `--` lo
+consuma, registra `ni = #LOCALS @` e prosegue; altrimenti arretra `>IN` e
+lascia che `0 CONSTANT` riparsi il nome. E' il ciclo di parsing con
+sbirciata gia' prezzato in 10 (~10 righe), qui senza nessuno dei suoi
+prezzi, perche' `LOCALS-FOR` gira in interpretazione e non c'e' nessuno
+scavalco nel thread.
+
+Tre vantaggi: **e' retrocompatibile** (senza `--` si ottiene esattamente il
+comportamento di oggi, zero uscite); si legge come il commento di stack che
+il programmatore scriverebbe comunque; ed e' auto-verificabile -- si puo'
+controllare che il numero di nomi prima di `--` corrisponda a quanto il
+corpo consuma. Unico effetto: `--` diventa un token riservato dentro la
+lista dei nomi, il che e' senza conseguenze pratiche.
+
+### 12.6 Inizializzazione: azzerati, e perche' la sezione 8 resta chiusa
+
+Un locale di uscita non viene caricato dallo stack. Lasciarlo com'e' non e'
+un'opzione: con lo shallow binding la cella conterrebbe **il valore
+dell'attivazione esterna**, cioe' un risultato plausibile e sbagliato
+invece di spazzatura riconoscibile -- il modo peggiore di fallire.
+
+Va quindi legato a 0 all'ingresso, con una variante del binder che non
+consuma nulla dallo stack:
+
+```forth
+: (LOC-BIND0)  ( a -- )             \ R: -- old a
+    R> SWAP DUP >R  DUP @ >R  0 SWAP !  >R
+;
+```
+
+Nota che questo **non riapre** la questione chiusa in sezione 8 ("niente
+locali non inizializzati"): l'invariante era che ogni locale sia caricato
+prima che il corpo parta, e resta vera -- semplicemente, per le uscite la
+sorgente e' una costante invece dello stack. E' proprio l'invariante che
+rende innocuo lo scavalco della catena da parte di `ABORT`/`THROW` (11.4).
+
+Sull'ordine di compilazione non ci sono interferenze: `LOCALS` emette i
+binding dall'indice piu' alto al piu' basso, e i binding di uscita non
+consumano stack, quindi gli argomenti del chiamante continuano a essere
+prelevati nell'ordine giusto qualunque sia la posizione delle uscite nella
+dichiarazione.
+
+### 12.7 Il costo, sommato
+
+| Voce | Costo |
+|---|---|
+| Return stack | invariato: 4 byte per locale, uscite comprese. Valgono i tetti misurati in 11.4 |
+| Thread della definizione | invariato: 3 celle per locale (`LIT`, indirizzo, binder) |
+| Dizionario per scope | `+2n+2` byte (catena per scope), `-18` byte una tantum (catena condivisa che sparisce) |
+| Runtime, ingresso | uguale a un locale d'ingresso |
+| Runtime, uscita | `(LOC-EPOP)` = `(LOC-POP)` piu' 3 primitive |
+| Word nuove | `(LOC-EPOP)`, `(LOC-BIND0)`; via `(LOC-CHAIN)`, `(LOC-EXIT)`, `LOC-ENTRY` |
+| Righe di modulo | circa in pari: si perde l'aritmetica della catena, si guadagna il parsing del separatore |
+| `SEE` | intatto -- il thread continua a contenere solo codice |
+| Core | nessuna modifica, nessuna word ridefinita: **niente nuovo build number** |
+
+### 12.8 Verdetto
+
+La macchineria e' modesta e non tocca nessuno dei vincoli duri del sistema.
+Ma il guadagno va misurato contro la baseline di 12.2, e si riduce a tre
+cose:
+
+1. **Garanzia su ogni via d'uscita.** Con un `EXIT` anticipato dentro un
+   `IF`, oggi i risultati vanno spinti a mano in ogni punto di uscita; con
+   le uscite dichiarate lo fa la catena, una volta per tutte. E' l'unico
+   argomento di *correttezza*, non di stile -- e va pesato sapendo che
+   **lo stile di questo repo evita l'`EXIT` a meta' definizione**,
+   preferendo negare la condizione e annidare il corpo sotto `IF...THEN`.
+   Su definizioni scritte cosi', questo vantaggio non si presenta mai.
+2. **L'effetto di stack diventa dichiarato**, e con l'opzione 3 e'
+   scritto dove il programmatore scriverebbe comunque il commento.
+   Documentazione che il sistema puo' verificare, invece che un commento.
+3. **Simmetria concettuale**: ingressi e uscite hanno lo stesso trattamento,
+   il che rende la libreria piu' facile da insegnare (tutorial 061).
+
+Contro: `2n+2` byte permanenti per scope, due word nuove, un token
+riservato, e una superficie di errore in piu' (dichiarare un'uscita e non
+assegnarla mai restituisce 0 senza che nulla lo segnali -- un difetto
+speculare a quello che 3.3 chiude con le guardie, ma qui non c'e' niente
+da controllare in compilazione).
+
+**Raccomandazione: non implementare adesso.** Il rapporto e' meno favorevole
+di quello della rientranza (sezione 11), che aggiungeva una capacita'
+mancante; qui si aggiunge zucchero sintattico sopra una capacita' che c'e'
+gia'. Se pero' si decide di adottare la sintassi inline di sezione 10, il
+discorso cambia -- vedi 12.9.
+
+### 12.9 Rapporto con la sezione 10
+
+Se un giorno si adotta `LOCALS{ ... }` inline, le uscite dovrebbero entrare
+**nello stesso momento**, non dopo: la notazione standard-simile
+`{: a b | c -- r :}` ha gia' il posto dove scriverle (dopo `--`, che nello
+standard e' solo commento), il separatore serve comunque per gli
+uninitialized, e il ciclo di parsing con sbirciata di `>IN` -- che e' il
+grosso del lavoro di 12.5 -- lo si sta scrivendo comunque. Fatte insieme,
+le uscite costano quasi nulla; fatte prima, si paga due volte il parsing.
+
+Il "Prezzo 1" di sezione 10 (`SEE` che si rompe sullo scavalco) resta
+l'unico arbitro di quella scelta, e le uscite non lo spostano di un
+millimetro: nessuna delle parti nuove studiate qui mette dati dentro il
+thread.
+
+### 12.10 Se si implementa: casi da verificare
+
+Da aggiungere a `test/LOCALS-TESTS.f`, sull'emulatore, prima di
+considerarlo fatto:
+
+| Caso | Atteso |
+|---|---|
+| Una sola uscita, assegnata con `TO` | valore sullo stack, `DEPTH` = 1 |
+| Due uscite: ordine | dichiarata per prima piu' in basso, seconda in cima |
+| Uscita mai assegnata | `0`, non il valore del chiamante -- e' il test che dimostra 12.6 |
+| Uscita in posizione non finale (`A -- Q B`) | ordine corretto, ingressi consumati giusti |
+| Ricorsione con uscite (`RECURSE`) | ogni livello restituisce i propri valori |
+| `EXIT` anticipato dentro `IF` | uscite spinte lo stesso |
+| Nessuna uscita (`--` assente) | comportamento identico a oggi, retrocompatibilita' |
+| `MAXLOCALS` al limite con uscite (ingressi+uscite = 8) | ok; 9 -> `LOCALS: bad count` |
+| `DEPTH` prima e dopo | coerente con l'effetto dichiarato |
+| `SEE` su una word con uscite | thread leggibile, solo codice |
+| `NO-LOCALS` e ricarica | pulito |
