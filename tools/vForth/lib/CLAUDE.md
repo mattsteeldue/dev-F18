@@ -60,22 +60,39 @@ floating-point vocabulary. Reload via `024 TUTORIAL` from a clean session for a 
 
 `lib/LOCALS.f` adds `VALUE`-like named locals. Unlike FLOATING and ASSEMBLER above it
 **patches nothing and redefines no core word**, so `MARKER NO-LOCALS` unloads it cleanly
-and loading it cannot disturb already-compiled code. Two words, declaration first:
+and loading it cannot disturb already-compiled code. Declared in place, `{ ... }`:
 
 ```forth
-3 LOCALS-FOR MULADD  A B C        \ interpretation state, one line, before the ':'
+: MULADD  ( a b c -- n )  { A B C }  A B *  C + ;
+```
+
+The older two-part form still works and is what `{` is built on -- `LOCALS-FOR` in
+interpretation state, on one line, immediately before the `:`, then `LOCALS` as the
+first word of the body:
+
+```forth
+3 LOCALS-FOR MULADD  A B C
 : MULADD  ( a b c -- n )  LOCALS  A B *  C + ;
 ```
 
-Two facts worth carrying into any `lib/` work, not just into LOCALS:
+Three facts worth carrying into any `lib/` work, not just into LOCALS:
 
 - **You cannot `CREATE` a word while a colon definition is being compiled.** `CREATE`
   writes at `HERE`, and inside a definition `HERE` *is* the thread being generated, so
   the new word's header lands in the middle of the code and the IP later runs into it.
-  This is why the locals are declared *before* the `:` rather than inside it. Anything
-  else that wants to define words at compile time hits the same wall.
+  Anything else that wants to define words at compile time hits the same wall.
+- **The way around it is to end the definition early and re-open the body anonymously.**
+  This is the *trampoline* `{` uses, and it is the reason the locals can be declared
+  inside the definition instead of before it: `{` compiles a slot plus `EXIT`, `SMUDGE`s
+  the outer word into existence, and only then -- with `HERE` outside any pending
+  definition -- `CREATE`s one cell per local. `:NONAME` (`inc/_noname.f`) then opens the
+  real body and its xt is patched into the slot, so the visible word is just
+  `( call body ) EXIT`. Since `:NONAME` makes the body the LATEST definition, the final
+  `;` closes the body, and `RECURSE` re-enters the body directly (re-binding the locals,
+  skipping the trampoline).
 - **`:` resets `CONTEXT`** (`CURRENT @ CONTEXT !`), so a search-order change made before
-  the definition does not survive into its body -- hence the second word, `LOCALS`.
+  the definition does not survive into its body -- which is why the older form needs a
+  second word, `LOCALS`, inside the definition at all.
 
 A local is one permanent cell, not a frame slot, but the word is still **re-entrant**:
 `LOCALS` compiles a save of each cell's previous content onto the return stack, and
@@ -84,8 +101,9 @@ address above the caller's return address. Recursion (`RECURSE`) therefore works
 every exit path -- including an early `EXIT` inside `IF` -- unwinds, without `EXIT`, `;`
 or `:` being redefined. Two consequences worth remembering:
 
-- Each activation costs `4+4n` bytes on the 160-byte return stack shared with the TIB.
-  Measured: one local survives 15 recursion levels and corrupts the system at 20.
+- Each activation costs `4+4n` bytes on the 160-byte return stack shared with the TIB,
+  plus one cell for the trampoline's return address -- paid on entry, not per recursion
+  level. Measured: one local survives 15 recursion levels and corrupts the system at 20.
 - `ABORT` and `THROW` bypass the chain, leaving inner values in the cells. Harmless
   only because every entry re-binds all the locals before the body runs -- do not
   build anything that reads a local outside its own definition.
@@ -95,6 +113,11 @@ Maximum 8 locals per scope. Design notes and the rejected alternatives are in
 
 ### Other conventions
 
+- **Errors: `?ERROR`, not `ABORT"`.** Library modules report with numbered messages
+  (`f n ?ERROR`) from the error blocks, listable with `9 LOAD`; `ABORT"` is left to
+  end-user application sources. Document the numbers a module reserves in a comment at
+  its top -- `lib/locals.f` (#57-#60) is the model. Rationale in root `CLAUDE.md`,
+  "Error reporting: `?ERROR` over `ABORT"` in the library".
 - **NEEDS for dependencies**: always use `NEEDS` to pull in prerequisites -- never assume
   a word is already present.
 - **Refactoring guideline**: if a definition inside a `lib/` module is general enough to

@@ -18,7 +18,7 @@ this repository.
 computer. It includes a complete Forth compiler (self-bootstrapping), Z80/Z80N assembly
 support, and multiple library modules for graphics, sound, file I/O, and hardware control.
 
-**Current version**: 1.8 (build 2026-08-01)  
+**Current version**: 1.8 (build 2026-08-17)  
 **License**: MIT  
 **Author**: Matteo Vitturi
 
@@ -163,7 +163,9 @@ unit vForth allocates internally in `!Blocks.txt`. Two consecutive Blocks form o
 |---------|--------|----------|
 | 0 | 0 | Unused |
 | 0.5 | 1 | System metadata (copyright, block usage); **F_INCLUDE internal buffer** |
-| 4-7 | 8-15 | Standard error messages -- read by `?ERROR` -> `ERROR` -> `MESSAGE` |
+| 2-3 | 4-7 | Error messages #-32 to #-1 -- the negative area, aligned with the standard THROW codes (`-1` ABORT, `-2` ABORT", `-13` undefined word, ...); Screen 3 is pre-filled with `msg# -n` placeholders |
+| 4-8 | 8-17 | Standard error messages #0-#79 -- read by `?ERROR` -> `ERROR` -> `MESSAGE` |
+| 9 | 18-19 | `9 LOAD` -- prints the whole message list, page by page, then FORGETs itself |
 | 10 | 20-21 | Previously held `include src/f18e.f`; now free for end-user use |
 
 **Note on BLOCK 1 and F_INCLUDE:** The first 512 bytes of `!Blocks.txt` are BLOCK 1 and
@@ -181,10 +183,70 @@ file-based source inclusion without allocating extra heap memory and reusing the
 **Convention:** While BLOCK 1 permits lines up to 511 bytes, vForth source style maintains 
 lines at **80 bytes or fewer** for readability and adherence to Forth conventions.
 
-The error-message Screens (4-7) or Blocks (8-14) are a space-saving heritage from classic block-based Forth:
+### Byte offsets inside `!Blocks-64.bin` (tools that read/write the file directly)
+
+**BLOCK 0 is not stored.** The file begins with BLOCK 1, so the file offset of a block is
+**`(block - 1) * 512`**, not `block * 512`. Everything else follows from it:
+
+| Target | File offset |
+|---|---|
+| BLOCK `b` | `(b - 1) * 512` |
+| Screen `S` (= blocks `2S`, `2S+1`) | `(2S - 1) * 512` |
+| Screen `S`, line `L` (0-15, 64 bytes each) | `(2S - 1) * 512 + L * 64` |
+| Error message `#n` (= Screen `4 + n/16`, line `n MOD 16`) | `(n + 32) * 64 + 3 * 512` |
+
+Sanity checks: BLOCK 1 (metadata) is at 0; Screen 1 is at 512 -- which is exactly where
+`util/blocks2txt.pl` seeks before it starts counting screens from 1; message `#0` is at
+`0xE00`, the first line of Screen 4.
+
+**The off-by-one is silent.** Using `block * 512` shifts everything by one block, i.e. by
+eight lines within a screen, and the wrong text reads as perfectly plausible -- a wrong
+message rather than garbage. When touching the binary, verify by reading back through the
+real `BLOCK` mechanism (headless emulator) instead of trusting your own arithmetic, and
+diff against a copy of the file to confirm only the intended byte ranges changed. Lines
+are padded to 64 bytes with spaces (`BLANK`), and the file size must never change.
+
+The error-message Screens (4-8) or Blocks (8-17) are a space-saving heritage from classic block-based Forth:
 error text lives in the block file rather than being compiled inline into each definition.
 `f n ?ERROR` checks `f`; if true it calls `n ERROR`, which calls `n MESSAGE` to display
-the text from the appropriate block.
+the text from the appropriate block. Message #n is line n of Screen 4 counted straight
+through, so Screen 5 starts at #16, Screen 6 at #32, Screen 7 at #48 and Screen 8 at #64 --
+and the first line of each of those Screens is spent on a `( ... )` header comment.
+To see the whole table on the machine, `9 LOAD`: an old auto-forgetting utility that
+prints every message page by page and then `FORGET`s itself.
+
+### Error reporting: `?ERROR` over `ABORT"` in the library
+
+**In `inc/` and `lib/` -- the library that ships as the compendium of the vForth core --
+report errors with numbered messages (`f n ?ERROR`), not with `ABORT"`.** Reasons, in
+order of weight:
+
+- `ERROR` prints the offending token (`HERE COUNT TYPE`) before the message, and when
+  `BLK` is non-zero it leaves `>IN BLK` on the stack, which is exactly what `WHERE`
+  (`inc/where.f`) consumes to show Screen#, row and a caret under the column. `ABORT"`
+  prints its string and loses the position -- a bad trade for errors raised while
+  compiling the user's source.
+- `?ERROR` is a core word: no `NEEDS`. `ABORT"` pulls in `inc/abort".f` -> `S"` -> `H"`,
+  i.e. the heap.
+- Cost: `n ?ERROR` is a literal plus a call (~5 bytes) and no text; `ABORT"` compiles a
+  branch, `(H")`, an `ha` cell, `TYPE` and `ABORT` (~12 bytes) **plus the string,
+  permanently, in the scarce MMU7 heap it shares with the name-space**.
+- The texts stay centralised, editable with `EDIT`, listable with `9 LOAD`, reusable
+  across modules, and separated from the code.
+
+Adding a message means editing the block file, so keep the numbers documented in a
+comment at the top of the module (see `lib/locals.f`, which reserved #57-#60), and be
+aware of the two costs: the number space is global, and a module distributed on its own
+against an older `!Blocks-64.bin` will print the wrong line. Also remember `ERROR` ends
+in `QUIT`, which resets `STATE` and the return stack but **not** `CONTEXT`/`CURRENT` --
+`FORTH DEFINITIONS` is done by `ABORT`, not by `ERROR`. Code that temporarily switches
+vocabulary must restore it by itself.
+
+Where the mechanism degrades, `ABORT"` is legitimate even in the library: with
+`WARNING` at 0 `MESSAGE` prints only `msg#n`, and with `WARNING` at -1 `ERROR` aborts
+silently. **End-user application sources are free to use `ABORT"` throughout** -- it is
+self-contained, needs no slot in a shared table, and its cost is paid by the application
+that chose it.
 
 ### Dictionary Structure (New_Def macro)
 

@@ -7,18 +7,25 @@
 \
 \ Used in the form
 \
+\       : SUM3   { A B C }   A B + C + ;
+\
+\ { is IMMEDIATE and must be the first word of the definition: it declares
+\ the local names, in the order in which the caller pushed them, and
+\ compiles the code that pops the arguments into them. The names live as
+\ VALUE-like words inside the DEFLOCALS vocabulary, invisible from
+\ outside the definition that declared them.
+\
+\ The older two-part form is still supported, and is what { is built on:
+\
 \       3 LOCALS-FOR SUM3   A B C
 \       : SUM3   LOCALS   A B + C + ;
 \
-\ LOCALS-FOR runs in interpretation state, BEFORE the colon definition.
-\ It takes the count of locals, the name of the definition that follows,
-\ and then that many local names. It creates the locals as VALUE-like
-\ words inside the DEFLOCALS vocabulary, invisible from outside.
-\
-\ LOCALS is IMMEDIATE and takes no arguments. Inside the definition it
-\ makes the local names visible again and compiles the code that pops the
-\ caller arguments into them. It must run before the body touches the
-\ stack, so in practice it is the first word of the definition.
+\ LOCALS-FOR runs in interpretation state, BEFORE the colon definition,
+\ and takes the count of locals, the name of the definition that follows,
+\ and then that many names. LOCALS, IMMEDIATE, then makes them visible
+\ inside the body and binds them. Everything { does in one place. Prefer
+\ { ... } : it cannot get the count wrong, and nothing has to stay
+\ adjacent to anything else.
 \
 \ A local pushes its value; write it with TO :
 \
@@ -36,11 +43,30 @@
 \ an early one inside IF -- lands there instead of returning, the chain
 \ restores the cells, and its own final EXIT returns to the caller.
 \
+\ TRAMPOLINE. { (like LOCALS) does not compile the body into the
+\ definition the user opened. It ends that definition after two cells --
+\ a slot and EXIT
+\ -- reveals it with SMUDGE, and then opens the body as an anonymous
+\ :NONAME definition whose xt is written into the slot. So
+\
+\       : FOO   { A }  ... ;
+\
+\ compiles two words: FOO, which is just  ( call body ) EXIT , and the
+\ nameless body that binds the locals and runs the code. The point of the
+\ split is that between the two HERE is outside any pending definition,
+\ which is the one state in which words can be CREATEd -- this is what
+\ lets { ... } declare the locals in place, where LOCALS-FOR had to do it
+\ before the colon. RECURSE keeps working: after :NONAME the LATEST
+\ definition is the body itself, so recursion re-enters it directly,
+\ re-binding the locals and skipping the trampoline.
+\
 \ Cost per activation: one return-stack cell for the chain address, plus
 \ two per local (old value + its cell address), i.e. 4+4n bytes on top of
-\ the caller's address. The return stack is 160 bytes shared with the TIB,
-\ so recursion stays shallow -- measured on the emulator, a word with one
-\ local survives 15 levels and dies at 20; with eight locals, about 3.
+\ the caller's address, plus one more cell for the trampoline's own return
+\ address -- paid once on entry, not on each recursion level. The return
+\ stack is 160 bytes shared with the TIB, so recursion stays shallow --
+\ measured on the emulator, a word with one local survives 15 levels and
+\ dies at 20; with eight locals, about 3.
 \ Overflowing it overwrites the input buffer, silently.
 \
 \ ABORT and THROW bypass the chain, so an aborted word leaves its locals
@@ -50,14 +76,24 @@
 \ Every local name and cell is permanent: a scope costs n cells of
 \ dictionary plus one heap header per name, none of it reclaimable.
 \
-\ All the local names must be on the SAME source line as LOCALS-FOR.
+\ All the local names must be on the SAME source line as the { that opens
+\ them (or as LOCALS-FOR, in the older form).
 \
 \ Design notes and the reasoning behind this shape: prompts/LOCALS-PLAN.md
+\
+\ Errors are reported with ?ERROR, using four messages reserved in the
+\ standard error blocks (Screen #7, lines 9-12) -- see  9 LOAD  for the
+\ full list:
+\
+\       #57  LOCALS: bad count.
+\       #58  LOCALS: no scope declared.
+\       #59  LOCALS: scope not adjacent.
+\       #60  LOCALS: misplaced { or }.
 \
 MARKER NO-LOCALS
 
 NEEDS TO
-NEEDS ABORT"
+NEEDS :NONAME
 
   8 CONSTANT MAXLOCALS
 
@@ -75,6 +111,7 @@ LOC-VOC @   CONSTANT LOC-EMPTY      \ value of that cell when empty
 VARIABLE #LOCALS        0 #LOCALS !     \ locals in the pending scope
 VARIABLE SCOPE-LINK     0 SCOPE-LINK !  \ LATEST when the scope was opened
 VARIABLE OLD-CURRENT    0 OLD-CURRENT !
+VARIABLE LOC-SLOT       0 LOC-SLOT !     \ cell to patch with the body's xt
 
 CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
 
@@ -118,31 +155,84 @@ CREATE (LOC-EXIT)
 ;
 
 \ ----------------------------------------------------------------------
-\ LOCALS-FOR  -- interpretation state, before the colon definition
+\ Compile-time support: the trampoline
+\
+\ (LOC-OPEN) ends the definition being compiled after a slot and an EXIT,
+\ then SMUDGE reveals it. HERE is now outside any pending definition, so
+\ CREATE works again -- see the header note.
+\
+\ (LOC-CLOSE) opens the body as an anonymous definition and writes its xt
+\ into the slot. :NONAME leaves that xt on the stack and makes the body
+\ the LATEST definition, so the final ; un-SMUDGEs the body -- the outer
+\ word was already revealed by (LOC-OPEN). Consuming the xt puts the
+\ stack back where : found it, and !CSP re-arms the ?CSP check of ; on it.
+
+: (LOC-OPEN)  ( -- )
+    HERE LOC-SLOT !
+    COMPILE NOOP                    \ placeholder: harmless if never patched
+    COMPILE EXIT
+    SMUDGE                          \ reveal the outer word
+;
+
+\ (LOC-CLOSE) also makes the local names visible and compiles, at the head
+\ of the body, the code that binds them: last declared first, that is the
+\ one on top at run time. The chain address goes last, so that it is what
+\ the EXIT of the body finds on top of the return stack.
+
+: (LOC-CLOSE) ( -- )
+    :NONAME                         \ ( -- xt )  the body; LATEST is now it
+    LOC-SLOT @ !                    \ the outer word calls the body
+    !CSP
+
+    LOC-VOC CONTEXT !               \ local names visible in the body
+
+    #LOCALS @ 0 DO
+        COMPILE LIT
+        #LOCALS @ 1- I - LOC-PFA @ ,
+        COMPILE (LOC-BIND)
+    LOOP
+
+    COMPILE LIT
+    #LOCALS @ LOC-ENTRY ,
+    COMPILE >R
+
+    0 #LOCALS !                     \ consume the scope
+;
+
+\ ----------------------------------------------------------------------
+\ Declaring one local -- used by both forms
 \
 \ CURRENT must be restored before returning: if it were left on
 \ DEFLOCALS, the following  :  would create the definition itself inside
-\ DEFLOCALS, and it would vanish at the next LOCALS-FOR.
-\ CONTEXT is restored too, but only for tidiness -- the following  :
-\ overwrites it anyway with  CURRENT @ CONTEXT !
+\ DEFLOCALS, and it would vanish at the next scope. CONTEXT is restored
+\ with it -- for LOCALS-FOR that is mere tidiness, since the following  :
+\ overwrites it anyway with  CURRENT @ CONTEXT !  , but { runs after that
+\ point and an error in mid-declaration must not leave the locals in the
+\ search order. Nothing else will do it for us: ?ERROR ends in QUIT, which
+\ resets STATE and the return stack but not CONTEXT/CURRENT -- it is ABORT,
+\ not ERROR, that does FORTH DEFINITIONS.
+
+: (LOC-MAKE)  ( -- ccc )            \ create one local, parsing its name
+    CURRENT @ OLD-CURRENT !
+    DEFLOCALS DEFINITIONS
+    0 CONSTANT                      \ the local: a VALUE-like cell
+    LATEST PFA  #LOCALS @ LOC-PFA !
+    OLD-CURRENT @ CURRENT !
+    CURRENT @ CONTEXT !
+    1 #LOCALS +!
+;
+
+\ ----------------------------------------------------------------------
+\ LOCALS-FOR  -- interpretation state, before the colon definition
 
 : LOCALS-FOR ( n -- ccc ccc1 ... cccn )
-    DUP 0=  OVER MAXLOCALS >  OR    ABORT" LOCALS: bad count"
+    DUP 0=  OVER MAXLOCALS >  OR    #57 ?ERROR  \ bad count
 
     BL WORD DROP                    \ consume the definition name
     CURRENT @ @ SCOPE-LINK !        \ remember what LATEST was
     LOC-EMPTY LOC-VOC !             \ empty the locals vocabulary
     0 #LOCALS !
-
-    CURRENT @ OLD-CURRENT !
-    DEFLOCALS DEFINITIONS
-    0 DO
-        0 CONSTANT                  \ the local: a VALUE-like cell
-        LATEST PFA  #LOCALS @ LOC-PFA !
-        1 #LOCALS +!
-    LOOP
-    OLD-CURRENT @ CURRENT !
-    CURRENT @ CONTEXT !
+    0 DO  (LOC-MAKE)  LOOP
 ;
 
 \ ----------------------------------------------------------------------
@@ -155,26 +245,52 @@ CREATE (LOC-EXIT)
 
 : LOCALS ( -- )
     ?COMP
-    #LOCALS @ 0=                    ABORT" LOCALS: no scope declared"
-    LATEST PFA LFA @ SCOPE-LINK @ - ABORT" LOCALS: scope not adjacent"
+    #LOCALS @ 0=                    #58 ?ERROR  \ no scope declared
+    LATEST PFA LFA @ SCOPE-LINK @ - #59 ?ERROR  \ scope not adjacent
 
-    LOC-VOC CONTEXT !               \ local names visible in the body
+    (LOC-OPEN)                      \ close the outer word on a slot
+    (LOC-CLOSE)                     \ body as :NONAME, bind, divert EXIT
+;
+IMMEDIATE
 
-    \ bind the arguments, last declared first: it is the one on top.
+\ ----------------------------------------------------------------------
+\ {  ccc1 ... cccn  }   -- IMMEDIATE, first thing in the definition
+\
+\       : SUM3   { A B C }   A B + C + ;
+\
+\ Declaration and use in one place: no count to keep in step, no separate
+\ LOCALS-FOR to keep adjacent to the definition. It is the trampoline that
+\ makes this possible -- (LOC-OPEN) closes the outer word, and only then
+\ is HERE free for the CREATE that each local needs.
+\
+\ Each name is parsed twice: >IN is rewound after the test against } so
+\ that CONSTANT parses the very same name. All the names, and the } , must
+\ be on the SAME source line as the { .
+\
+\ On a malformed declaration the outer word survives as a do-nothing
+\ NOOP EXIT : the error is raised after (LOC-OPEN) has already revealed it.
 
-    #LOCALS @ 0 DO
-        COMPILE LIT
-        #LOCALS @ 1- I - LOC-PFA @ ,
-        COMPILE (LOC-BIND)
-    LOOP
+: }  ( -- )
+    1 #60 ?ERROR                    \ misplaced: } without {
+;
 
-    \ divert the return: this must be the LAST thing pushed at run time,
-    \ so that it is what the EXIT of the definition finds on top.
+: {  ( -- )
+    ?COMP
+    (LOC-OPEN)                      \ HERE is free from here on
+    LOC-EMPTY LOC-VOC !             \ empty the locals vocabulary
+    0 #LOCALS !
+    BEGIN
+        >IN @  BL WORD              ( in a )
+        DUP C@ 0=  OVER 1+ C@ 0= OR #60 ?ERROR  \ misplaced: missing }
+        DUP C@ 1 = OVER 1+ C@ [CHAR] } = AND  0=
+    WHILE                           ( in a )
+        DROP  >IN !                 \ rewind: CONSTANT re-parses the name
+        (LOC-MAKE)
+        #LOCALS @ MAXLOCALS >       #57 ?ERROR  \ bad count
+    REPEAT
+    2DROP                           ( in a )
+    #LOCALS @ 0=                    #57 ?ERROR  \ bad count
 
-    COMPILE LIT
-    #LOCALS @ LOC-ENTRY ,
-    COMPILE >R
-
-    0 #LOCALS !                     \ consume the scope
+    (LOC-CLOSE)                     \ body as :NONAME, bind, divert EXIT
 ;
 IMMEDIATE

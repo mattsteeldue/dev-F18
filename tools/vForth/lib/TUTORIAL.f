@@ -116,9 +116,10 @@ CREATE TUT-TABLE
     H" tutorial/059-standalone-executables.f" ,
     H" tutorial/060-idiomatic-traps.f" ,
     H" tutorial/061-locals.f"          ,
-\   H" tutorial/062-dma.f"             ,
+    H" tutorial/062-error-messages.f"  ,
+\   H" tutorial/063-dma.f"             ,
 
-61 CONSTANT TUT-MAX
+62 CONSTANT TUT-MAX
 
 
 \ ---------------------------------------------------------------------------

@@ -52,7 +52,6 @@
 MARKER NO-LOCALS
 
 NEEDS TO
-NEEDS ABORT"
 
   8 CONSTANT MAXLOCALS
 
@@ -88,7 +87,7 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
 \ overwrites it anyway with  CURRENT @ CONTEXT !
 
 : LOCALS-FOR ( n -- ccc ccc1 ... cccn )
-    DUP 0=  OVER MAXLOCALS >  OR    ABORT" LOCALS: bad count"
+    DUP 0=  OVER MAXLOCALS >  OR    #57 ?ERROR  \ bad count
 
     BL WORD DROP                    \ consume the definition name
     CURRENT @ @ SCOPE-LINK !        \ remember what LATEST was
@@ -116,8 +115,8 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
 
 : LOCALS ( -- )
     ?COMP
-    #LOCALS @ 0=                    ABORT" LOCALS: no scope declared"
-    LATEST PFA LFA @ SCOPE-LINK @ - ABORT" LOCALS: scope not adjacent"
+    #LOCALS @ 0=                    #58 ?ERROR  \ no scope declared
+    LATEST PFA LFA @ SCOPE-LINK @ - #59 ?ERROR  \ scope not adjacent
 
     LOC-VOC CONTEXT !               \ local names visible in the body
 

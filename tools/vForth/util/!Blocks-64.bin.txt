@@ -1,9 +1,9 @@
 File: ..\!Blocks-64.bin
-Created: Sun Jul 19 23:07:01 2026
+Created: Mon Aug 17 17:35:21 2026
 
 See index at end of file.
 
-\ v-Forth 1.8 - NextZXOS versione - build 2026-07-14
+\ v-Forth 1.8 - NextZXOS versione - build 2026-08-17
 \ MIT License (c) 1990-2026 Matteo Vitturi
 \ Read LICENSE.md file for MIT License terms agreement or
 \ at prompt type NEEDS VIEW and then VIEW LICENSE.MD
@@ -132,10 +132,10 @@ Scr# 7
   6 Cell number after '->' below ...}T does not match.
   7 
   8 Real-Time-Clock module not present.
-  9 
- 10 
- 11 
- 12 
+  9 LOCALS: bad count.
+ 10 LOCALS: no scope declared.
+ 11 LOCALS: scope not adjacent.
+ 12 LOCALS: misplaced { or }.
  13 
  14 
  15 Abort.
@@ -17629,24 +17629,6 @@ Scr# 9013
  14                performs the correct 8K paging at $E000
  15 
 
-Scr# 9058 
-  0    8 24 at. h-bar count type
-  1   13 9 do i 24 at. v-bar count type loop
-  2   13 24 at. h-bar count type
-  3 ;
-  4 -->
-  5 
-  6 
-  7 
-  8 
-  9 
- 10 
- 11 
- 12 
- 13 
- 14 
- 15 
-
 Scr# 9990 
   0 ( splash screen )
   1 needs remount
@@ -21229,44 +21211,6 @@ Scr# 10311
  14 
  15 
 
-Scr# 10604 
-  0 
-  1 
-  2 
-  3 
-  4 
-  5 
-  6 
-  7 
-  8 ( UART Raspberry PI Zero - protocol )
-  9 \ fastest read from rpi0
- 10 code uart-get-block ( a -- )
- 11 hex f3 c,        \ di
- 12     d9 c,        \ exx
- 13     e1 c,        \ pop  hl
- 14     11 c, 200 ,  \ ld   de,   #512
- 15     01 c, 143b , \ ld   bc,   uart-rx-port  nn,
-
-Scr# 15000 
-  0 
- ! , MºööX ∏"	                      
-  1   ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
-  2 @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \ ] ^ _
-  3 ` a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~ 
-  4 Ä Å Ç É Ñ Ö Ü á à â ä ã å ç é è ê ë í ì î ï ñ ó ò ô ö õ ú ù û ü
-  5 † ° ¢ £ § • ¶ ß ® © ™ ´ ¨ ≠ Æ Ø ∞ ± ≤ ≥ ¥ µ ∂ ∑ ∏ π ∫ ª º Ω æ ø
-  6 ¿ ¡ ¬ √ ƒ ≈ ∆ « » …   À Ã Õ Œ œ – — “ ” ‘ ’ ÷ ◊ ÿ Ÿ ⁄ € ‹ › ﬁ ﬂ
-  7 ‡ · ‚ „ ‰ Â Ê Á Ë È Í Î Ï Ì Ó Ô  Ò Ú Û Ù ı ˆ ˜ ¯ ˘ ˙ ˚ ¸ ˝ ˛ ˇ
-  8  	
-
-  9  !"#$%&'()*+,-./0123456789:;<=>?
- 10 @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_
- 11 `abcdefghijklmnopqrstuvwxyz{|}~
- 12 ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü
- 13 †°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø
- 14 ¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ
- 15 ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛ
-
 Scr# 15360 
   0 
   1 
@@ -21312,24 +21256,6 @@ Scr# 15362
   5   x          x          x   x      x          x          x
   6     x          x          x          x          x          x
   7       x          x  x       x          x          x          x
-  8 
-  9 
- 10 
- 11 
- 12 
- 13 
- 14 
- 15 
-
-Scr# 15616 
-  0 NextZXOS Out of memory.
-  1 NextZXOS Open error.
-  2 NextZXOS Close error.
-  3 File not found.
-  4 NextZXOS DOS call error.
-  5 NextZXOS Pos error.
-  6 NextZXOS Read error.
-  7 NextZXOS Write error.
   8 
   9 
  10 
@@ -22331,7 +22257,6 @@ Restarting Supervisor
  9010 ---  D I R E C T   v s   I N D I R E C T ---
  9012 ---  H E A P   C O N C E P T  ---
  9013 ---  H E A P   D E F I N I T I O N S  ---
- 9058    8 24 at. h-bar count type
  9990 ( splash screen )
  9991 ( splash screen )
  9992 ( splash screen )
@@ -22531,11 +22456,7 @@ Restarting Supervisor
 10309 ( MMU7 banking study )
 10310 ( MMU7 banking study )
 10311 ( MMU7 banking study )
-10604 
-15000 
-!,MºööX∏"	 
 15360 
 15361 x     x x x x x x x x x x x x x x x x x x x x x x x x x x x x x
 15362 x             x          x          x          x          x
-15616 NextZXOS Out of memory.
 15999 ( clear blocks 16000 - 16208 )

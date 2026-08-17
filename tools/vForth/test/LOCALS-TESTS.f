@@ -123,15 +123,62 @@ T{  7 L-EARLY               ->  70              }T
 T{  1 2 3 4 5 6 7 8 L-EIGHT ->  36              }T
 
 \ ---------------------------------------------------------------------------
-\ Not covered here, because a failure aborts instead of returning a value
-\ and cannot be expressed as T{ ... }T. Verified by hand on the emulator:
+\ the { ... } form -- same semantics, declared in place
 \
-\   0 LOCALS-FOR ZZZ            -> LOCALS: bad count
-\   9 LOCALS-FOR ZZZ ...        -> LOCALS: bad count
-\   : OOPS LOCALS ;             -> LOCALS: no scope declared
+\ Same words as above, re-expressed with { ... } : the names are parsed
+\ from the very line being compiled, so this also covers the case of a
+\ declaration read from an INCLUDEd file rather than from the keyboard.
+\ ---------------------------------------------------------------------------
+
+: B-SUM3    ( a b c -- n )      { A B C }   A B + C + ;
+: B-ORDER   ( x y -- x y )      { X Y }     X Y ;
+: B-TO      ( p q -- n )        { P Q }     P Q + TO P  P ;
+: B-SQ      ( n -- n2 )         { N }       N N * ;
+: B-NEST    ( u v -- n )        { U V }     U B-SQ  V B-SQ + ;
+: B-EIGHT   ( 8n -- n )         { E1 E2 E3 E4 E5 E6 E7 E8 }
+    E1 E2 + E3 + E4 + E5 + E6 + E7 + E8 + ;
+
+: B-FACT    ( n -- n! )         { N }
+    N 1 > IF  N 1- RECURSE  N *  ELSE  1  THEN ;
+
+: B-EARLY   ( z -- n )          { Z }
+    Z 0= IF  999 EXIT  THEN  Z 10 * ;
+
+T{  1 2 3 B-SUM3            ->  6               }T
+T{  111 1 2 3 B-SUM3        ->  111 6           }T
+T{  7 9 B-ORDER             ->  7 9             }T
+T{  3 4 B-TO                ->  7               }T
+T{  5 B-SQ                  ->  25              }T
+T{  3 4 B-NEST              ->  25              }T
+T{  1 2 3 4 5 6 7 8 B-EIGHT ->  36              }T
+T{  7 B-FACT                ->  5040            }T
+T{  333 5 B-FACT            ->  333 120         }T
+T{  0 B-EARLY               ->  999             }T
+T{  7 B-EARLY               ->  70              }T
+
+\ the two forms do not interfere: each scope replaces the previous one
+
+T{  1 2 3 L-SUM3            ->  6               }T
+
+\ ---------------------------------------------------------------------------
+\ Not covered here, because a failure aborts instead of returning a value
+\ and cannot be expressed as T{ ... }T. Verified by hand on the emulator.
+\ Each line prints the offending token, then ? , then the message from the
+\ standard error blocks -- listed by  9 LOAD  :
+\
+\   0 LOCALS-FOR ZZZ            -> #57 LOCALS: bad count.
+\   9 LOCALS-FOR ZZZ ...        -> #57 LOCALS: bad count.
+\   : OOPS LOCALS ;             -> #58 LOCALS: no scope declared.
 \   scope, then an unrelated definition, then LOCALS
-\                               -> LOCALS: scope not adjacent
+\                               -> #59 LOCALS: scope not adjacent.
 \   FORTH then a local name     -> undefined (scoping works)
+\   : OOPS { A B ;              -> #60 LOCALS: misplaced { or }.
+\   : OOPS { } ;                -> #57 LOCALS: bad count.
+\   : OOPS { 9 names } ;        -> #57 LOCALS: bad count.
+\   }  on its own               -> #60 LOCALS: misplaced { or }.
+\
+\ Inside INCLUDE or LOAD the error also leaves  >IN BLK  on the stack, so
+\ WHERE shows the offending screen, row and column.
 \ ---------------------------------------------------------------------------
 
 CR .( LOCALS-TESTS done. Type TESTING-TASK to unload. ) CR

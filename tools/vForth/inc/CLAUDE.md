@@ -29,6 +29,9 @@ NEEDS dependency1    \ only if needed
 - Use `NEEDS` at interpreter level only -- never inside a colon-definition.
 - Always ensure the file ends with a blank line (known bug: missing trailing newline
   causes a crash).
+- Report errors with a numbered message (`f n ?ERROR`), not with `ABORT"` -- see
+  "Error reporting: `?ERROR` over `ABORT"` in the library" in root `CLAUDE.md`.
+  `ABORT"` remains available to end-user application sources.
 
 ## CODE words in inc/ -- development vs. release form
 
