@@ -15,6 +15,15 @@
 \ VALUE-like words inside the DEFLOCALS vocabulary, invisible from
 \ outside the definition that declared them.
 \
+\ An optional  --  marks off a second group of names: OUTPUT locals.
+\ They are not bound from the stack -- created at 0 on every entry -- and
+\ the body does not push them either: every exit path (the final ; and
+\ any early EXIT) pushes their current value automatically, in the order
+\ declared, before restoring the caller's own locals underneath them.
+\
+\       : SUM-TO  { N -- ACC }
+\           N 0> IF  N 0 DO  ACC I 1+ + TO ACC  LOOP  THEN ;
+\
 \ The older two-part form is still supported, and is what { is built on:
 \
 \       3 LOCALS-FOR SUM3   X Y Z
@@ -45,28 +54,35 @@
 \
 \ TRAMPOLINE. { (like LOCALS) does not compile the body into the
 \ definition the user opened. It ends that definition after two cells --
-\ a slot and EXIT
-\ -- reveals it with SMUDGE, and then opens the body as an anonymous
-\ :NONAME definition whose xt is written into the slot. So
+\ a slot and EXIT -- which leaves it smudged, exactly as plain : left it,
+\ and then builds by hand a second, nameless colon-header (just the
+\ 3-byte "call Enter_Ptr" prologue that : itself would write) and patches
+\ its address into the slot. So
 \
 \       : FOO   { X }  ... ;
 \
-\ compiles two words: FOO, which is just  ( call body ) EXIT , and the
-\ nameless body that binds the locals and runs the code. The point of the
-\ split is that between the two HERE is outside any pending definition,
-\ which is the one state in which words can be CREATEd -- this is what
-\ lets { ... } declare the locals in place, where LOCALS-FOR had to do it
-\ before the colon. RECURSE keeps working: after :NONAME the LATEST
-\ definition is the body itself, so recursion re-enters it directly,
-\ re-binding the locals and skipping the trampoline.
+\ compiles two threads sharing one dictionary entry: FOO's own, which is
+\ just  ( call body ) EXIT , and the nameless body right after it that
+\ binds the locals and runs the code. Between the two, HERE is outside
+\ any pending definition, which is the one state in which words can be
+\ CREATEd -- this is what lets { ... } declare the locals in place, where
+\ LOCALS-FOR had to do it before the colon. The nameless body gets no
+\ dictionary header at all -- unlike :NONAME (inc/_noname.f), the first
+\ design tried here, dropped because it hooks a phantom entry into the
+\ CURRENT vocabulary chain for every definition. LATEST is therefore
+\ still FOO throughout the body, so RECURSE compiles a call back to FOO,
+\ not directly into the body: correct, but the trampoline's entry cost is
+\ paid again on every recursion level, not only once. The user's closing
+\ ; still belongs to FOO: it compiles the body's final EXIT and SMUDGEs
+\ FOO, revealing it in the dictionary.
 \
 \ Cost per activation: one return-stack cell for the chain address, plus
 \ two per local (old value + its cell address), i.e. 4+4n bytes on top of
 \ the caller's address, plus one more cell for the trampoline's own return
-\ address -- paid once on entry, not on each recursion level. The return
-\ stack is 160 bytes shared with the TIB, so recursion stays shallow --
-\ measured on the emulator, a word with one local survives 15 levels and
-\ dies at 20; with eight locals, about 3.
+\ address, paid on every recursion level (RECURSE re-enters through FOO,
+\ see above). The return stack is 160 bytes shared with the TIB, so
+\ recursion stays shallow -- measured on the emulator, a word with one
+\ local survives 15 levels and dies at 20; with eight locals, about 3.
 \ Overflowing it overwrites the input buffer, silently.
 \
 \ ABORT and THROW bypass the chain, so an aborted word leaves its locals
@@ -74,7 +90,11 @@
 \ from the stack before the body runs.
 \
 \ Every local name and cell is permanent: a scope costs n cells of
-\ dictionary plus one heap header per name, none of it reclaimable.
+\ dictionary plus one heap header per name, none of it reclaimable. The
+\ restore chain adds n+1 more dictionary cells per scope (12.4/12.7 in
+\ the plan doc), since it is no longer a single table shared by every
+\ scope. An output local's chain step, (LOC-EPOP), costs three more
+\ primitives at exit than a plain (LOC-POP).
 \
 \ All the local names must be on the SAME source line as the { that opens
 \ them (or as LOCALS-FOR, in the older form).
@@ -88,7 +108,7 @@
 \       #57  LOCALS: bad count.
 \       #58  LOCALS: no scope declared.
 \       #59  LOCALS: scope not adjacent.
-\       #60  LOCALS: misplaced { or }.
+\       #60  LOCALS: misplaced { or }.  Also raised for a duplicate --.
 \
 
 FORTH DEFINITIONS   \ Force this library as part of Forth definitions
@@ -96,7 +116,6 @@ FORTH DEFINITIONS   \ Force this library as part of Forth definitions
 MARKER NO-LOCALS
 
 NEEDS TO
-\ NEEDS :NONAME
 
   8 CONSTANT MAXLOCALS
 
@@ -112,9 +131,12 @@ FORTH
 LOC-VOC @   CONSTANT LOC-EMPTY      \ value of that cell when empty
 
 VARIABLE #LOCALS        0 #LOCALS !     \ locals in the pending scope
+VARIABLE #IN-LOCALS     0 #IN-LOCALS !  \ how many of #LOCALS come off the
+                                         \ stack; the rest are outputs, after --
 VARIABLE SCOPE-LINK     0 SCOPE-LINK !  \ LATEST when the scope was opened
 VARIABLE OLD-CURRENT    0 OLD-CURRENT !
 VARIABLE LOC-SLOT       0 LOC-SLOT !     \ cell to patch with the body's xt
+VARIABLE LOC-CHAIN-START  0 LOC-CHAIN-START !  \ this scope's own restore chain
 
 CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
 
@@ -123,86 +145,116 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
 
 : LOC-PFA   ( i -- a )  CELLS LOCAL-PFAS + ;
 
+\ Maps a loop count (0..#LOCALS-1, ascending -- what a plain DO gives)
+\ to the declared position it must bind at run time (#LOCALS-1..0,
+\ descending): binding has to run in the exact reverse of the chain's
+\ declared-position order (12.3), regardless of which positions are
+\ inputs and which are outputs.
+
+: LOC-POS   ( i -- position )   #LOCALS @ 1- SWAP - ;
+
 \ ----------------------------------------------------------------------
 \ Run-time support: shallow binding
 \
 \ (LOC-BIND) binds one local to an argument, remembering on the return
-\ stack what was in the cell and which cell it was. Both words juggle
-\ their own return address, which is on top when they start.
+\ stack what was in the cell and which cell it was. (LOC-BIND0) does the
+\ same for an output local (declared after -- in the { } form): it is
+\ not on the caller's stack at all, so it is bound to a literal 0
+\ instead. Both words juggle their own return address, which is on top
+\ when they start.
 \
-\ (LOC-POP) undoes one binding. It is never called from a definition:
-\ it is reached through the (LOC-EXIT) chain below, when the EXIT of the
-\ word being unwound jumps into it.
+\ (LOC-POP) undoes one binding, discarding the old contents. (LOC-EPOP)
+\ undoes one binding too, but first pushes what the cell held -- the
+\ value an output local delivers to the caller. Neither is ever called
+\ from a definition directly: each scope builds its own chain of them
+\ (see (LOC-CLOSE)), reached when the EXIT of the word being unwound
+\ jumps into it.
 
 : (LOC-BIND)  ( x a -- )            \ R: -- old a
     R> SWAP DUP >R  DUP @ >R  ROT SWAP !  >R
+;
+
+: (LOC-BIND0)  ( a -- )             \ R: -- old a
+    R> SWAP DUP >R  DUP @ >R  0 SWAP !  >R
 ;
 
 : (LOC-POP)   ( -- )                \ R: old a --
     R> R> R> !  >R
 ;
 
-\ MAXLOCALS pop cells followed by EXIT. A definition with n locals is made
-\ to return into this chain n cells before its end, so exactly n bindings
-\ are undone and the final EXIT returns to the caller.
-\ Same idiom as the hand-built thread in inc/exec_.f  ( HERE ' EXIT , ).
+: (LOC-EPOP)  ( -- x )              \ R: old a --
+    R> R> R>  DUP @  ROT ROT !  SWAP >R
+;
 
-: (LOC-CHAIN) ( xt n -- )   0 DO  DUP ,  LOOP  DROP ;
+\ Each scope builds its OWN restore chain, instead of sharing one fixed
+\ table: a single shared table cannot represent an arbitrary mix of POP
+\ and EPOP steps at different positions for different scopes.
+\ (LOC-STEP) decides which one a given declared position needs.
 
-CREATE (LOC-EXIT)
-    ' (LOC-POP) MAXLOCALS (LOC-CHAIN)
-    ' EXIT ,
-
-: LOC-ENTRY  ( n -- a )             \ where to enter the chain for n locals
-    MAXLOCALS SWAP - CELLS  (LOC-EXIT) +
+: (LOC-STEP)  ( i -- xt )
+    #IN-LOCALS @ <  IF  ['] (LOC-POP)  ELSE  ['] (LOC-EPOP)  THEN
 ;
 
 \ ----------------------------------------------------------------------
 \ Compile-time support: the trampoline
 \
-\ (LOC-OPEN) ends the definition being compiled after a slot and an EXIT,
-\ then SMUDGE reveals it. HERE is now outside any pending definition, so
-\ CREATE works again -- see the header note.
+\ (LOC-OPEN) ends the definition being compiled after a slot and an EXIT.
+\ It does NOT reveal it: it stays smudged, the way plain : left it, until
+\ the user's own closing ; does that later. HERE is now outside any
+\ pending definition, so CREATE works again -- see the header note.
 \
-\ (LOC-CLOSE) opens the body as an anonymous definition and writes its xt
-\ into the slot. :NONAME leaves that xt on the stack and makes the body
-\ the LATEST definition, so the final ; un-SMUDGEs the body -- the outer
-\ word was already revealed by (LOC-OPEN). Consuming the xt puts the
-\ stack back where : found it, and !CSP re-arms the ?CSP check of ; on it.
+\ (LOC-CLOSE) builds the nameless body's header by hand (just the 3-byte
+\ "call Enter_Ptr" prologue -- see the header note on why not :NONAME)
+\ and patches its address into the slot left by (LOC-OPEN). !CSP re-arms
+\ the ?CSP check so that the user's own ; -- which closes the BODY's
+\ thread, not the outer word's -- passes, compiles the body's final EXIT,
+\ and SMUDGEs the outer word into visibility.
 
 : (LOC-OPEN)  ( -- )
     HERE LOC-SLOT !
     COMPILE NOOP                    \ placeholder: harmless if never patched
     COMPILE EXIT
-\   SMUDGE                          \ reveal the outer word
     ;
 
-\ (LOC-CLOSE) also makes the local names visible and compiles, at the head
-\ of the body, the code that binds them: last declared first, that is the
-\ one on top at run time. The chain address goes last, so that it is what
-\ the EXIT of the body finds on top of the return stack.
+\ (LOC-CLOSE) first lays down this scope's own restore chain -- one step
+\ per local, in declaration order, POP or EPOP as (LOC-STEP) decides,
+\ followed by EXIT -- then makes the local names visible and compiles,
+\ at the head of the body, the code that binds them: last declared
+\ first, that is the one on top at run time. The chain address goes
+\ last, so that it is what the EXIT of the body finds on top of the
+\ return stack.
 
 : (LOC-CLOSE) ( -- )
-    \ :NONAME                       \ ( -- xt )  the body; LATEST is now it
-    HERE                            \ xt
+    HERE  LOC-CHAIN-START !          \ this scope's restore chain starts here
+    #LOCALS @ 0 DO  I (LOC-STEP) ,  LOOP  \ #LOCALS is always >=1 here
+    ['] EXIT ,
+
+    HERE                            \ xt (the nameless body's CFA)
 
     $CD C,                          \ compile CALL op-code
-    [ ' ' >BODY CELL- @ ]   
-    LITERAL ,                       \ colon-definition CFA address to jump to    
-    
+    [ ' ' >BODY CELL- @ ]
+    LITERAL ,                       \ Enter_Ptr address to jump to
+
     LOC-SLOT @ !                    \ the outer word calls the body
     !CSP
 
     LOC-VOC CONTEXT !               \ local names visible in the body
 
+    \ bind every local, one DO across both kinds: last declared first,
+    \ the one on top at run time for the stack-supplied ones. This keeps
+    \ the chronological bind order the exact reverse of the chain's
+    \ declared-position order (12.3) regardless of the -- split, which is
+    \ what makes chain step j restore/push the local at position j.
+
     #LOCALS @ 0 DO
-        COMPILE LIT
-        #LOCALS @ 1- I - LOC-PFA @ ,
-        COMPILE (LOC-BIND)
+        I LOC-POS                       ( position )
+        COMPILE LIT  DUP LOC-PFA @ ,
+        DUP #IN-LOCALS @ <  IF  COMPILE (LOC-BIND)  ELSE  COMPILE (LOC-BIND0)  THEN
+        DROP
     LOOP
 
     COMPILE LIT
-    #LOCALS @ LOC-ENTRY ,
+    LOC-CHAIN-START @ ,
     COMPILE >R
 
     0 #LOCALS !                     \ consume the scope
@@ -242,6 +294,7 @@ CREATE (LOC-EXIT)
     LOC-EMPTY LOC-VOC !             \ empty the locals vocabulary
     0 #LOCALS !
     0 DO  (LOC-MAKE)  LOOP
+    #LOCALS @ #IN-LOCALS !          \ all of them come off the stack
 ;
 
 \ ----------------------------------------------------------------------
@@ -258,29 +311,43 @@ CREATE (LOC-EXIT)
     LATEST PFA LFA @ SCOPE-LINK @ - #59 ?ERROR  \ scope not adjacent
 
     (LOC-OPEN)                      \ close the outer word on a slot
-    (LOC-CLOSE)                     \ body as :NONAME, bind, divert EXIT
+    (LOC-CLOSE)                     \ trampoline: build body, bind, divert EXIT
 ;
 IMMEDIATE
 
 \ ----------------------------------------------------------------------
-\ {  ccc1 ... cccn  }   -- IMMEDIATE, first thing in the definition
+\ {  ccc1 ... cccn [ -- ccccn+1 ... ] }   -- IMMEDIATE, first in the body
 \
-\       : SUM3   { X Y Z }   X Y + Z + ;
+\       : SUM3    { X Y Z }        X Y + Z + ;
+\       : SUM-TO  { N -- ACC }     N 0> IF  N 0 DO  ACC I 1+ + TO ACC  LOOP  THEN ;
 \
 \ Declaration and use in one place: no count to keep in step, no separate
 \ LOCALS-FOR to keep adjacent to the definition. It is the trampoline that
 \ makes this possible -- (LOC-OPEN) closes the outer word, and only then
 \ is HERE free for the CREATE that each local needs.
 \
-\ Each name is parsed twice: >IN is rewound after the test against } so
-\ that CONSTANT parses the very same name. All the names, and the } , must
-\ be on the SAME source line as the { .
+\ Each name is parsed twice: >IN is rewound after the test against } (and
+\ against --) so that CONSTANT parses the very same name. All the names,
+\ the optional -- , and the } , must be on the SAME source line as the { .
 \
 \ On a malformed declaration the outer word survives as a do-nothing
-\ NOOP EXIT : the error is raised after (LOC-OPEN) has already revealed it.
+\ NOOP EXIT, but stays smudged (KNOWN ISSUE: since (LOC-OPEN) does not
+\ reveal it and QUIT never reaches the closing ; that would, the stub is
+\ left in the dictionary but unreachable by name -- see prompts/LOCALS-PLAN.md 14.5).
 
 : }  ( -- )
     #60 ERROR                       \ misplaced: } without {
+;
+
+: ?}  ( a -- a flag )               \ true if the counted string at a is "}"
+    DUP C@ 1 =
+    OVER 1+ C@ [CHAR] } = AND
+;
+
+: ?--  ( a -- a flag )              \ true if the counted string at a is "--"
+    DUP C@ 2 =
+    OVER 1+ C@ [CHAR] - = AND
+    OVER 2 + C@ [CHAR] - = AND
 ;
 
 : {  ( -- )
@@ -288,19 +355,28 @@ IMMEDIATE
     (LOC-OPEN)                      \ HERE is free from here on
     LOC-EMPTY LOC-VOC !             \ empty the locals vocabulary
     0 #LOCALS !
+    -1 #IN-LOCALS !                 \ sentinel: -- not seen yet
     BEGIN
         >IN @  BL WORD              ( in a )
         DUP C@ 0=  OVER 1+ C@ 0= OR #60 ?ERROR  \ misplaced: missing }
-        DUP C@ 1 = OVER 1+ C@ [CHAR] } = AND  0=
-    WHILE                           ( in a )
-        DROP  >IN !                 \ rewind: CONSTANT re-parses the name
-        (LOC-MAKE)
-        #LOCALS @ MAXLOCALS >       #57 ?ERROR  \ bad count
+        ?} 0=                       ( in a flag )   \ true while not }
+    WHILE
+        ?--                         ( in a flag )
+        IF
+            #IN-LOCALS @ 0< 0=      #60 ?ERROR  \ misplaced: duplicate --
+            #LOCALS @ #IN-LOCALS !
+            2DROP
+        ELSE
+            DROP  >IN !              \ rewind: CONSTANT re-parses the name
+            #LOCALS @ MAXLOCALS =   #57 ?ERROR  \ bad count -- before the write
+            (LOC-MAKE)
+        THEN
     REPEAT
     2DROP                           ( in a )
     #LOCALS @ 0=                    #57 ?ERROR  \ bad count
+    #IN-LOCALS @ 0<  IF  #LOCALS @ #IN-LOCALS !  THEN
 
-    (LOC-CLOSE)                     \ body as :NONAME, bind, divert EXIT
+    (LOC-CLOSE)                     \ trampoline: build body, bind, divert EXIT
 ;
 IMMEDIATE
 

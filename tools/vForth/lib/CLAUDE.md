@@ -66,9 +66,19 @@ and loading it cannot disturb already-compiled code. Declared in place, `{ ... }
 : MULADD  ( a b c -- n )  { A B C }  A B *  C + ;
 ```
 
+An optional `--` inside the braces marks off a second group of names: **output locals**.
+They are not bound from the stack (created at 0 on every entry) and the body does not
+push them either -- every exit path (the closing `;` and any early `EXIT`) pushes their
+current value automatically, in declaration order, before restoring the caller's own
+locals underneath them:
+
+```forth
+: SUM-TO  ( n -- sum )  { N -- ACC }  N 0 ?DO  ACC I 1+ + TO ACC  LOOP ;
+```
+
 The older two-part form still works and is what `{` is built on -- `LOCALS-FOR` in
 interpretation state, on one line, immediately before the `:`, then `LOCALS` as the
-first word of the body:
+first word of the body (no `--`: every name in this form comes off the stack):
 
 ```forth
 3 LOCALS-FOR MULADD  A B C
@@ -83,13 +93,19 @@ Three facts worth carrying into any `lib/` work, not just into LOCALS:
   Anything else that wants to define words at compile time hits the same wall.
 - **The way around it is to end the definition early and re-open the body anonymously.**
   This is the *trampoline* `{` uses, and it is the reason the locals can be declared
-  inside the definition instead of before it: `{` compiles a slot plus `EXIT`, `SMUDGE`s
-  the outer word into existence, and only then -- with `HERE` outside any pending
-  definition -- `CREATE`s one cell per local. `:NONAME` (`inc/_noname.f`) then opens the
-  real body and its xt is patched into the slot, so the visible word is just
-  `( call body ) EXIT`. Since `:NONAME` makes the body the LATEST definition, the final
-  `;` closes the body, and `RECURSE` re-enters the body directly (re-binding the locals,
-  skipping the trampoline).
+  inside the definition instead of before it: `{` compiles a slot plus `EXIT` inside the
+  outer word (left smudged, exactly as plain `:` would leave it), and only then -- with
+  `HERE` outside any pending definition -- `CREATE`s one cell per local. It then builds,
+  by hand, a second nameless colon-header (just the 3-byte `call Enter_Ptr` prologue
+  that `:` itself would write) and patches its address into the slot, so the visible
+  word is just `( call body ) EXIT`. The nameless body gets no dictionary header at all
+  -- unlike `:NONAME` (`inc/_noname.f`), the first design tried here and dropped because
+  it hooks a phantom entry into the `CURRENT` vocabulary chain for every definition.
+  `LATEST` therefore stays the outer word throughout the body, so `RECURSE` compiles a
+  call back to it, not directly into the body: correct, but the trampoline's entry cost
+  is paid again on every recursion level, not only once. The user's closing `;` still
+  belongs to the outer word: it compiles the body's final `EXIT` and `SMUDGE`s the outer
+  word, revealing it in the dictionary.
 - **`:` resets `CONTEXT`** (`CURRENT @ CONTEXT !`), so a search-order change made before
   the definition does not survive into its body -- which is why the older form needs a
   second word, `LOCALS`, inside the definition at all.
@@ -99,17 +115,25 @@ A local is one permanent cell, not a frame slot, but the word is still **re-entr
 diverts the definition's `EXIT` into a chain of restore steps by pushing that chain's
 address above the caller's return address. Recursion (`RECURSE`) therefore works, and
 every exit path -- including an early `EXIT` inside `IF` -- unwinds, without `EXIT`, `;`
-or `:` being redefined. Two consequences worth remembering:
+or `:` being redefined. Every scope builds its **own** chain rather than sharing one
+fixed table, because an output local's step must push its value before restoring, while
+an input local's step only restores -- a single shared table cannot represent a
+different mix of the two per scope. Output locals are bound to a literal 0 (not a stack
+value) by the same entry code, so they too reset on every entry, including a recursive
+one. Two consequences worth remembering:
 
 - Each activation costs `4+4n` bytes on the 160-byte return stack shared with the TIB,
-  plus one cell for the trampoline's return address -- paid on entry, not per recursion
-  level. Measured: one local survives 15 recursion levels and corrupts the system at 20.
+  plus one cell for the trampoline's return address, paid on every recursion level (not
+  only on entry) because `RECURSE` calls back through the outer word. Measured: one
+  local survives 15 recursion levels and corrupts the system at 20. The per-scope chain
+  also adds `n+1` dictionary cells per scope (no longer shared across scopes), and an
+  output local's exit step costs three more primitives than a plain input local's.
 - `ABORT` and `THROW` bypass the chain, leaving inner values in the cells. Harmless
   only because every entry re-binds all the locals before the body runs -- do not
   build anything that reads a local outside its own definition.
 
-Maximum 8 locals per scope. Design notes and the rejected alternatives are in
-`prompts/LOCALS-PLAN.md`; tests in `test/LOCALS-TESTS.f`; tutorial 061.
+Maximum 8 locals per scope, input and output combined. Design notes and the rejected
+alternatives are in `prompts/LOCALS-PLAN.md`; tests in `test/LOCALS-TESTS.f`; tutorial 061.
 
 ### Other conventions
 

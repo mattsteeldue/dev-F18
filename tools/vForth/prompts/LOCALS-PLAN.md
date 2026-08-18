@@ -2,7 +2,12 @@
 
 Stato: **implementato** in `lib/LOCALS.f`, verificato sull'emulatore
 headless (`emu/repl.py`). Vedi sezione 9.
-Ultima revisione: 2026-08-17 -- la sintassi inline `{ ... }` e' stata
+Ultima revisione: 2026-08-18 -- i **locali in uscita** studiati in
+sezione 12 sono stati **implementati** (sezione 15), con la catena di
+ripristino per scope che 12.4 aveva gia' previsto, invece della catena
+condivisa di 11-14. Corretto insieme anche il bug di scrittura oltre
+`LOCAL-PFAS` documentato in 14.5.
+Revisione precedente: 2026-08-17 -- la sintassi inline `{ ... }` e' stata
 **implementata** col trampolino (sezione 13) e subito dopo semplificata
 togliendo la dipendenza da `:NONAME` (sezione 14). Le due sezioni
 ribaltano il verdetto della sezione 10 e correggono le misure di 11.4 e
@@ -10,8 +15,6 @@ ribaltano il verdetto della sezione 10 e correggono le misure di 11.4 e
 Revisione precedente: 2026-08-16 -- **i locali sono ora rientranti**, vedi
 sezione 11: e' la modifica piu' importante dopo il primo impianto e
 cambia quello che dicono le sezioni 6 e 10.
-La sezione 12 studia i **locali in uscita** (risultati nominati): e' solo
-uno studio, non implementato, e non tocca nulla di quanto precede.
 
 Obiettivo: variabili locali caricabili con `NEEDS LOCALS` (nuovo `lib/LOCALS.f`),
 **senza modificare il core assembly** e **senza ridefinire nessuna word del core**.
@@ -986,11 +989,12 @@ assegnarla mai restituisce 0 senza che nulla lo segnali -- un difetto
 speculare a quello che 3.3 chiude con le guardie, ma qui non c'e' niente
 da controllare in compilazione).
 
-**Raccomandazione: non implementare adesso.** Il rapporto e' meno favorevole
-di quello della rientranza (sezione 11), che aggiungeva una capacita'
-mancante; qui si aggiunge zucchero sintattico sopra una capacita' che c'e'
-gia'. Se pero' si decide di adottare la sintassi inline di sezione 10, il
-discorso cambia -- vedi 12.9.
+**Raccomandazione (2026-08-16): non implementare adesso.** Il rapporto era
+meno favorevole di quello della rientranza (sezione 11), che aggiungeva una
+capacita' mancante; qui si aggiungeva zucchero sintattico sopra una
+capacita' che c'era gia'. La condizione posta in 12.9 -- prima adottare la
+sintassi inline -- si e' avverata con la sezione 13: **implementato**,
+vedi sezione 15.
 
 ### 12.9 Rapporto con la sezione 10
 
@@ -1223,3 +1227,128 @@ non ha il problema perche' controlla il conteggio *prima* del ciclo.
 Rimedio: spostare la guardia sopra `(LOC-MAKE)`, come
 `#LOCALS @ MAXLOCALS = #57 ?ERROR`. Da verificare sull'emulatore col caso
 `: OOPS { 9 nomi } ;` gia' elencato in `test/LOCALS-TESTS.f`.
+
+---
+
+## 15. Locali in uscita, implementati (2026-08-18)
+
+Chiude lo studio di sezione 12: la condizione posta in 12.9 (prima la
+sintassi inline, poi le uscite "quasi gratis" sopra di essa) si e'
+avverata con la sezione 13, quindi le uscite sono state implementate
+sopra `{ ... }`, con l'opzione 3 di 12.5 (separatore `--` nella lista) e
+il legame a 0 di 12.6, esattamente come studiati. Corretto insieme anche
+il bug di scrittura oltre `LOCAL-PFAS` di 14.5 (secondo punto), toccando
+comunque il ramo che chiama `(LOC-MAKE)`; il primo punto di 14.5 (word
+orfana su dichiarazione malformata) resta aperto, non toccato qui.
+
+### 15.1 Sintassi
+
+```forth
+: SUM3    { X Y Z }        X Y + Z + ;
+: SUM-TO  { N -- ACC }     N 0> IF  N 0 DO  ACC I 1+ + TO ACC  LOOP  THEN ;
+: SPLIT   { N -- LO HI }   N 10 MOD TO LO  N 10 / TO HI ;
+```
+
+I nomi dopo `--` non vengono caricati dallo stack (12.6: legati a 0
+all'ingresso) e **non vanno referenziati a fine corpo**: ogni via
+d'uscita -- il `;` finale e un `EXIT` anticipato dentro `IF` -- li spinge
+da sola, nell'ordine di dichiarazione (il primo dichiarato finisce piu'
+in basso), prima di ripristinare le celle del chiamante sotto di essi.
+E' la differenza reale rispetto alla baseline di 12.2 (`... Q R ;` scritto
+a mano): qui la garanzia vale su **ogni** punto di uscita, non solo su
+quello dove il programmatore ha ricordato di scriverla.
+
+### 15.2 La catena per scope (12.4, come previsto)
+
+`(LOC-CLOSE)` ora scrive **due** cose in sequenza, non una: prima la
+catena di ripristino di *questo* scope (`#LOCALS` celle, una per locale,
+piu' `EXIT`), poi -- come prima -- il CFA a mano e il corpo. La catena
+condivisa (`(LOC-CHAIN)`, `CREATE (LOC-EXIT)`, `LOC-ENTRY`) e' sparita:
+`(LOC-STEP)` decide passo per passo se compilare `(LOC-POP)` (ripristina
+soltanto) o `(LOC-EPOP)` (spinge, poi ripristina), guardando `#IN-LOCALS`
+-- la stessa variabile che gia' separava input da output nel ciclo di
+bind. Nessuna word nuova per la sintassi: `{` non e' cambiata da 13/14,
+solo `(LOC-CLOSE)` e le word di supporto.
+
+`(LOC-BIND0)` lega un output a 0 (12.6); `(LOC-EPOP)` spinge il valore
+corrente e poi ripristina quello del chiamante, nella stessa word (12.3:
+lettura e ripristino devono stare insieme). La formulazione usata e'
+quella gia' scritta in 12.3 (`R> R> R> DUP @ ROT ROT ! SWAP >R`),
+ritracciata a mano qui perche' vale la pena fidarsi solo dopo averla
+verificata di persona.
+
+### 15.3 Due bug reali trovati implementando, non solo sulla carta
+
+Il design di sezione 12 era corretto nella sostanza, ma **due errori di
+implementazione**, non di design, hanno rotto la prima stesura -- vale la
+pena registrarli perche' nessuno dei due si vede rileggendo il codice in
+fretta.
+
+**Bug 1 -- `'` al posto di `[']` dentro una definizione compilata.**
+`(LOC-CLOSE)` chiudeva la catena con `' EXIT ,`. Questo idioma e' corretto
+**solo interpretando** (e' esattamente come `CREATE (LOC-EXIT) ' (LOC-POP)
+... ' EXIT ,` lo usava, a livello di file, prima di questa sezione): li'
+`'` esegue subito e consuma "EXIT" dal testo sorgente che si sta
+caricando. Dentro una definizione compilata `'` **non e' immediate**: la
+parola dopo di essa nel sorgente di `(LOC-CLOSE)` non viene affatto
+consumata da `'` a compile-time, ma compilata normalmente nel thread di
+`(LOC-CLOSE)` **come se fosse codice** -- qui, un `EXIT` letterale, che fa
+uscire `(LOC-CLOSE)` a meta'. La chiamata di `'` cade quindi a runtime,
+quando (LOC-CLOSE) gira per davvero: legge il prossimo token dal flusso di
+input **del chiamante** (in `: T2 LOCALS X ;`, il token e' `X`), lo cerca
+-- fallisce, perche' `CONTEXT` non e' ancora stato spostato su
+`DEFLOCALS` -- e da' "X? is undefined.", silenziosamente, senza mai
+arrivare al resto di `(LOC-CLOSE)`. Il rimedio e' `['] EXIT ,`, lo stesso
+idioma gia' corretto usato in `(LOC-STEP)` per `(LOC-POP)`/`(LOC-EPOP)`.
+Diagnosticato piazzando marcatori numerici (`1111 . CR` ... `2222 . CR`)
+attorno al sospetto: `2222` non compariva mai, isolando il guasto esatto.
+
+**Bug 2 -- l'ordine di bind non e' piu' "l'inverso della dichiarazione"
+quando si spezza in due cicli.** La prima stesura legava tutti gli input
+in un ciclo (ultimo dichiarato per primo, correttamente) e poi tutti gli
+output in un secondo ciclo (in ordine di posizione). Ma la catena si
+aspetta che il passo `j` corrisponda alla posizione dichiarata `j` (12.3)
+**solo se** l'ordine cronologico dei bind e' l'esatto inverso dell'ordine
+della catena -- e con due cicli separati, tutti gli input finiscono
+cronologicamente *dopo* tutti gli output (o viceversa), indipendentemente
+dalle loro posizioni dichiarate: la corrispondenza si rompe ogni volta che
+uno scope mescola i due tipi. Sintomo: non un crash, un valore sbagliato
+(`T{ 47 B-SPLIT -> 7 4 }T` dava "Incorrect result."). Rimedio: **un solo
+ciclo** `#LOCALS @ 0 DO ... LOOP`, con `I LOC-POS` (nuova word, `#LOCALS @
+1- SWAP -`) a mappare il contatore ascendente del `DO` sulla posizione
+dichiarata discendente, e con `LOC-BIND` o `LOC-BIND0` scelti posizione
+per posizione in base a `#IN-LOCALS`. Uniforma i due casi (solo input,
+misto) nello stesso codice, ed e' *piu' corto* della versione a due cicli.
+
+### 15.4 Costo, confrontato con la stima di 12.7
+
+| Voce | Stimato in 12.7 | Osservato |
+|---|---|---|
+| Dizionario per scope | `+2n+2` byte | `n+1` celle per la catena (2 byte l'una): stesso ordine di grandezza |
+| Word nuove | `(LOC-EPOP)`, `(LOC-BIND0)` | uguale, piu' `(LOC-STEP)` e `LOC-POS` come selettori |
+| Runtime, uscita | `(LOC-EPOP)` = `(LOC-POP)` + 3 primitive | confermato dal confronto diretto dei due corpi |
+| `SEE` | intatto | invariato rispetto a 14 (mostra lo stub, non il corpo -- 14.4 vale ancora) |
+| Core | nessuna modifica | confermato: nessun nuovo build number |
+
+### 15.5 Verifica sull'emulatore
+
+Tutto su `emu/repl.py`, binari correnti (build 2026-08-17). Nessuna
+modifica al core. La suite `test/LOCALS-TESTS.f` gira precaricando le
+`NEEDS` al prompt prima di `INCLUDE`, aggirando il limite gia' registrato
+in 14.4 (NEEDS annidato dentro un file INCLUDEd).
+
+| Caso | Atteso | Esito |
+|---|---|---|
+| `test/LOCALS-TESTS.f` intera (input-only + le nuove uscite, ~30 asserzioni) | silenzio | passa |
+| `: SUM-TO { N -- ACC } ...` / `5 SUM-TO` / `0 SUM-TO` | `15` / `0` | ok |
+| `: RESET { F -- V } F IF 99 TO V THEN ;` / `-1 RESET` / `0 RESET` | `99` / `0` -- V non assegnato resta 0, non il valore del chiamante (12.6) | ok |
+| `: SPLIT { N -- LO HI } ...` / `47 SPLIT . .` | `4 7` (HI in cima, LO sotto) | ok |
+| `: RFACT { N -- ACC } ... RECURSE ...` / `5 RFACT` | `120` -- ogni livello ricorsivo restituisce il proprio valore | ok |
+| `{ A B C D E F G -- H }` (7 input + 1 output = 8, limite MAXLOCALS) | `28` | ok |
+| `{ 9 nomi }` (nessun `--`) | errore pulito, nessuna corruzione | `I? LOCALS: bad count.` |
+| `{ A -- B -- C }` (`--` duplicato) | errore pulito | `--? LOCALS: misplaced { or }.` |
+| `1 2 3 SUM3` dopo i due errori sopra | `6` -- il dizionario non e' corrotto | ok |
+
+Il caso `SPLIT` e' quello che verifica l'ordine delle uscite multiple
+(12.10: "due uscite: dichiarata per prima piu' in basso, seconda in
+cima") ed e' anche il caso che ha rivelato il Bug 2 di 15.3.

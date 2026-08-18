@@ -156,6 +156,50 @@ T{  333 5 B-FACT            ->  333 120         }T
 T{  0 B-EARLY               ->  999             }T
 T{  7 B-EARLY               ->  70              }T
 
+\ ---------------------------------------------------------------------------
+\ { ... -- ... }  -- names after -- are OUTPUT locals: not bound from the
+\ stack (created at 0 on every entry), and pushed automatically on every
+\ exit path, in declaration order, instead of being referenced by the
+\ body. See prompts/LOCALS-PLAN.md section 12 for the design.
+\ ---------------------------------------------------------------------------
+
+: B-SUMTO    ( n -- sum )        { N -- ACC }
+    N 0> IF  N 0 DO  ACC I 1+ + TO ACC  LOOP  THEN ;
+
+: B-RESET    ( flag -- v )       { F -- V }
+    F IF  99 TO V  THEN ;
+
+: B-SPLIT    ( n -- lo hi )      { N -- LO HI }
+    N 10 MOD TO LO   N 10 / TO HI ;
+
+: B-RFACT    ( n -- n! )         { N -- ACC }
+    N 0= IF  1 TO ACC  ELSE  N 1- RECURSE  N *  TO ACC  THEN ;
+
+: B-EIGHTMIX ( a b c d e f g -- n )    { A B C D E F G -- H }
+    A B + C + D + E + F + G + TO H ;
+
+T{  5 B-SUMTO                ->  15              }T
+T{  0 B-SUMTO                ->  0               }T
+
+\ V starts at 0 on every entry, even right after a call that set it to 99;
+\ and if the body never assigns it, it stays 0 instead of leaking the
+\ caller's value -- the case 12.6 is built to prevent.
+
+T{  -1 B-RESET               ->  99              }T
+T{   0 B-RESET               ->  0               }T
+
+\ two outputs: declared-first ends up deepest, declared-second on top
+
+T{  47 B-SPLIT               ->  7 4             }T
+
+\ recursion with an output: each activation returns its own value
+
+T{  5 B-RFACT                ->  120             }T
+
+\ 7 input + 1 output: MAXLOCALS boundary with a split scope
+
+T{  1 2 3 4 5 6 7 B-EIGHTMIX ->  28              }T
+
 \ the two forms do not interfere: each scope replaces the previous one
 
 T{  1 2 3 L-SUM3            ->  6               }T
@@ -175,6 +219,7 @@ T{  1 2 3 L-SUM3            ->  6               }T
 \   : OOPS { A B ;              -> #60 LOCALS: misplaced { or }.
 \   : OOPS { } ;                -> #57 LOCALS: bad count.
 \   : OOPS { 9 names } ;        -> #57 LOCALS: bad count.
+\   : OOPS { A -- B -- C } ;    -> #60 LOCALS: misplaced { or }. (duplicate --)
 \   }  on its own               -> #60 LOCALS: misplaced { or }.
 \
 \ Inside INCLUDE or LOAD the error also leaves  >IN BLK  on the stack, so

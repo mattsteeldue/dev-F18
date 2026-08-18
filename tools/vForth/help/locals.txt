@@ -11,4 +11,12 @@ so the word is re-entrant and may RECURSE. Each activation
 costs 4+4n bytes of a 160-byte return stack: keep recursion
 shallow.
 
+Prefer the inline form  { ... }  over LOCALS-FOR/LOCALS: it
+declares the names where they are used, in the definition
+itself, e.g.  : SUM3 { X Y Z } X Y + Z + ; . An optional --
+inside the braces marks output locals: not read from the
+stack, pushed automatically (in declaration order) by every
+exit path instead, e.g.  : SUM-TO { N -- ACC } ... ; . See
+HELP { and HELP }.
+
 Available after NEEDS LOCALS
