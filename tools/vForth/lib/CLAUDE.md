@@ -112,13 +112,15 @@ Three facts worth carrying into any `lib/` work, not just into LOCALS:
   the definition does not survive into its body -- which is why the older form needs a
   second word, `LOCALS`, inside the definition at all.
 
-**Known regression, deliberately deferred: `SEE` on a word with locals.** The splice
-`{` leaves inside the thread (local headers, then the restore chain) is exactly what
-`SEE` cannot decode as code. In testing it did not return to the prompt within several
-minutes after printing the `BRANCH` and desyncing on what follows -- worse than "prints
-garbage," which is what the design that was tried and rejected in section 10 of the plan
-doc would have done. Do not call `SEE` on a word with locals, and do not add it to
-automated test scripts. Not yet addressed.
+**`SEE` on a word with locals -- fixed.** The splice `{` leaves inside the thread (local
+headers, then the restore chain) used to desync `SEE`'s decoder after printing the
+`BRANCH`, hanging instead of returning to the prompt. `lib/see.f` now recognises `BRANCH`
+as a definition's first cell as the unique signature of a `{`/`LOCALS` splice (no other
+core construct ever compiles `BRANCH` there) and jumps straight to the binding preamble
+via `LOC-SKIP`, the same target the CPU resolves at runtime. `SEE` on such a word
+therefore terminates and shows the binding preamble and real body, though not the local
+names or the restore chain themselves -- decoding the splice itself remains out of scope.
+Verified on the emulator (`prompts/LOCALS-PLAN.md` section 17).
 
 A local is one permanent cell, not a frame slot, but the word is still **re-entrant**:
 `LOCALS` compiles a save of each cell's previous content onto the return stack, and

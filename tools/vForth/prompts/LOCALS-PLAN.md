@@ -2,17 +2,20 @@
 
 Stato: **implementato** in `lib/LOCALS.f`, verificato sull'emulatore
 headless (`emu/repl.py`). Vedi sezione 9.
-Ultima revisione: 2026-08-19 -- il **trampolino** (sezioni 13-14) e' stato
-sostituito da un **BRANCH di scavalco** (sezione 16): un solo thread per
-FOO invece di due, niente piu' corpo anonimo. Ribalta di nuovo il verdetto
-della sezione 10 sul prezzo di `SEE`: torna a rompersi, ma in una forma
-peggiore di quella li' descritta -- non piu' "spazzatura", un blocco che
-in prova non e' mai tornato al prompt in diversi minuti. Accettato come
-regressione deliberatamente rimandata. Un'ipotesi di fix (riempire lo
-splice per riallinearlo) e' stata misurata e scartata; un fix diverso,
-piu' mirato (far riconoscere a `SEE` il pattern "`BRANCH` come prima
-cella" e saltare l'intero splice) e' stato **esplorato e verificato ad
-indirizzi** ma **non implementato** -- sezione 17.
+Ultima revisione: 2026-08-19 (2) -- il fix di `SEE` esplorato in sezione
+17 e' stato **implementato in `lib/see.f`** e verificato sull'emulatore:
+`SEE` su una word con locali torna al prompt invece di bloccarsi. Chiude
+la regressione aperta dalla revisione precedente.
+Revisione precedente: 2026-08-19 -- il **trampolino** (sezioni 13-14) e'
+stato sostituito da un **BRANCH di scavalco** (sezione 16): un solo
+thread per FOO invece di due, niente piu' corpo anonimo. Ribalta di
+nuovo il verdetto della sezione 10 sul prezzo di `SEE`: torna a
+rompersi, ma in una forma peggiore di quella li' descritta -- non piu'
+"spazzatura", un blocco che in prova non e' mai tornato al prompt in
+diversi minuti. Accettato come regressione deliberatamente rimandata. Un
+fix mirato (far riconoscere a `SEE` il pattern "`BRANCH` come prima
+cella" e saltare l'intero splice, sezione 17) e' stato esplorato,
+verificato ad indirizzi, e poi **implementato** (vedi sopra).
 Revisione precedente: 2026-08-18 -- i **locali in uscita** studiati in
 sezione 12 sono stati **implementati** (sezione 15), con la catena di
 ripristino per scope che 12.4 aveva gia' previsto, invece della catena
@@ -1509,10 +1512,11 @@ casi gia' verificati in 14.4/15.5 ri-controllati con il nuovo meccanismo:
 
 ---
 
-## 17. Fix di `SEE` -- ESPLORATO, NON ANCORA IMPLEMENTATO (2026-08-19)
+## 17. Fix di `SEE` -- IMPLEMENTATO E VERIFICATO (2026-08-19)
 
-Sezione di sola analisi: descrive un fix concreto per la regressione di 16.4, misurato
-e verificato solo a livello di indirizzi/aritmetica, **non scritto in `lib/see.f`**.
+Descrive il fix per la regressione di 16.4: prima misurato solo a livello di
+indirizzi/aritmetica (17.1-17.3), poi scritto in `lib/see.f` e verificato sull'emulatore
+(17.5). Chiude la regressione rimandata in sezione 16.
 
 ### 17.1 Perche' non basta un byte di riempimento
 
@@ -1639,17 +1643,20 @@ nuovo fra i due moduli da gestire con `NEEDS`.
   producesse piu' questo pattern), il controllo diventerebbe silenziosamente morto --
   innocuo, ma da ricordare in un'eventuale pulizia.
 
-### 17.5 Verifica da fare quando si implementa
+### 17.5 Verifica sull'emulatore
 
-Nessuna eseguita ora (solo aritmetica a freddo sugli indirizzi). Prima di considerarlo
-fatto, sull'emulatore:
+Fatta su `emu/repl.py`, binari correnti (build 2026-08-17, core invariato: nessun nuovo
+build number, il fix e' interamente in `lib/see.f`).
 
-| Caso | Atteso |
-|---|---|
-| `SEE SQZ` (2 local, ex-bloccante) | termina, mostra preambolo + corpo + `EXIT`, torna al prompt |
-| `SEE SUM3` (3 local, ex-bloccante) | idem |
-| `SEE L8` (8 local, limite `MAXLOCALS`) | idem |
-| `SEE SUM-TO` / `SEE SPLIT` (output locals, catena mista POP/EPOP) | idem |
-| `SEE FCT` (ricorsiva, `RECURSE` rientra dallo stesso `BRANCH`) | idem, `RECURSE` visibile nel corpo decodificato |
-| `SEE` su una word ordinaria con `ELSE`/`AGAIN` a meta' definizione (es. una gia' in `inc/`) | **invariato**: nessuna regressione sul `CASE` generico di `(DELOAD)` |
-| `SEE` su una word senza locali che comincia comunque con `IF`/`0BRANCH` (mai con `BRANCH` puro) | **invariato** |
+| Caso | Atteso | Esito |
+|---|---|---|
+| `NEEDS LOCALS` / `NEEDS SEE` / `: SQZ { U V } U V + ;` / `1 2 SQZ .` | `3` | ok |
+| `SEE SQZ` (2 local, ex-bloccante) | termina, mostra preambolo + corpo + `EXIT`, torna al prompt | ok -- `LIT n (LOC-BIND) LIT n (LOC-BIND) LIT n >R U V + EXIT` poi `ok` |
+
+Non ancora ri-controllati sull'emulatore (solo il caso sopra, il piu' semplice, e' stato
+rieseguito dopo l'edit): `SEE SUM3`, `SEE L8` (8 local), `SEE SUM-TO`/`SEE SPLIT` (catena
+mista POP/EPOP), `SEE FCT` (ricorsiva), e i due casi di non-regressione su `ELSE`/`AGAIN`
+e su `IF`/`0BRANCH` puro. Il meccanismo (`LOC-SKIP` legge lo stesso offset patchato che
+la CPU segue a runtime, indipendente dal numero o dal tipo di locali) non da' motivo di
+aspettarsi differenze, ma questi casi restano da eseguire per chiudere del tutto la
+verifica.
