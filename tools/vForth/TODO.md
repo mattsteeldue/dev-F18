@@ -19,3 +19,19 @@ Analyse whether a NO-ASSEMBLER is feasible and whether ;CODE needs a two-slot de
 Tested on real hardware; both definitions do not work correctly.
 Removed from tutorial/018-vocabularies.f until fixed.
 
+
+# Tutorial 054 (DMA) is a stub, not yet loadable
+**2026-08-18**
+`tutorial/054-dma.f` demonstrates DMA-COPY, DMA-FILL, DMA-OUT and DMA-IN via
+`NEEDS DMA`, but the library it depends on, `dev/DMA.f`, has never been
+promoted to `lib/DMA.f`: loading the tutorial today fails at `NEEDS DMA`
+("File not found"). The slot is registered in `lib/TUTORIAL.f` (`54
+TUTORIAL` resolves the file) and the header/self-references are correct, so
+the numbering is reserved, but the tutorial itself cannot run yet.
+Even once the library lands, the demo is unverified -- see the "NEEDS
+TESTING" section at the bottom of the file: the headless emulator does not
+model the zxnDMA controller, so `DEMO` needs a manual CSpect (or
+real-hardware) check against the written checklist.
+To close this: promote `dev/DMA.f` to `lib/DMA.f`, then run the CSpect
+verification checklist already in the tutorial file.
+

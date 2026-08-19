@@ -1,6 +1,6 @@
 ---
 name: release-rebuild
-description: Pipeline completa di rilascio vForth a parita' di sorgente core, per timbrare una nuova build (es. introduzione di nuove librerie come LAYER22). Accetta YYYYMMDD. PRIMA di iniziare, avvisa l'utente che doc/<PFX>YYYYMMDD.odt e .pdf devono gia' esistere (preparati a mano): se mancano, lo skill si ferma al gate del passo 1 (verifica esistenza E che contengano la data nuova ma NON quella precedente, .odt via content.xml, .pdf via pdftotext). Poi bump-build (compila DOES+DOT + aggiorna i riferimenti data), genera automaticamente il dump !Blocks txt via perl blocks2txt.pl, sync (sync-cspect sull'immagine CSpect), rilascio pubblico (new-version/new-build.bat) e aggiornamento di HISTORY.txt nel repo pubblico (entry separate da due righe vuote). NON tocca mai .odt/.pdf. Usare quando l'utente chiede /release-rebuild o un rilascio completo a binario sostanzialmente invariato.
+description: Pipeline completa di rilascio vForth a parita' di sorgente core, per timbrare una nuova build (es. introduzione di nuove librerie come LAYER22). Accetta YYYYMMDD. PRIMA di iniziare, avvisa l'utente che doc/<PFX>YYYYMMDD.odt e .pdf devono gia' esistere (preparati a mano): se mancano, lo skill si ferma al gate del passo 1 (verifica esistenza E che contengano la data nuova ma NON quella precedente, .odt via content.xml, .pdf via pdftotext), piu' il gate di igiene dell'.odt via util/odt-hygiene.py (blocca se il manuale trascina i segnalibri Word residui _Toc/_Hlk; il --fix lo lancia l'utente). Poi bump-build (compila DOES+DOT + aggiorna i riferimenti data), genera automaticamente il dump !Blocks txt via perl blocks2txt.pl, sync (sync-cspect sull'immagine CSpect), rilascio pubblico (new-version/new-build.bat) e aggiornamento di HISTORY.txt nel repo pubblico (entry separate da due righe vuote). NON tocca mai .odt/.pdf. Usare quando l'utente chiede /release-rebuild o un rilascio completo a binario sostanzialmente invariato.
 ---
 
 # release-rebuild: pipeline completa di rilascio vForth
@@ -119,6 +119,42 @@ if ($fail) {
 
 (Adatta `$ver`/`$dash`/`$old_dash`/`$pfx` ai valori reali del run. Se `pdftotext`
 non e' al percorso indicato, cercalo in PATH: `Get-Command pdftotext`.)
+
+### 1c. Igiene dell'.odt (bloccante) -- segnalibri Word residui
+
+Il manuale di ogni build nasce come **copia** di quello della build precedente,
+quindi la zavorra si eredita all'infinito se nessuno la ferma. Il residuo tipico
+sono i segnalibri `_Toc*`/`_Hlk*` che Word posa a ogni "aggiorna sommario" e non
+rimuove mai: nel manuale `20260817` erano 18617, in 18 generazioni sovrapposte,
+pari al 30% di `content.xml`. Sono invisibili in pagina e rallentano solo
+apertura e salvataggio (ripulendoli, un ordine di grandezza guadagnato).
+
+`util/odt-hygiene.py` in sola lettura: esce 0 se pulito, **1 se c'e' residuo**.
+
+```powershell
+$python = "C:\Users\matteo\AppData\Local\Python\pythoncore-3.14-64\python.exe"
+& $python "$base\util\odt-hygiene.py" $odt
+if ($LASTEXITCODE -ne 0) {
+  "GATE IGIENE FALLITO -- l'.odt trascina segnalibri Word residui."
+  "Ripulisci (in place, con validazione e .bak) e poi rilancia:"
+  "  & `"$python`" util\odt-hygiene.py --fix doc\$pfx$ver.odt"
+  exit 1
+}
+"IGIENE OK -- nessun segnalibro Word residuo"
+```
+
+> **Il --fix lo lancia l'utente, non lo skill.** Vale la regola ferrea: lo skill
+> non modifica mai l'.odt. Qui si limita a misurare e a fermarsi.
+>
+> Dopo un `--fix` **il `.pdf` NON va riesportato**: la rimozione non tocca il
+> testo visibile (lo script lo verifica byte per byte) ne' l'impaginazione, e il
+> gate contenuto del passo 1b resta soddisfatto. Il `.pdf` gia' esportato e'
+> ancora valido.
+
+Nel report compare anche il conteggio degli `<text:span>` ridondanti
+(`Default_20_Paragraph_20_Font`, altro residuo dell'import da Word, ~1 MB):
+e' **informativo e non bloccante** -- rimuoverli tocca la formattazione e non
+e' un intervento da fare dentro un rilascio.
 
 ## 2. bump-build YYYYMMDD (compila DOES + DOT, aggiorna i riferimenti)
 

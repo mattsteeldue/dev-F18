@@ -1,5 +1,5 @@
 \
-\ 054-blocks-as-assets.f
+\ 063-blocks-as-assets.f
 \ BLOCK as a binary-asset store: LOAD2BLOCK and the AFX sound library.
 \
 \ Tutorials 028 (BLOCK mechanism) and 029 (EDIT) treated blocks as source
@@ -21,15 +21,15 @@
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
-\   054 TUTORIAL
+\   063 TUTORIAL
 \ To unload and reload interactively:
-\   NEWTASK 054 TUTORIAL
+\   NEWTASK 063 TUTORIAL
 \
 
 MARKER NEWTASK
 
 CR
-.( --- Tutorial 054: blocks as assets loaded. ) CR
+.( --- Tutorial 063: blocks as assets loaded. ) CR
 .(     Type NEWTASK to unload.              ) CR
 
 NEEDS LOAD2BLOCK

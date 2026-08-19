@@ -1,5 +1,5 @@
 \
-\ 057-dma.f
+\ 054-dma.f
 \ Direct Memory Access (DMA) controller on the ZX Spectrum Next.
 \
 \ The zxnDMA is a single-channel DMA controller that transfers data between
@@ -25,15 +25,15 @@
 \
 \ Load from a clean session:
 \   NEEDS TUTORIAL
-\   057 TUTORIAL
+\   054 TUTORIAL
 \ To unload and reload interactively:
-\   NEWTASK 057 TUTORIAL
+\   NEWTASK 054 TUTORIAL
 \
 
 MARKER NEWTASK
 
 CR
-.( --- Tutorial 057: DMA (Direct Memory Access) loaded. ) CR
+.( --- Tutorial 054: DMA (Direct Memory Access) loaded. ) CR
 .(     Type NEWTASK to unload.                         ) CR
 
 NEEDS DMA
@@ -149,7 +149,7 @@ $10   CONSTANT IN-LEN
 \ To unload the tutorial and all DMA library words:
 \   NEWTASK
 \
-\ This restores the dictionary to its state before tutorial 057 was loaded.
+\ This restores the dictionary to its state before tutorial 054 was loaded.
 \ The `NO-DMA` unload anchor (defined inside lib/DMA.f) is forgotten along
 \ with the entire DMA-library definition tree.
 
@@ -186,7 +186,7 @@ CR
 \   4. Observe no crashes when DMA-OUT or DMA-IN are called (port I/O effects
 \      are hardware-dependent and not easily visible).
 \   5. Load/unload the tutorial multiple times: NEWTASK should restore the
-\      dictionary and allow 057 TUTORIAL to reload successfully.
+\      dictionary and allow 054 TUTORIAL to reload successfully.
 \
 \ Status: DMA library **NOT YET VERIFIED on CSpect or real hardware**.
 \          Byte-level register traces from the emulator can confirm WR0-WR6

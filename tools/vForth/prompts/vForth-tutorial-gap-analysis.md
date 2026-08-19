@@ -3,6 +3,14 @@
 \ Snapshot: dev-F18/main, updated 2026-07-19 (through commit c4c2af3).
 \ Subject to drift after Claude Code sessions.
 \ All code/doc in English per project convention.
+\
+\ UPDATE 2026-08-18: the numbering bands adopted (000-029 language, 030-059
+\ Next hardware, 060-... advanced topics; see tutorial/CLAUDE.md section 2)
+\ moved block-as-data from 054 to 063 (it is a technique, not a hardware
+\ subsystem) and promoted the long-parked DMA placeholder straight into the
+\ tree at the freed slot, tutorial/054-dma.f -- still a stub (dev/DMA.f has
+\ not been promoted to lib/DMA.f; see TODO.md). Below, "054" in reference to
+\ block-as-data is the number as it stood before that swap; read it as 063.
 
 # vForth Teaching Material -- Gap Analysis
 
@@ -52,7 +60,7 @@ large standalone programs.
   ULA graphics, Layer2, sprites (x2), Next registers, MMU, file I/O, filesystem,
   mouse, copper, BMP, UART, RPi0, interrupts, AFXframe, keyboard matrix, modular
   graphics.
-- **Block-as-data (054)**: the BLOCK-as-binary-asset technique (LOAD2BLOCK + the
+- **Block-as-data (063, was 054)**: the BLOCK-as-binary-asset technique (LOAD2BLOCK + the
   AFX sound library), appended after the hardware track because it cross-refers
   tutorial 050 (AFXframe).
 - **Dot commands (057). [CLOSED 2026-07-18]** `057-dot-commands.f` (462 lines)
@@ -67,7 +75,9 @@ large standalone programs.
   rather than duplicating them, and is registered in `lib/TUTORIAL.f`'s
   `TUT-TABLE` (`TUT-MAX` 56 -> 57). This closes former Axis-1 gap #3 below.
   The old placeholder slot for a DMA tutorial was renumbered `057-dma.f` ->
-  `058-dma.f` to make room (still unwritten; see Open Questions).
+  `058-dma.f` to make room (still unwritten; see Open Questions). [It later
+  moved again, see the 2026-08-18 update note at the top of this file: it now
+  lives at `tutorial/054-dma.f`.]
 
 All are dense (136-462 lines); none are stubs.
 
@@ -79,7 +89,7 @@ All are dense (136-462 lines); none are stubs.
    reserved blocks, the block-vs-screen unit trap, and the structure-across-
    boundary / NUL pitfalls); **029-edit** (the EDIT full-screen editor -- keys,
    the `[Edit]` command menu, PAD-based line ops, saving via FLUSH, and a note
-   on LED as the upper-8K-RAM evolution of EDIT); and **054-blocks-as-assets**
+   on LED as the upper-8K-RAM evolution of EDIT); and **063-blocks-as-assets**
    (the BLOCK-as-binary-asset technique, below). Note `THRU` is **not** a vForth
    word -- multi-screen loading uses `-->`. Worked screen examples remain a rich
    reference: besides **Scr# 880-881 (Buzzphrases Generator)** reading a word
@@ -179,10 +189,10 @@ Two boundary facts worth noting (both from the wiki's finer map):
   Ch.8 arrays it was previously pinned to.
 
 The block-based storage teaching (`n BLOCK ... TYPE`, `LOAD`, `-->`) is now taught
-in the tutorial track too (028/029/054, **Axis-1 #1 closed**), with the screens as
+in the tutorial track too (028/029/063, **Axis-1 #1 closed**), with the screens as
 a worked-example reference: the Buzzphrase generator (880-881), the Ch.10-completion
 screens 882-895 (block lister, `CHANGE` editing, `FORTUNE`, the 890-895 virtual
-array), and the AFX banks at Scr# 2200+ that 054 draws on directly.
+array), and the AFX banks at Scr# 2200+ that 063 draws on directly.
 
 ---
 
@@ -242,19 +252,19 @@ path outside `tutorial/`.
 1. **Numbering [PARTLY SETTLED 2026-06-21, further precedent 2026-07-18]**: the
    hybrid was adopted -- the core BLOCK items were *inserted* in the two empty
    slots (028 BLOCK mechanism, 029 EDIT) right after the core backbone, while
-   the block-as-data piece was *appended* at 054 because it cross-refers the
+   the block-as-data piece was *appended* at 054 (now 063) because it cross-refers the
    hardware-track AFXframe (050). The dot-command tutorial followed the same
    append precedent: written at **057** (after 055-afx-sound-board and
    056-layer2-palette), pushing the still-unwritten DMA placeholder from
    `057-dma.f` to `058-dma.f`. Still open for the remaining gaps (tilemap,
    Q8.8, chomp-capstone): append at 059+ or insert?
-2. **AFX assets [PARTLY ANSWERED]**: 054 now formally documents `LOAD2BLOCK` and
-   names the Scr# 2200+ AFX banks as its worked example, pinning the `tutorial/afx/`
-   tree to tutorials 050+054. The repo-inflation question (relocate under
-   `work/`/`assets/` vs. keep) is still open, but the *purpose* is no longer
-   ambiguous.
+2. **AFX assets [PARTLY ANSWERED]**: 063 (formerly 054) now formally documents
+   `LOAD2BLOCK` and names the Scr# 2200+ AFX banks as its worked example, pinning
+   the `tutorial/afx/` tree to tutorials 050+063. The repo-inflation question
+   (relocate under `work/`/`assets/` vs. keep) is still open, but the *purpose*
+   is no longer ambiguous.
 3. **Buzzwords/BLOCK [CLOSED]**: resolved by writing fresh tutorials rather than
-   promoting a screen verbatim -- 028 teaches the mechanism, 054 teaches the
+   promoting a screen verbatim -- 028 teaches the mechanism, 063 teaches the
    author's original BLOCK-as-binary-asset use (`LOAD2BLOCK`). The screen examples
    (Buzzphrase 880-881, block lister 882, `CHANGE` 886-887, `FORTUNE` 888, virtual
    array 890-895) remain as a cross-reference, not the primary teaching.
@@ -264,9 +274,9 @@ path outside `tutorial/`.
 ## Summary (TL;DR)
 
 - Dense tutorials cover core (001-027), block storage/editing (028-029), Next
-  hardware (030-053), block-as-data (054), AFX sound (055), Layer2 palette (056),
-  and dot commands (057). The system is far past "needs more tutorials"; it
-  needs a **map** and a few **bridges**.
+  hardware (030-053), block-as-data (063, was 054), AFX sound (055), Layer2
+  palette (056), and dot commands (057). The system is far past "needs more
+  tutorials"; it needs a **map** and a few **bridges**.
 - The Brodie screen track (800-905) is a **parallel, independent reference**, not
   a rewrite of the tutorials and not a backbone to verify against -- same concepts,
   different definitions. Use it as a cross-reference; the wiki and
@@ -274,7 +284,7 @@ path outside `tutorial/`.
   an unfilled "Ch.5 Fixed Point" hole is retracted: Ch.5 is covered by 002+015.)
   It now spans Brodie Ch.1-11: Ch.10 was completed to Scr# 895 and Ch.11 added at
   896-905, so the once-missing compilation/defining-word counterparts exist.
-- Axis-1 coverage gaps: **BLOCK is now closed** (028 mechanism, 029 EDIT, 054
+- Axis-1 coverage gaps: **BLOCK is now closed** (028 mechanism, 029 EDIT, 063
   block-as-data), and **`.dot` commands are now closed** (057, which also
   surfaced and fixed a real relocation bug in `demo/parser.dot.f` -- see
   `tutorial/CLAUDE.md` section 17). Remaining: **Tilemap/Layer3, Q8.8 fixed

@@ -1,3 +1,6 @@
 # Python bytecode (emulator tooling)
 __pycache__/
 *.pyc
+doc/manual/*.*
+doc/manual/pilot/*.*
+doc/manual/pilot/media*/*/*.*

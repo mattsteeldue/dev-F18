@@ -48,6 +48,19 @@ skill** (`.claude/skills/regen-doc-dict-structure/SKILL.md`) runs
 binaries via the headless emulator; the author then pastes it into the .odt
 by hand and re-exports the .pdf.
 
+**The one sanctioned exception** is `util/odt-hygiene.py`, and only when the
+author asks for it. It reports -- and with `--fix` removes -- the `_Toc*` /
+`_Hlk*` bookmarks Word leaves behind on every "update TOC": they accumulate
+one generation per round-trip and are inherited by every release, because
+each build's manual starts as a copy of the previous one (18617 of them,
+30% of `content.xml`, were removed on 2026-08-18, worth an order of
+magnitude in open/save time). The fix touches `content.xml` only, asserts
+the visible text is byte-identical, and re-validates the archive before
+replacing the original -- so **the `.pdf` does not need re-exporting**.
+Run it in report mode freely; it is read-only and exits 1 when residue is
+found, which is how `/release-rebuild` gates on it (step 1c). Everything
+else about the manual still goes through the author by hand.
+
 ## The Three Codebases and Their Roles
 
 The project has three codebases in order of priority:

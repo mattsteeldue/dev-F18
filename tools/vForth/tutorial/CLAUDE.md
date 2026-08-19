@@ -38,10 +38,21 @@ Two distinct documents are involved -- do not confuse them:
   Examples: `001-stack-basics.f`, `010-create-does.f`
 - The prefix determines load order and reading sequence; renumbering is acceptable
   when inserting new topics.
+- **Numbering bands, by topic:** `000-029` language foundation (core Forth, no
+  hardware); `030-059` ZX Spectrum Next hardware (display, sound, I/O, sprites,
+  interrupts, ...); `060-...` advanced topics (idiomatic patterns, LOCALS, error
+  messages, and anything that builds on several earlier tutorials rather than
+  introducing one hardware subsystem). A tutorial that turns out to belong to a
+  different band than its current number is renumbered to match, not left in
+  place -- see the 054/063 swap (`git log`, 2026-08-18): the BLOCK-as-asset
+  tutorial moved from 054 to 063 (it is a technique, not a hardware subsystem)
+  to free 054 for DMA (the zxnDMA controller), which does belong in the
+  hardware band.
 - Stored in: `tutorial/`
 - **Register every new tutorial in `lib/TUTORIAL.f`**: add its `H" tutorial/NNN-slug.f"`
   entry to `TUT-TABLE` and bump `TUT-MAX`, otherwise `NNN TUTORIAL` cannot load it.
-  (Tutorial 054 shipped without this step and was unreachable until 2026-07-01.)
+  (Tutorial 063, then numbered 054, shipped without this step and was
+  unreachable until 2026-07-01.)
 
 
 ## 3. File Structure

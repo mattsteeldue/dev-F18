@@ -38,7 +38,7 @@ Screen.
 | Ch.8 -- 850-867                 | 005-defining-words, 008-memory, 010-create-does, 023-structures | `VARIABLE/CONSTANT`, `!/@/+!`, `CREATE/ALLOT/,/C,`, array, `[COMPILE] CONSTANT` |
 | Ch.8 (double) -- 854-855, 864   | 015-double-arith                                          | `2VARIABLE/2CONSTANT`, `2@/2!`, `D./D+/M+`                               |
 | Ch.9 -- 868-876                 | 017-defer-is, 022-introspection                          | `'`/`[']`/`EXECUTE`, esecuzione vettorizzata (`'ALOHA` <-> `DEFER`), `SEE` |
-| Ch.10 -- 877-895                | 009-strings, 016-input, 028-blocks, 054-blocks-as-assets | `TYPE`, `-TRAILING`, `TEXT`, `EXPECT`, stringhe, I/O, BLOCK-as-data, virtual array, `LOAD2BLOCK` |
+| Ch.10 -- 877-895                | 009-strings, 016-input, 028-blocks, 063-blocks-as-assets | `TYPE`, `-TRAILING`, `TEXT`, `EXPECT`, stringhe, I/O, BLOCK-as-data, virtual array, `LOAD2BLOCK` |
 | Ch.11 -- 896-905                | 010-create-does, 019-compilation, 020-standard, 021-evaluate | `CREATE/DOES>` defining words, `IMMEDIATE`, `[COMPILE]`, `COMPILE`, `LITERAL`, `LOOPS` (re-INTERPRET) |
 
 
@@ -64,7 +64,7 @@ tutorial:
   tutorial **028-blocks** (meccanismo: `BLOCK`/`BUFFER`, `UPDATE`/`FLUSH`,
   `(LINE)`/`LIST`/`INDEX`, `LOAD` e `-->` -- `THRU` disponibile via `NEEDS THRU`
   dal 2026-07-02, prima non esisteva) e
-  **054-blocks-as-assets** (BLOCK come contenitore binario: `LOAD2BLOCK` e la
+  **063-blocks-as-assets** (BLOCK come contenitore binario: `LOAD2BLOCK` e la
   libreria sonora AFX). Gli Screen restano come reference di esempi: 882-883
   (`SCREENS`/`BLOCKS` lister, `TEXT`/`EXPECT`), 886-887 (`CHANGE`, editing di un
   blocco byte-per-byte), 888 (`FORTUNE`, BLOCK-as-data con `CHOOSE`), 889
@@ -87,7 +87,7 @@ tutorial:
   ULA/Layer2/sprite, AY, copper, Next-registers, MMU, file I/O, mouse, UART/RPi0,
   interrupt, keyboard-matrix, grafica modulare. **Nessun corrispettivo** negli
   Screen, che sono puro Forth standard da libro.
-- **054-blocks-as-assets** -- la tecnica originale dell'autore: BLOCK come
+- **063-blocks-as-assets** -- la tecnica originale dell'autore: BLOCK come
   contenitore binario auto-descrittivo (`LOAD2BLOCK`, etichetta su riga 0), con la
   libreria sonora AFX (Scr# 2200+) come caso reale, agganciata al tutorial 050
   (AFXframe). Concetto-cugino del Cap.10 (BLOCK-as-data) ma estensione vForth.
@@ -104,7 +104,7 @@ del tutto assente. Corrispondenze con i tutorial:
 | 882-883 | `SCREENS`/`BLOCKS` lister, `TEXT`/`I'M`/`GREET`    | 028-blocks, 016-input     |
 | 884-885 | love-letter, `EXPECT`, `-TEXT` (cfr. `(COMPARE)`) | 009-strings, 016-input    |
 | 886-887 | `CHANGE` (editing byte di un blocco)               | 028-blocks, 029-edit      |
-| 888-889 | `FORTUNE`, `.ANIMAL`/`JUNEESHEE` (BLOCK-as-data)   | 054-blocks-as-assets, 016 |
+| 888-889 | `FORTUNE`, `.ANIMAL`/`JUNEESHEE` (BLOCK-as-data)   | 063-blocks-as-assets, 016 |
 | 890-895 | **virtual array** su disco (`ELEMENT`/`PUT`/...)   | 028-blocks, 025-memory    |
 | 896-897 | `CONSTANT`/`CHARACTERS`/`STRING`/`ARRAY` (DOES>)   | 010-create-does, 023      |
 | 898     | `SHAPE` (CREATE/DOES> + `C,`, UDG)                 | 010-create-does           |
@@ -195,6 +195,6 @@ totale **58 righe**.
 > completato e Cap.11) sono elencate nella sezione "Cap.10 completato e Cap.11
 > aggiunto" piu' sopra, non come righe qui. I tutorial 028-blocks e 029-edit
 > hanno controparte concettuale (Ch.3 / Ch.10), elencata nelle sezioni sopra. I
-> tutorial 011 (bit-ops), 013 (case), 024-027, 054-blocks-as-assets e l'intera
+> tutorial 011 (bit-ops), 013 (case), 024-027, 063-blocks-as-assets e l'intera
 > traccia hardware 030-053 restano senza controparte negli Screen (estensioni
 > vForth/Next).
