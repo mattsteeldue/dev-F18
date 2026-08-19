@@ -13,7 +13,10 @@
 \ the local names, in the order in which the caller pushed them, and
 \ compiles the code that pops the arguments into them. The names live as
 \ VALUE-like words inside the DEFLOCALS vocabulary, invisible from
-\ outside the definition that declared them.
+\ outside the definition that declared them. A second, same-named word
+\ per local lives in DEFBINDS -- see BINDER WORDS below -- and is never
+\ looked up by name; it only exists to be compiled and to make SEE
+\ readable.
 \
 \ An optional  --  marks off a second group of names: OUTPUT locals.
 \ They are not bound from the stack -- created at 0 on every entry -- and
@@ -75,8 +78,15 @@
 \
 \ SEE handles the splice: lib/see.f recognises a BRANCH as a definition's
 \ first cell as this pattern's own signature and jumps straight to the
-\ binding prologue instead of decoding the splice cell by cell -- see
-\ prompts/LOCALS-PLAN.md section 17.
+\ binding prologue instead of decoding the splice cell by cell. What it
+\ shows there is one word per local -- see BINDER WORDS below -- rather
+\ than the raw LIT+xt pair the prologue used to compile.
+\
+\ BINDER WORDS. Each local also gets a second word, same name, in a
+\ separate vocabulary (DEFBINDS): a DOES>-word that already knows its own
+\ local's storage cell and, called, does what "LIT a (LOC-BIND)" used to
+\ do -- one thread cell in the prologue instead of three, and a name SEE
+\ can print instead of two raw primitives. See (LOC-MAKE) below.
 \
 \ Cost per activation: one return-stack cell for the chain address, plus
 \ two per local (old value + its cell address), i.e. 4+4n bytes on top of
@@ -91,11 +101,15 @@
 \ from the stack before the body runs.
 \
 \ Every local name and cell is permanent: a scope costs n cells of
-\ dictionary plus one heap header per name, none of it reclaimable. The
-\ restore chain adds n+1 more dictionary cells per scope (12.4/12.7 in
-\ the plan doc), since it is no longer a single table shared by every
-\ scope. An output local's chain step, (LOC-EPOP), costs three more
-\ primitives at exit than a plain (LOC-POP).
+\ dictionary plus one heap header per name, none of it reclaimable -- and
+\ now TWICE that, since the binder word (above) is a second full header
+\ (DEFBINDS) and a second few dictionary cells (CREATE + DOES> runtime +
+\ one data cell) for every local, paid to shrink the PROLOGUE's own
+\ thread from three cells per local to one. The restore chain adds n+1
+\ more dictionary cells per scope (12.4/12.7 in the plan doc), since it
+\ is no longer a single table shared by every scope. An output local's
+\ chain step, (LOC-EPOP), costs three more primitives at exit than a
+\ plain (LOC-POP).
 \
 \ All the local names must be on the SAME source line as the { that opens
 \ them (or as LOCALS-FOR, in the older form).
@@ -131,6 +145,20 @@ CONTEXT @   CONSTANT LOC-VOC        \ address of DEFLOCALS' LATEST cell
 FORTH
 LOC-VOC @   CONSTANT LOC-EMPTY      \ value of that cell when empty
 
+\ Per-local binder words (see (LOC-MAKE) below) live in a SECOND
+\ vocabulary, not in DEFLOCALS alongside the reader they pair with: a
+\ binder shares its local's own name, and two same-named headers in ONE
+\ vocabulary would leave FIND -- so TO, so any body reference -- to pick
+\ whichever is linked more recently, silently. A separate vocabulary
+\ makes that collision impossible instead of relying on creation order.
+
+VOCABULARY DEFBINDS
+
+DEFBINDS
+CONTEXT @   CONSTANT BND-VOC        \ address of DEFBINDS' LATEST cell
+FORTH
+BND-VOC @   CONSTANT BND-EMPTY      \ value of that cell when empty
+
 VARIABLE #LOCALS        0 #LOCALS !     \ locals in the pending scope
 VARIABLE #IN-LOCALS     0 #IN-LOCALS !  \ how many of #LOCALS come off the
                                         \ stack; the rest are outputs, after --
@@ -139,12 +167,13 @@ VARIABLE OLD-CURRENT    0 OLD-CURRENT !
 VARIABLE LOC-SLOT       0 LOC-SLOT !    \ address of BRANCH's unresolved offset
 VARIABLE LOC-CHAIN-START  0 LOC-CHAIN-START !  \ this scope's own restore chain
 
-CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
+\ Each local's binder word (see below) is recorded by CFA, in declaration
+\ order; the binding preamble has to compile them in reverse, because the
+\ last one declared is on top at run time.
 
-\ locals are recorded in declaration order; the binding code has to be
-\ emitted in reverse, because the last one declared is on top at run time.
+CREATE LOCAL-BIND-XTS   MAXLOCALS CELLS ALLOT
 
-: LOC-PFA   ( i -- a )  CELLS LOCAL-PFAS + ;
+: LOC-BIND-XT   ( i -- a )  CELLS LOCAL-BIND-XTS + ;
 
 \ Maps a loop count (0..#LOCALS-1, ascending -- what a plain DO gives)
 \ to the declared position it must bind at run time (#LOCALS-1..0,
@@ -186,6 +215,24 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
 : (LOC-EPOP)  ( -- x )              \ R: old a --
     R> R> R>  DUP @  ROT ROT !  SWAP >R
 ;
+
+\ ----------------------------------------------------------------------
+\ Per-local binder words -- collapse "LIT a (LOC-BIND[0])" into one call
+\
+\ (LOC-MAKE) below creates, for every local, a SECOND word with the SAME
+\ name as the local's own CONSTANT reader, but in DEFBINDS instead of
+\ DEFLOCALS: a DOES>-word that already knows its own local's storage
+\ address and, executed, does exactly what the three-cell sequence
+\ "LIT a (LOC-BIND)" (or (LOC-BIND0) for an output local) used to do --
+\ one thread cell instead of three. (LOC-BINDER-IN) and (LOC-BINDER-OUT)
+\ are the two makers; which one runs is decided once, at creation time,
+\ in (LOC-MAKE). (LOC-CLOSE) then compiles a direct call to the binder
+\ instead of the old LIT+xt pair -- and because the binder carries the
+\ local's own name, SEE shows that name in the binding preamble instead
+\ of "LIT n (LOC-BIND)".
+
+: (LOC-BINDER-IN)   ( a -- )   CREATE ,  DOES>  @ (LOC-BIND)  ;
+: (LOC-BINDER-OUT)  ( a -- )   CREATE ,  DOES>  @ (LOC-BIND0) ;
 
 \ Each scope builds its OWN restore chain, instead of sharing one fixed
 \ table: a single shared table cannot represent an arbitrary mix of POP
@@ -266,10 +313,7 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
     \ what makes chain step j restore/push the local at position j.
 
     #LOCALS @ 0 DO
-        I LOC-POS                       ( position )
-        COMPILE LIT  DUP LOC-PFA @ ,
-        DUP #IN-LOCALS @ <  IF  COMPILE (LOC-BIND)  ELSE  COMPILE (LOC-BIND0)  THEN
-        DROP
+        I LOC-POS  LOC-BIND-XT @  ,     \ call this local's own binder
     LOOP
 
     COMPILE LIT
@@ -297,9 +341,17 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
 
 : (LOC-MAKE)  ( -- ccc )            \ create one local, parsing its name
     CURRENT @ OLD-CURRENT !
+
+    >IN @                           ( in )          \ where this name starts
     DEFLOCALS DEFINITIONS
     0 CONSTANT                      \ the local: a VALUE-like cell
-    LATEST PFA  #LOCALS @ LOC-PFA !
+    LATEST PFA                      ( in a )         \ this local's own cell
+
+    SWAP >IN !                      ( a )            \ rewind: same name again
+    DEFBINDS DEFINITIONS
+    #IN-LOCALS @ 0<  IF  (LOC-BINDER-IN)  ELSE  (LOC-BINDER-OUT)  THEN
+    LATEST PFA CFA  #LOCALS @ LOC-BIND-XT !
+
     OLD-CURRENT @ CURRENT !
     CURRENT @ CONTEXT !
     1 #LOCALS +!
@@ -314,7 +366,10 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
     BL WORD DROP                    \ consume the definition name
     CURRENT @ @ SCOPE-LINK !        \ remember what LATEST was
     LOC-EMPTY LOC-VOC !             \ empty the locals vocabulary
+    BND-EMPTY BND-VOC !             \ empty the binders vocabulary
     0 #LOCALS !
+    -1 #IN-LOCALS !                 \ sentinel: this form has no outputs,
+                                    \ but (LOC-MAKE) still reads it per local
     0 DO  (LOC-MAKE)  LOOP
     #LOCALS @ #IN-LOCALS !          \ all of them come off the stack
 ;
@@ -378,6 +433,7 @@ IMMEDIATE
     ?COMP
     (LOC-OPEN)                      \ HERE is free from here on
     LOC-EMPTY LOC-VOC !             \ empty the locals vocabulary
+    BND-EMPTY BND-VOC !             \ empty the binders vocabulary
     0 #LOCALS !
     -1 #IN-LOCALS !                 \ sentinel: -- not seen yet
     BEGIN
