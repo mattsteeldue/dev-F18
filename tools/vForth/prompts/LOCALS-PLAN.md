@@ -2,10 +2,17 @@
 
 Stato: **implementato** in `lib/LOCALS.f`, verificato sull'emulatore
 headless (`emu/repl.py`). Vedi sezione 9.
-Ultima revisione: 2026-08-19 (2) -- il fix di `SEE` esplorato in sezione
-17 e' stato **implementato in `lib/see.f`** e verificato sull'emulatore:
-`SEE` su una word con locali torna al prompt invece di bloccarsi. Chiude
-la regressione aperta dalla revisione precedente.
+Ultima revisione: 2026-08-19 (3) -- un'idea per rendere piu' leggibile il
+preambolo che `SEE` ormai mostra (sezione 17) -- una parola-binder per
+locale, in un vocabolario `DEFBINDS` separato, al posto della sequenza
+`LIT n (LOC-BIND)` -- e' stata **implementata e poi scartata**: rompe la
+rientranza. Sezione 18. `lib/LOCALS.f` e' tornato al testo della
+revisione precedente (solo i due commenti di sezione 17 restano
+aggiornati).
+Revisione precedente: 2026-08-19 (2) -- il fix di `SEE` esplorato in
+sezione 17 e' stato **implementato in `lib/see.f`** e verificato
+sull'emulatore: `SEE` su una word con locali torna al prompt invece di
+bloccarsi. Chiude la regressione aperta dalla revisione precedente.
 Revisione precedente: 2026-08-19 -- il **trampolino** (sezioni 13-14) e'
 stato sostituito da un **BRANCH di scavalco** (sezione 16): un solo
 thread per FOO invece di due, niente piu' corpo anonimo. Ribalta di
@@ -1660,3 +1667,160 @@ e su `IF`/`0BRANCH` puro. Il meccanismo (`LOC-SKIP` legge lo stesso offset patch
 la CPU segue a runtime, indipendente dal numero o dal tipo di locali) non da' motivo di
 aspettarsi differenze, ma questi casi restano da eseguire per chiudere del tutto la
 verifica.
+
+---
+
+## 18. Parole-binder per locale (DEFBINDS) -- ESPLORATO E SCARTATO (2026-08-19)
+
+Con la sezione 17 chiusa, `SEE` su una word con locali mostra il preambolo di binding,
+ma in una forma grezza: `LIT n (LOC-BIND) LIT n (LOC-BIND) LIT n >R U V + EXIT` per
+`SQZ { U V }`. L'autore, vedendolo su CSpect, ha trovato la ripetizione `LIT nnnnn
+(LOC-BIND)` poco leggibile e ha proposto di sostituirla con un'unica parola per locale,
+con lo **stesso nome** del locale (`U`, `V`, ...) ma in un vocabolario diverso da
+`DEFLOCALS` per evitare ambiguita' nella ricerca. L'idea e' stata **implementata per
+intero, testata, e poi tolta**: rompe la rientranza per una ragione strutturale, non per
+un errore di battitura risolvibile.
+
+### 18.1 Il design implementato
+
+Un vocabolario `DEFBINDS` in piu', accanto a `DEFLOCALS`, azzerato ad ogni scope come
+`LOC-VOC`. Per ogni locale, `(LOC-MAKE)` creava **due** word invece di una:
+
+- la solita `CONSTANT` in `DEFLOCALS` (invariata);
+- subito dopo, riavvolgendo `>IN` con lo stesso trucco gia' usato da `{` per `?}`/`?--`,
+  una parola-binder con lo **stesso nome**, in `DEFBINDS`, costruita con
+  `CREATE , DOES> @ (LOC-BIND)` (o `(LOC-BIND0)` per un output local -- scelto a
+  quel punto perche' `#IN-LOCALS` distingue gia' "prima o dopo `--`" localmente, senza
+  bisogno di rimandare la decisione).
+
+`(LOC-CLOSE)` compilava poi, al posto delle tre celle `LIT a (LOC-BIND)`, una sola
+cella: la CFA del binder, presa da un nuovo array `LOCAL-BIND-XTS` parallelo a
+`LOCAL-PFAS` (che di conseguenza spariva, non piu' letto da nessuno). Risultato atteso:
+`SEE SQZ` avrebbe mostrato `V U >R U V + EXIT` -- i nomi dei binder al posto delle
+sequenze `LIT`/`(LOC-BIND)`.
+
+Il codice completo (poi rimosso) e' recuperabile da questa sezione del piano se serve
+come riferimento; non e' stato lasciato in nessun commit.
+
+### 18.2 Il sintomo
+
+`: SQZ { U V } U V + ;` compilava senza errori. `1 2 SQZ .` non tornava **mai** al
+prompt in modo pulito: nessun `3`, nessun messaggio d'errore -- il resto della riga di
+input (`. ." <-RESULT"` in uno dei test) non veniva mai eseguito, e i comandi
+**successivi** su righe diverse iniziavano a fallire con `is undefined.` su parole
+sicuramente presenti (`SEE`, perfino `LOC-VOC` stessa) -- sintomo di dizionario/registri
+scombussolati, non di un semplice errore Forth.
+
+### 18.3 L'indagine: escludere le piste sbagliate prima di quella giusta
+
+Una decina di prove mirate su `emu/repl.py`, in ordine:
+
+1. **Trap 2.1 non c'entra.** Due `CREATE...DOES>` fatti a mano dentro un `:` aperto
+   **senza** la protezione del BRANCH di scavalco corrompono il thread esterno, come
+   previsto (`OUTER? is undefined.` dopo). Ma il design usa GIA' quella protezione (e'
+   la stessa che regge gia' la `CONSTANT` di `DEFLOCALS`), quindi non e' questo il buco.
+2. **Il meccanismo DOES> di base funziona.** Due `CREATE...DOES>` fatti a mano **a
+   livello top-level** (fuori da qualunque `:` aperto) funzionano perfettamente, anche
+   ripetuti piu' volte.
+3. **Un artefatto universale, ma estraneo.** Interrogando lo stack con `.` invece che
+   `.S` (che si e' rivelato inaffidabile in questo contesto -- riporta stack vuoto
+   quando `.` trova ancora un valore) e' emerso che **qualunque** parola DOES> in questo
+   sistema, se chiamata piu' volte e drenata abbastanza a fondo, lascia esattamente
+   **un** valore fantasma sotto ai risultati legittimi -- provato anche su `2CONSTANT`,
+   mai toccata in questa sessione. E' un fenomeno preesistente e ortogonale (a occhio,
+   un artefatto dell'emulatore headless legato al confine "stack vuoto"), **non** la
+   causa del crash di `SQZ`: un solo valore fantasma in fondo allo stack non spiega un
+   salto a indirizzo casuale a meta' esecuzione.
+4. **`SEE SQZ` diretto (senza mai eseguire `SQZ`) mostra un thread compilato
+   corretto**: `V U LIT -30174 >R U V + EXIT` -- i due binder nell'ordine giusto
+   (l'ultimo dichiarato, `V`, per primo), poi la catena, poi il corpo. La compilazione
+   quindi non e' il problema: e' l'esecuzione.
+
+### 18.4 La causa vera: `R>` cattura il frame sbagliato
+
+Decodificato `Enter_Ptr` (`L1.asm:24-37`):
+
+```asm
+Enter_Ptr:
+    ex de, hl
+    dec hl / ld (hl),b / dec hl / ld (hl),c   ; push BC (Forth IP) sul return-stack (DE)
+    ex de, hl
+    pop bc            ; << l'indirizzo che la call appena eseguita ha spinto sullo
+                       ;    stack HARDWARE (SP, che in questo sistema E' lo stack dati)
+    next
+```
+
+Per una `CALL Enter_Ptr` diretta (una colon-definition normale, o la `(LOC-BINDER-IN)`
+stessa quando e' LEI a essere chiamata), il ciclo push-poi-pop su SP si pareggia
+esattamente: nessun residuo sullo stack dati, il return-stack software (DE) riceve
+correttamente l'IP del chiamante. Per una parola creata con `CREATE...DOES>`, la CFA
+punta invece a una **seconda** `CALL Enter_Ptr`, quella compilata da `DOES>` dentro il
+thread del *maker* (`(LOC-BINDER-IN)`): **due** `CALL` innestate, ma un solo `pop bc` in
+`Enter_Ptr`. Il primo valore spinto (il PFA del binder) resta apposta sullo stack dati:
+e' esattamente cosi' che DOES> consegna il PFA al corpo (`DOES> and PFA` in root
+`CLAUDE.md`) -- fin qui, disegno corretto e verificato.
+
+Il problema e' un altro, e riguarda il **return-stack**, non lo stack dati. `(LOC-BIND)`
+apre con `R>` per "rubarsi" il proprio indirizzo di ritorno e reindirizzarlo verso la
+catena di ripristino (sezione 11.2). Quell'indirizzo di ritorno e' valido **solo se
+`(LOC-BIND)` viene chiamata direttamente dal thread di `SQZ`** -- che e' esattamente
+come funziona nel design attuale (`LIT a (LOC-BIND)` compilato in linea nel thread di
+`SQZ`). Chiamata invece da **dentro il corpo DOES> del binder**, l'indirizzo che `R>`
+trova in cima al return-stack e' "il punto dopo `(LOC-BIND)` nel thread **condiviso**
+di `(LOC-BINDER-IN)`" -- lo stesso identico punto per **ogni** binder mai creato da
+quel maker, perche' il corpo DOES> vive nel thread del maker, non in quello di `SQZ`.
+`(LOC-BIND)` reinserisce quell'indirizzo (sbagliato) in cima alla sua stessa uscita;
+quando l'esecuzione ci ritorna, cade sull'`EXIT` condiviso di `(LOC-BINDER-IN)` -- che a
+sua volta fa `R>` per sapere dove tornare, e trova non un indirizzo ma il valore dati
+`old` appena salvato per il ripristino (12.3/15.2), e ci salta dentro come fosse codice.
+Da li' in poi, esecuzione a un indirizzo qualunque: il crash silenzioso osservato.
+
+### 18.5 Perche' e' strutturale, non un refuso
+
+Il trucco "rubati il tuo indirizzo di ritorno e reindirizzalo" e' corretto **un livello
+sopra il chiamante immediato** -- vale per `(LOC-BIND)` chiamata da `SQZ` direttamente.
+Interporre un secondo livello (il corpo DOES> del binder, che e' un thread condiviso da
+piu' word) sposta quell'indirizzo di un passo, e quel passo punta sempre allo stesso
+posto sbagliato: l'`EXIT` del maker, non la continuazione di `SQZ`. Far "vedere oltre"
+il livello extra (es. uno `2R>` che scarti il frame del binder prima di chiamare
+`(LOC-BIND)`) sposta il problema di un passo ma non lo risolve, perche' **chiamare
+`(LOC-BIND)`** e' *essa stessa* un'altra `CALL Enter_Ptr` che aggiunge un frame in piu'
+puntando di nuovo nel thread condiviso -- non c'e' un punto fisso da cui "vedere
+abbastanza in la'" che non dipenda da quanti binder si annidano in mezzo. Qualunque
+indirezione DOES> tra `SQZ` e `(LOC-BIND)` e' incompatibile con questo specifico trucco
+di rientranza, non solo con l'implementazione provata qui.
+
+### 18.6 Alternative non esplorate, per una pensata futura
+
+Registrate ma **non tentate** in questa sessione:
+
+- **CODE word scritta a mano per binder, senza DOES>/PFA.** Una piccola routine Z80
+  costruita a mano per ciascun locale -- l'indirizzo del suo `LOC-PFA` cablato
+  direttamente nel codice macchina (es. `LD HL,<addr> / JP (LOC-BIND)-body`), CFA che
+  esegue quel codice DIRETTAMENTE (come le CODE word esistenti: niente `CALL Enter_Ptr`,
+  niente frame extra) invece di passare per `Enter_Ptr`/DOES>. In teoria evita
+  l'indirezione che rompe `R>`, perche' non c'e' nessuna seconda `CALL` di mezzo. Costo:
+  richiede assemblare a mano qualche byte di Z80 per binder (o un piccolo generatore in
+  Forth che scrive quei byte), e non e' piu' "una parola qualsiasi fatta con
+  `CREATE...DOES>`" -- va capito bene prima se vale il beneficio, che resta puramente
+  estetico (leggibilita' di `SEE`).
+- **Ripensare `(LOC-BIND)` per non dipendere da "un solo livello di chiamata".** Una
+  variante che non usi `R>` per rubare l'indirizzo di ritorno, ma che riceva
+  esplicitamente "dove reindirizzare" come argomento (passato dalla catena costruita da
+  `(LOC-CLOSE)`, non scoperto a runtime frugando il return-stack). Cambierebbe il cuore
+  del meccanismo di rientranza (sezione 11), quindi va trattata come una revisione
+  grossa, non una patch.
+
+### 18.7 Verdetto
+
+**Non implementato.** Il beneficio (leggibilita' di `SEE`) e' reale ma cosmetico;
+il costo per ottenerlo con parole-binder DOES> e' rompere la rientranza, che e' la
+proprieta' piu' importante del modulo (sezione 11). `lib/LOCALS.f` e' stato riportato
+al testo della revisione precedente (verificato: `1 2 SQZ .` -> `3`, `SEE SQZ` mostra
+di nuovo `LIT n (LOC-BIND) LIT n (LOC-BIND) LIT n >R U V + EXIT` e torna al prompt).
+Nessuna modifica al core, nessun nuovo build number -- il tentativo e il rollback sono
+stati interamente in `lib/LOCALS.f`, mai toccato `lib/see.f`.
+
+Se in futuro il beneficio sembrera' valere lo sforzo, la strada da valutare per prima
+e' la CODE word scritta a mano (18.6): evita l'indirezione DOES> alla radice invece di
+provare a farla convivere con `(LOC-BIND)`.
