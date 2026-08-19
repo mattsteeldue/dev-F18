@@ -2,7 +2,18 @@
 
 Stato: **implementato** in `lib/LOCALS.f`, verificato sull'emulatore
 headless (`emu/repl.py`). Vedi sezione 9.
-Ultima revisione: 2026-08-18 -- i **locali in uscita** studiati in
+Ultima revisione: 2026-08-19 -- il **trampolino** (sezioni 13-14) e' stato
+sostituito da un **BRANCH di scavalco** (sezione 16): un solo thread per
+FOO invece di due, niente piu' corpo anonimo. Ribalta di nuovo il verdetto
+della sezione 10 sul prezzo di `SEE`: torna a rompersi, ma in una forma
+peggiore di quella li' descritta -- non piu' "spazzatura", un blocco che
+in prova non e' mai tornato al prompt in diversi minuti. Accettato come
+regressione deliberatamente rimandata. Un'ipotesi di fix (riempire lo
+splice per riallinearlo) e' stata misurata e scartata; un fix diverso,
+piu' mirato (far riconoscere a `SEE` il pattern "`BRANCH` come prima
+cella" e saltare l'intero splice) e' stato **esplorato e verificato ad
+indirizzi** ma **non implementato** -- sezione 17.
+Revisione precedente: 2026-08-18 -- i **locali in uscita** studiati in
 sezione 12 sono stati **implementati** (sezione 15), con la catena di
 ripristino per scope che 12.4 aveva gia' previsto, invece della catena
 condivisa di 11-14. Corretto insieme anche il bug di scrittura oltre
@@ -1352,3 +1363,293 @@ in 14.4 (NEEDS annidato dentro un file INCLUDEd).
 Il caso `SPLIT` e' quello che verifica l'ordine delle uscite multiple
 (12.10: "due uscite: dichiarata per prima piu' in basso, seconda in
 cima") ed e' anche il caso che ha rivelato il Bug 2 di 15.3.
+
+---
+
+## 16. BRANCH di scavalco al posto del trampolino (2026-08-19)
+
+Il trampolino (13-14) evitava la trappola di 2.1 (`CREATE` dentro una
+colon-definition spezza il thread) chiudendo FOO su due sole celle
+(`slot` + `EXIT`) e costruendo i local, la catena e il corpo vero in un
+**secondo** thread anonimo, agganciato via CFA scritta a mano. Costava
+un'indirezione in piu' a ogni chiamata (11.4) e la ricorsione pagava
+quell'indirezione **a ogni livello** (14.3), non solo una volta.
+
+Questa sezione sostituisce quel meccanismo con l'alternativa che la
+sezione 5 aveva scartato per un'altra ragione (rompere `SEE`): un
+**BRANCH di scavalco**, lo stesso idioma a riferimento in avanti che
+usano `IF`/`THEN` (`COMPILE 0BRANCH HERE 0 ,` / `HERE OVER - SWAP !`),
+sempre preso. FOO non viene mai chiusa: il `:` originale resta aperto per
+tutta `{ ... }`, e torna a esserci **un solo thread**, non due.
+
+### 16.1 Il design
+
+```
+(LOC-OPEN)   COMPILE BRANCH   HERE 0 ,   LOC-SLOT !
+             \ FOO resta aperta. LOC-SLOT e' l'indirizzo della cella
+             \ offset, non ancora risolta.
+
+             \ { (o LOCALS-FOR/LOCALS) crea qui gli header dei local,
+             \ come sempre -- ma ora dentro il thread ancora aperto di
+             \ FOO: e' la trappola di 2.1, deliberatamente non evitata.
+
+(LOC-CLOSE)  compila la catena di ripristino di questo scope (come in
+             15.2, invariata)
+             LOC-VOC CONTEXT !                    \ i nomi diventano visibili
+             HERE LOC-SLOT @ - LOC-SLOT @ !        \ <-- il BRANCH atterra QUI
+             compila il preambolo di binding (come in 15.2, invariato)
+             ]                                     \ riafferma STATE compiling
+             0 #LOCALS !
+```
+
+Il punto delicato e' **dove** atterra il BRANCH. Non puo' essere ne'
+l'inizio della catena di ripristino ne' l'inizio del corpo utente:
+
+- **Non l'inizio della catena.** La catena (`(LOC-POP)`/`(LOC-EPOP)` a
+  ripetizione + `EXIT`) non viene mai raggiunta per caduta -- solo di
+  traverso, quando l'`EXIT` del corpo trova il suo indirizzo in cima al
+  return stack (messo li' dal preambolo con `>R`, sezione 11.2). Se il
+  BRANCH atterrasse li', chiamare FOO eseguirebbe subito `(LOC-POP)` con
+  un return stack che non contiene ancora niente da ripristinare --
+  corruzione immediata.
+- **Non l'inizio del corpo utente.** Salterebbe il preambolo di binding:
+  i local non verrebbero mai caricati dallo stack del chiamante.
+
+Il bersaglio giusto e' quindi **l'inizio del preambolo di binding**, cioe'
+`HERE` subito dopo aver compilato la catena e prima di compilare il
+preambolo -- non "come ultima operazione di `(LOC-CLOSE)`" in senso
+letterale (quella sarebbe dopo il preambolo, il bersaglio sbagliato). La
+formulazione iniziale data a voce ("patcha l'offset come ultima
+operazione") andava quindi letta come "ultima operazione **prima del
+preambolo**", non come l'ultima riga della word -- un'imprecisione
+verbale simile a quella di 16.2 sotto.
+
+### 16.2 `]`, non `[`
+
+La prima formulazione a voce del passo finale diceva `[COMPILE] [`
+("lascia aperta la compilazione"). Tracciato meccanicamente: `[` fa
+`0 STATE !` -- passa a interpretazione, l'opposto dell'obiettivo
+dichiarato. Corretto durante la discussione: la parola giusta e' `]`
+(`192 STATE !`, la costante di compilazione), usata via `[COMPILE]`
+esattamente come '`;`' stessa la usa in coda alla propria definizione
+(`src/F18e.f:2971-2977`) -- necessario perche' `]`, se scritta bare
+dentro `(LOC-CLOSE)`, verrebbe eseguita **quando `(LOC-CLOSE)` stessa
+viene compilata** (al caricamento di `lib/LOCALS.f`) invece che quando
+gira, essendo pero' `]` non-immediate questo non e' in realta' un
+problema qui: si e' scelto comunque `]` bare (non `[COMPILE] ]`) per
+semplicita', equivalente.
+
+In pratica `]` qui e' un'asserzione difensiva, non una correzione: niente
+fra `(LOC-OPEN)` e questo punto tocca `STATE` (`CREATE`/`CONSTANT` non lo
+sfiorano), quindi resterebbe comunque a "compiling". Vale la pena
+scriverla lo stesso, a beneficio di chi rilegge il codice: il `:` di FOO
+e' ancora aperto, e le parole del corpo utente che seguono devono essere
+**compilate**, non solo date per scontate.
+
+**Nota per il futuro**: l'autore stesso ha segnalato di invertire talvolta
+i concetti in mente quando detta un meccanismo preciso (qui, quale delle
+due parole simmetriche `[`/`]` intendeva). Vale la pena tracciare la
+conseguenza concreta di ogni istruzione del genere e confrontarla con
+l'obiettivo dichiarato nella stessa frase, prima di implementare.
+
+### 16.3 Cosa cade, cosa cambia
+
+- Spariscono la CFA costruita a mano (14.1) e la `!CSP` di re-armo
+  (13.2): non c'e' piu' un secondo corpo da chiudere separatamente, quindi
+  il `CSP` salvato dal `:` originale di FOO resta quello giusto per il
+  `;` finale dell'utente.
+- `RECURSE` (compila ancora `LATEST PFA CFA ,`, invariato) rientra ora
+  attraverso lo **stesso** BRANCH, con un solo salto Z80 (`JR`, nessun
+  push sul return stack) invece di passare per una seconda `Enter_Ptr`:
+  il costo aggiuntivo per livello di ricorsione descritto in 14.3/11.4
+  (la nota "+1 cella per livello") **decade** -- non ancora rimisurato
+  sui binari, ma il meccanismo che lo causava (due `Enter_Ptr` per
+  livello) non c'e' piu'.
+- Il "KNOWN ISSUE" di 14.5 (parola orfana e invisibile su `{` malformato)
+  resta tale e quale: `(LOC-OPEN)` non smudga, `QUIT` non arriva mai alla
+  `;` che lo farebbe. Non toccato da questa sezione.
+
+### 16.4 Prezzo aggravato: `SEE`
+
+Il "Prezzo 1" della sezione 10 torna, ma peggiore. Con lo scavalco
+originale (mai implementato) la spazzatura veniva **stampata** fino a
+fine definizione senza pero' bloccare il prompt. Qui, provato
+sull'emulatore (`SEE` su una word con locali dopo `NEEDS SEE`), il
+decompilatore ha stampato l'intestazione, poi `BRANCH 31`, poi si e'
+bloccato: nessun ritorno al prompt in diversi minuti di esecuzione
+reale (non un timeout di script -- il processo dell'emulatore restava
+attivo, a consumare istruzioni). Non e' stato accertato se sia un loop
+Forth-level genuinamente infinito o solo molto piu' lento del tetto
+`STEP_CAP` di `emu/repl.py` (60 milioni di istruzioni) -- in entrambi i
+casi, in pratica: **non usare `SEE` su una word con locali**. Rimandato
+per esplicita richiesta dell'autore ("Tralasciamo per ora... risolveremo
+questa regressione piu' avanti"), non ancora affrontato.
+
+### 16.5 Verifica sull'emulatore (build 2026-08-17, core invariato)
+
+Nessuna modifica al core: **non serve un nuovo build number**. Tutti i
+casi gia' verificati in 14.4/15.5 ri-controllati con il nuovo meccanismo:
+
+| Caso | Atteso | Esito |
+|---|---|---|
+| `test/LOCALS-TESTS.f` intera (precaricando le `NEEDS`, limite 14.4) | silenzio | passa |
+| `1 2 3 SUM3` (`{ X Y Z }`) | `6` | ok |
+| `5 SQ2` (`{ N }`) | `25` | ok |
+| `7 9 NEST` (annidamento: chiama `SQ` due volte) | `130` | ok |
+| `1 2 3 4 5 6 7 8 L8` (8 local, limite `MAXLOCALS`) | `36` | ok |
+| `7 FCT` ricorsiva (`RECURSE`) | `5040` | ok |
+| `0 EARLY` / `7 EARLY` (`EXIT` anticipato dentro `IF`) | `999` / `70` | ok |
+| `111 1 2 3 SUM3 . .` (sotto pila intatto) | `6 111` | ok |
+| `5 SUM-TO` (uscita, sezione 15) | `15` | ok |
+| `47 SPLIT . .` (due uscite, ordine) | `4 7` | ok |
+| `: OOPS { A B ;` (manca `}`) | errore pulito | `LOCALS: misplaced { or }.` |
+| `: BAD9 { 9 nomi senza -- }` | errore pulito, guardia prima della scrittura (14.5) | `I? LOCALS: bad count.` |
+| `1 2 3 SUM3` dopo i due errori sopra | `6` -- dizionario non corrotto | ok |
+| `SEE` su una word con locali | -- | non torna al prompt (16.4); **non testare in script automatici** |
+
+---
+
+## 17. Fix di `SEE` -- ESPLORATO, NON ANCORA IMPLEMENTATO (2026-08-19)
+
+Sezione di sola analisi: descrive un fix concreto per la regressione di 16.4, misurato
+e verificato solo a livello di indirizzi/aritmetica, **non scritto in `lib/see.f`**.
+
+### 17.1 Perche' non basta un byte di riempimento
+
+Ipotesi discussa e scartata: siccome `0 CONSTANT <nome>` occupa **7 byte** in origin
+space **sempre**, indipendentemente dalla lunghezza del nome (misurato:
+`HERE 0 CONSTANT Z1 HERE SWAP -` -> `7`, uguale con nomi da 1 a 8 caratteri -- coerente
+con `CODE`/`CREATE`, `L1.asm:1554-1610`: NFA/LFA/XFA vengono scritti nell'heap e poi
+tolti da origin space con un `ALLOT` negativo, lasciando li' solo un mirror-ptr fisso +
+la `CALL` patchata + la PFA + il codice macchina di `;CODE`), la parita' dello splice
+totale dipende dalla parita' del numero di local (7 e' dispari). Un solo byte di
+riempimento, condizionale al conteggio dispari, pareggerebbe la lunghezza totale.
+
+**Misurato e scartato.** Su `SQZ  { U V }  U V + ;` (2 local, quindi gia' "pari" per
+questa teoria, nessun riempimento richiesto):
+
+| Punto | Indirizzo | Offset da PFA |
+|---|---|---|
+| PFA | `$853E` | 0 |
+| cella offset del BRANCH | `$8540` | +2 |
+| `LOC-CHAIN-START` | `$8550` | +18 |
+| bersaglio patchato del BRANCH | `$8556` | +24 |
+| `HERE` dopo il `;` reale (con l'`EXIT` vero) | `$8570` | +48 |
+
+Tutti pari, esattamente come previsto -- eppure `SEE SQZ` si e' comunque bloccato per
+diversi minuti. La teoria della parita' e' corretta ma **non e' la causa del blocco**:
+un riempitivo (per-local o singolo condizionale) non lo risolve.
+
+### 17.2 La causa piu' probabile
+
+`DELOAD` (`lib/see.f:91-106`) avanza sempre di un multiplo di 2 byte da PFA (mai 1: il
+suo loop fa `CELL+` a ogni giro, e i casi a 2 celle come `BRANCH`/`LIT`/`(?DO)` -- via
+`DEB-B`/`DEB-L`, righe 43-45 -- consumano una cella extra, cioe' *un altro* multiplo di
+2). L'allineamento a byte quindi non si rompe mai in senso stretto. Il problema e'
+un altro: `(DELOAD)` (righe 72-88) confronta ogni cella con un pugno di xt noti
+(`BRANCH`, `0BRANCH`, `LIT`, `(?DO)`, `(+LOOP)`, `(LOOP)`, `(LEAVE)`, `(.")`, `(H")`,
+`COMPILE`). Se una cella-spazzatura dentro lo splice (header dei local, poi la catena
+di ripristino) **coincide per caso numerico** con uno di questi xt, `DELOAD` crede sia
+un'istruzione a 2 celle e salta una cella IN PIU' -- che puo' essere proprio quella in
+cui si trova un `EXIT` vero: sia quello interno della catena (`['] EXIT ,` in coda,
+sezione 15.2), sia quello reale a fine definizione. Scavalcato quello, `DELOAD`
+continua a decodificare memoria non correlata, senza piu' incontrare per caso nessuno
+dei cinque terminatori (`ABORT`/`QUIT`/`EXIT`/`WARM`/`(;CODE)`, righe 98-102) --
+da cui il blocco osservato, non spiegabile dalla sola parita' della lunghezza.
+
+Non e' stato individuato a byte singolo *quale* cella causi il match (richiederebbe
+`NEEDS DUMP` e un confronto manuale byte-per-byte); non necessario per il fix proposto
+sotto, che aggira il problema invece di correggerne la causa puntuale.
+
+### 17.3 Il fix: riconoscere BRANCH come prima cella
+
+Osservazione dell'autore, verificata: **nessun'altra semantica del sistema compila un
+`BRANCH` come prima cella di una colon-definition.** `BRANCH` viene compilato solo da
+`ELSE` e `AGAIN` (`src/F18e.f:481-483`), e in entrambi i casi sempre a meta' di una
+definizione, mai come primissima cella -- un `: FOO ELSE ...` o `: FOO AGAIN ...` non ha
+senso strutturalmente (`ELSE` richiede un `IF` gia' aperto, `AGAIN` un `BEGIN`) e non
+compila comunque `BRANCH` per primo. Il pattern "`PFA @ = BRANCH`" e' quindi una firma
+univoca e affidabile di uno scope creato da `{` o dalla vecchia `LOCALS`, che sono
+oggi l'**unico** produttore di questa forma (entrambe passano da `(LOC-OPEN)`).
+
+Invece di sperare che la decodifica cella-per-cella si riallinei da sola per caso,
+`SEE` puo' **riconoscere il pattern esplicitamente** e saltare l'intero splice (header
+dei local + catena di ripristino) in un colpo solo, andando dritto al bersaglio che
+`(LOC-CLOSE)` ha gia' calcolato e scritto nella cella offset -- lo stesso valore che
+la CPU userebbe a runtime, letto pero' a freddo da `SEE`:
+
+```forth
+\ pfa e' l'indirizzo della cella del BRANCH stesso (non ancora avanzato)
+: LOC-SKIP  ( pfa -- target )
+    CELL+  DUP @ +          \ (indirizzo cella offset) + (valore li' patchato)
+;
+```
+
+Formula verificata in questa sessione: `LOC-SLOT @ DUP @ +` ha dato `34134` ($8556),
+combaciando in modo indipendente con tutte le altre misure di 17.1 (differenza di 24
+byte da PFA, coerente col preambolo di binding calcolato a mano).
+
+Il punto di innesto e' `(SEE)` (righe 109-125), **non** il `CASE` generico di
+`(DELOAD)`: quel `CASE` gestisce gia' correttamente un `BRANCH` che compare a meta' di
+una definizione normale (da `ELSE`/`AGAIN`), e deve continuare a farlo -- solo un
+`BRANCH` che e' **la primissima cella** deve essere trattato diversamente:
+
+```forth
+: (SEE)  ( xt -- )
+    BASE @
+    SWAP HEX
+    >BODY
+    DUP DEB-NFA
+    DUP DEB-LFA
+    DUP DEB-CFA
+    DUP CFA @ ['] : @ =
+    IF
+        SWAP BASE !
+        DUP @ ['] BRANCH =  IF  LOC-SKIP  THEN   \ <-- nuovo: salta lo splice
+        DELOAD
+        DROP
+    ELSE
+        HEX DEB-PFA
+        BASE !
+    THEN
+;
+```
+
+Non tocca `lib/LOCALS.f`: `BRANCH` e' gia' una word core, quindi il controllo e'
+innocuo anche quando `LOCALS` non e' caricato (nessuna word normale comincia con
+`BRANCH`, quindi il ramo non scatta mai per definizioni ordinarie). Nessun accoppiamento
+nuovo fra i due moduli da gestire con `NEEDS`.
+
+### 17.4 Cosa il fix NON risolve (deliberatamente)
+
+- **Lo splice non diventa leggibile.** `SEE` smetterebbe di bloccarsi e di stampare
+  spazzatura, ma non mostrerebbe nemmeno i nomi dei local ne' la catena -- li salta e
+  basta, mostrando solo il preambolo di binding (celle `LIT`/`(LOC-BIND)`/`(LOC-BIND0)`
+  grezze, non "belle") seguito dal corpo utente vero e dall'`EXIT` reale. Coerente con
+  quanto gia' accettato all'inizio di questa indagine: l'obiettivo e' il resync, non la
+  decodifica corretta dello splice.
+- **La firma non e' una garanzia assoluta.** E' vera per tutto cio' che il repository
+  compila oggi, ma un utente potrebbe in teoria scrivere a mano
+  `: FOO COMPILE BRANCH HERE 0 , ... ;` fuori da `LOCALS` (via `ASSEMBLER`/trucchi di
+  compilazione diretta) e ottenere un falso positivo. Rischio giudicato accettabile:
+  nessun costrutto del repository lo fa oggi.
+- **Non copre un'eventuale futura fusione dei due thread** (l'opzione "tutto in un solo
+  thread" scartata nella prima domanda di chiarimento di questa sessione, sezione 16):
+  se in futuro lo scavalco venisse eliminato del tutto (nessuna word con locali
+  producesse piu' questo pattern), il controllo diventerebbe silenziosamente morto --
+  innocuo, ma da ricordare in un'eventuale pulizia.
+
+### 17.5 Verifica da fare quando si implementa
+
+Nessuna eseguita ora (solo aritmetica a freddo sugli indirizzi). Prima di considerarlo
+fatto, sull'emulatore:
+
+| Caso | Atteso |
+|---|---|
+| `SEE SQZ` (2 local, ex-bloccante) | termina, mostra preambolo + corpo + `EXIT`, torna al prompt |
+| `SEE SUM3` (3 local, ex-bloccante) | idem |
+| `SEE L8` (8 local, limite `MAXLOCALS`) | idem |
+| `SEE SUM-TO` / `SEE SPLIT` (output locals, catena mista POP/EPOP) | idem |
+| `SEE FCT` (ricorsiva, `RECURSE` rientra dallo stesso `BRANCH`) | idem, `RECURSE` visibile nel corpo decodificato |
+| `SEE` su una word ordinaria con `ELSE`/`AGAIN` a meta' definizione (es. una gia' in `inc/`) | **invariato**: nessuna regressione sul `CASE` generico di `(DELOAD)` |
+| `SEE` su una word senza locali che comincia comunque con `IF`/`0BRANCH` (mai con `BRANCH` puro) | **invariato** |

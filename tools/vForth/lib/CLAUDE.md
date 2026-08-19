@@ -91,24 +91,34 @@ Three facts worth carrying into any `lib/` work, not just into LOCALS:
   writes at `HERE`, and inside a definition `HERE` *is* the thread being generated, so
   the new word's header lands in the middle of the code and the IP later runs into it.
   Anything else that wants to define words at compile time hits the same wall.
-- **The way around it is to end the definition early and re-open the body anonymously.**
-  This is the *trampoline* `{` uses, and it is the reason the locals can be declared
-  inside the definition instead of before it: `{` compiles a slot plus `EXIT` inside the
-  outer word (left smudged, exactly as plain `:` would leave it), and only then -- with
-  `HERE` outside any pending definition -- `CREATE`s one cell per local. It then builds,
-  by hand, a second nameless colon-header (just the 3-byte `call Enter_Ptr` prologue
-  that `:` itself would write) and patches its address into the slot, so the visible
-  word is just `( call body ) EXIT`. The nameless body gets no dictionary header at all
-  -- unlike `:NONAME` (`inc/_noname.f`), the first design tried here and dropped because
-  it hooks a phantom entry into the `CURRENT` vocabulary chain for every definition.
-  `LATEST` therefore stays the outer word throughout the body, so `RECURSE` compiles a
-  call back to it, not directly into the body: correct, but the trampoline's entry cost
-  is paid again on every recursion level, not only once. The user's closing `;` still
-  belongs to the outer word: it compiles the body's final `EXIT` and `SMUDGE`s the outer
-  word, revealing it in the dictionary.
+- **`{` does not avoid that wall -- it jumps over it.** The outer word's own `:` is
+  never closed: `{` compiles an unconditional `BRANCH` with an offset left unresolved
+  (the same forward reference `IF`/`THEN` use), then lets each local's `CONSTANT`
+  header get created right after it, splicing real dictionary structure into the
+  middle of the still-open thread. The `BRANCH` exists purely to jump over that splice
+  -- and over this scope's own restore chain, compiled next to it -- landing exactly on
+  the binding prologue, never on the chain (which would corrupt the return stack if
+  fallen into) and never past the prologue (which would skip binding the locals
+  entirely). `LATEST` is the outer word throughout, since there is only ever one word,
+  so `RECURSE` compiles a call straight back into it and re-enters through the same
+  `BRANCH` -- one Z80 jump, no extra return-stack push. The user's closing `;` still
+  belongs to the outer word, unchanged: it compiles the body's final `EXIT` and
+  `SMUDGE`s it, revealing it in the dictionary. (An earlier design, the *trampoline*,
+  closed the outer word early and built a second, separate anonymous body reached by
+  CALL -- correct, but each recursion level paid that call's entry cost again. Dropped
+  in favor of the branch: see `prompts/LOCALS-PLAN.md` sections 13-14 for what it did
+  and section 16 for why it was replaced.)
 - **`:` resets `CONTEXT`** (`CURRENT @ CONTEXT !`), so a search-order change made before
   the definition does not survive into its body -- which is why the older form needs a
   second word, `LOCALS`, inside the definition at all.
+
+**Known regression, deliberately deferred: `SEE` on a word with locals.** The splice
+`{` leaves inside the thread (local headers, then the restore chain) is exactly what
+`SEE` cannot decode as code. In testing it did not return to the prompt within several
+minutes after printing the `BRANCH` and desyncing on what follows -- worse than "prints
+garbage," which is what the design that was tried and rejected in section 10 of the plan
+doc would have done. Do not call `SEE` on a word with locals, and do not add it to
+automated test scripts. Not yet addressed.
 
 A local is one permanent cell, not a frame slot, but the word is still **re-entrant**:
 `LOCALS` compiles a save of each cell's previous content onto the return stack, and
@@ -122,12 +132,14 @@ different mix of the two per scope. Output locals are bound to a literal 0 (not 
 value) by the same entry code, so they too reset on every entry, including a recursive
 one. Two consequences worth remembering:
 
-- Each activation costs `4+4n` bytes on the 160-byte return stack shared with the TIB,
-  plus one cell for the trampoline's return address, paid on every recursion level (not
-  only on entry) because `RECURSE` calls back through the outer word. Measured: one
-  local survives 15 recursion levels and corrupts the system at 20. The per-scope chain
-  also adds `n+1` dictionary cells per scope (no longer shared across scopes), and an
-  output local's exit step costs three more primitives than a plain input local's.
+- Each activation costs `4+4n` bytes on the 160-byte return stack shared with the TIB.
+  Under the earlier trampoline design, `RECURSE` paid one extra cell per recursion
+  level (a second call/return hop through the anonymous body); the branch design
+  removed that hop, so the figure is back to `4+4n` at every level -- not yet
+  re-measured against the trampoline's old "15 levels, corrupts at 20" figures. The
+  per-scope chain also adds `n+1` dictionary cells per scope (no longer shared across
+  scopes), and an output local's exit step costs three more primitives than a plain
+  input local's.
 - `ABORT` and `THROW` bypass the chain, leaving inner values in the cells. Harmless
   only because every entry re-binds all the locals before the body runs -- do not
   build anything that reads a local outside its own definition.

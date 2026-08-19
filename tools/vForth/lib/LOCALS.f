@@ -52,37 +52,36 @@
 \ an early one inside IF -- lands there instead of returning, the chain
 \ restores the cells, and its own final EXIT returns to the caller.
 \
-\ TRAMPOLINE. { (like LOCALS) does not compile the body into the
-\ definition the user opened. It ends that definition after two cells --
-\ a slot and EXIT -- which leaves it smudged, exactly as plain : left it,
-\ and then builds by hand a second, nameless colon-header (just the
-\ 3-byte "call Enter_Ptr" prologue that : itself would write) and patches
-\ its address into the slot. So
+\ BRANCH SCAVALCO. { (like LOCALS) does not close the definition the user
+\ opened -- FOO's own : stays open throughout. It compiles an
+\ unconditional BRANCH with an offset left unresolved (the same forward
+\ reference IF/THEN use), then lets the local names get CREATEd right
+\ after it, splicing real dictionary headers into the middle of FOO's own
+\ thread -- exactly what CREATE-inside-a-colon-definition normally
+\ corrupts (see the design doc). The BRANCH exists to jump over that
+\ splice, and over this scope's own restore chain compiled next to it, so
+\ that calling FOO lands directly on the binding prologue instead of
+\ falling into either. So
 \
 \       : FOO   { X }  ... ;
 \
-\ compiles two threads sharing one dictionary entry: FOO's own, which is
-\ just  ( call body ) EXIT , and the nameless body right after it that
-\ binds the locals and runs the code. Between the two, HERE is outside
-\ any pending definition, which is the one state in which words can be
-\ CREATEd -- this is what lets { ... } declare the locals in place, where
-\ LOCALS-FOR had to do it before the colon. The nameless body gets no
-\ dictionary header at all -- unlike :NONAME (inc/_noname.f), the first
-\ design tried here, dropped because it hooks a phantom entry into the
-\ CURRENT vocabulary chain for every definition. LATEST is therefore
-\ still FOO throughout the body, so RECURSE compiles a call back to FOO,
-\ not directly into the body: correct, but the trampoline's entry cost is
-\ paid again on every recursion level, not only once. The user's closing
-\ ; still belongs to FOO: it compiles the body's final EXIT and SMUDGEs
-\ FOO, revealing it in the dictionary.
+\ is ONE dictionary entry, ONE thread: BRANCH, offset, X's own CONSTANT
+\ header, the restore chain, then -- where the BRANCH lands -- the
+\ prologue that binds X, then the user's own code, then EXIT. LATEST is
+\ FOO throughout, so RECURSE compiles a call straight back into FOO: it
+\ re-enters through the same BRANCH (one jump, no extra return-stack
+\ push) and rebinds a fresh set of arguments. The user's closing ; still
+\ belongs to FOO, unchanged: COMPILE exit, SMUDGE, back to interpreting.
+\
+\ KNOWN REGRESSION, deliberately deferred: SEE decodes the BRANCH, then
+\ desyncs on the splice it jumps over. See prompts/LOCALS-PLAN.md.
 \
 \ Cost per activation: one return-stack cell for the chain address, plus
 \ two per local (old value + its cell address), i.e. 4+4n bytes on top of
-\ the caller's address, plus one more cell for the trampoline's own return
-\ address, paid on every recursion level (RECURSE re-enters through FOO,
-\ see above). The return stack is 160 bytes shared with the TIB, so
-\ recursion stays shallow -- measured on the emulator, a word with one
-\ local survives 15 levels and dies at 20; with eight locals, about 3.
+\ the caller's address -- no extra trampoline entry cost per recursion
+\ level, unlike the design this replaced. The return stack is 160 bytes
+\ shared with the TIB, so recursion stays shallow -- the design doc's
+\ figures were taken under the trampoline and want re-measuring here.
 \ Overflowing it overwrites the input buffer, silently.
 \
 \ ABORT and THROW bypass the chain, so an aborted word leaves its locals
@@ -132,10 +131,10 @@ LOC-VOC @   CONSTANT LOC-EMPTY      \ value of that cell when empty
 
 VARIABLE #LOCALS        0 #LOCALS !     \ locals in the pending scope
 VARIABLE #IN-LOCALS     0 #IN-LOCALS !  \ how many of #LOCALS come off the
-                                         \ stack; the rest are outputs, after --
+                                        \ stack; the rest are outputs, after --
 VARIABLE SCOPE-LINK     0 SCOPE-LINK !  \ LATEST when the scope was opened
 VARIABLE OLD-CURRENT    0 OLD-CURRENT !
-VARIABLE LOC-SLOT       0 LOC-SLOT !     \ cell to patch with the body's xt
+VARIABLE LOC-SLOT       0 LOC-SLOT !    \ address of BRANCH's unresolved offset
 VARIABLE LOC-CHAIN-START  0 LOC-CHAIN-START !  \ this scope's own restore chain
 
 CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
@@ -196,49 +195,65 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
 ;
 
 \ ----------------------------------------------------------------------
-\ Compile-time support: the trampoline
+\ Compile-time support: BRANCH scavalco (v.6)
 \
-\ (LOC-OPEN) ends the definition being compiled after a slot and an EXIT.
-\ It does NOT reveal it: it stays smudged, the way plain : left it, until
-\ the user's own closing ; does that later. HERE is now outside any
-\ pending definition, so CREATE works again -- see the header note.
+\ (LOC-OPEN) does NOT close the definition being compiled: FOO's own :
+\ stays open the whole time. It only compiles an unconditional BRANCH
+\ with an unresolved offset -- the same forward-reference idiom IF uses
+\ (COMPILE 0branch HERE 0 , / THEN's HERE OVER - SWAP !), just always
+\ taken. LOC-SLOT remembers the offset cell's address.
 \
-\ (LOC-CLOSE) builds the nameless body's header by hand (just the 3-byte
-\ "call Enter_Ptr" prologue -- see the header note on why not :NONAME)
-\ and patches its address into the slot left by (LOC-OPEN). !CSP re-arms
-\ the ?CSP check so that the user's own ; -- which closes the BODY's
-\ thread, not the outer word's -- passes, compiles the body's final EXIT,
-\ and SMUDGEs the outer word into visibility.
+\ HERE is then used exactly as CREATE inside a colon-definition would
+\ normally corrupt it (2.1): the local CONSTANTs get created right after
+\ the branch, splicing real dictionary headers into the middle of FOO's
+\ own thread. The BRANCH exists to jump over that splice at run time,
+\ landing on the binding prologue that (LOC-CLOSE) compiles below --
+\ never on the splice itself, and never on the restore chain (see next).
+\
+\ (LOC-CLOSE) runs after the local names are already created (the { and
+\ LOCALS-FOR loops call (LOC-MAKE) before this). It lays down this
+\ scope's own restore chain right where HERE now is -- one step per
+\ local, POP or EPOP as (LOC-STEP) decides, followed by EXIT. The chain
+\ is never reached by falling into it: only later, sideways, when the
+\ body's own EXIT lands on the address the binding prologue below pushes
+\ with >R. Landing there straight through, at FOO's entry, would run
+\ (LOC-POP)/(LOC-EPOP) against a return stack nothing has bound yet --
+\ which is exactly why the BRANCH must clear the chain too, not just the
+\ local headers, and why its offset is patched here, before the
+\ prologue, rather than after it (the natural place to end (LOC-CLOSE)
+\ at, but the wrong address to land on).
+\
+\ ] re-affirms STATE as compiling before returning: nothing here should
+\ have changed it (CREATE/CONSTANT do not touch STATE), but FOO's own :
+\ is still open and the user's own upcoming words must still be compiled,
+\ not executed -- so this is asserted, not assumed. FOO's own ; -- typed
+\ by the user right after the body -- closes it normally: COMPILE exit,
+\ SMUDGE, back to interpreting. No !CSP re-arm is needed either: unlike
+\ the previous (trampoline) design, there is no second, nested
+\ compilation to re-arm the check against -- the CSP that : saved at the
+\ very start is still the right one for that ; to check.
+\
+\ KNOWN REGRESSION (deliberately deferred): FOO's thread now contains the
+\ local headers and the restore chain in the middle of what SEE expects
+\ to be straight code. SEE will decode the BRANCH, then desync on the
+\ splice. Left unaddressed for now -- see prompts/LOCALS-PLAN.md.
 
 : (LOC-OPEN)  ( -- )
-    HERE LOC-SLOT !
-    COMPILE NOOP                    \ placeholder: harmless if never patched
-    COMPILE EXIT
+    COMPILE BRANCH
+    HERE  0 ,                       \ unresolved offset, patched below
+    LOC-SLOT !
     ;
 
-\ (LOC-CLOSE) first lays down this scope's own restore chain -- one step
-\ per local, in declaration order, POP or EPOP as (LOC-STEP) decides,
-\ followed by EXIT -- then makes the local names visible and compiles,
-\ at the head of the body, the code that binds them: last declared
-\ first, that is the one on top at run time. The chain address goes
-\ last, so that it is what the EXIT of the body finds on top of the
-\ return stack.
-
 : (LOC-CLOSE) ( -- )
-    HERE  LOC-CHAIN-START !          \ this scope's restore chain starts here
+    HERE  LOC-CHAIN-START !         \ this scope's restore chain starts here
     #LOCALS @ 0 DO  I (LOC-STEP) ,  LOOP  \ #LOCALS is always >=1 here
     ['] EXIT ,
 
-    HERE                            \ xt (the nameless body's CFA)
-
-    $CD C,                          \ compile CALL op-code
-    [ ' ' >BODY CELL- @ ]
-    LITERAL ,                       \ Enter_Ptr address to jump to
-
-    LOC-SLOT @ !                    \ the outer word calls the body
-    !CSP
-
     LOC-VOC CONTEXT !               \ local names visible in the body
+
+    HERE  LOC-SLOT @ -  LOC-SLOT @ !  \ branch lands HERE: right before the
+                                    \ prologue below, clearing the chain
+                                    \ above along with the local headers
 
     \ bind every local, one DO across both kinds: last declared first,
     \ the one on top at run time for the stack-supplied ones. This keeps
@@ -256,6 +271,9 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
     COMPILE LIT
     LOC-CHAIN-START @ ,
     COMPILE >R
+
+    ]                               \ re-affirm compiling: FOO's own : is
+                                    \ still open, its ; will close it
 
     0 #LOCALS !                     \ consume the scope
 ;
@@ -310,8 +328,8 @@ CREATE LOCAL-PFAS   MAXLOCALS CELLS ALLOT
     #LOCALS @ 0=                    #58 ?ERROR  \ no scope declared
     LATEST PFA LFA @ SCOPE-LINK @ - #59 ?ERROR  \ scope not adjacent
 
-    (LOC-OPEN)                      \ close the outer word on a slot
-    (LOC-CLOSE)                     \ trampoline: build body, bind, divert EXIT
+    (LOC-OPEN)                      \ open the branch scavalco
+    (LOC-CLOSE)                     \ splice locals+chain, patch, bind, divert EXIT
 ;
 IMMEDIATE
 
@@ -322,18 +340,20 @@ IMMEDIATE
 \       : SUM-TO  { N -- ACC }     N 0> IF  N 0 DO  ACC I 1+ + TO ACC  LOOP  THEN ;
 \
 \ Declaration and use in one place: no count to keep in step, no separate
-\ LOCALS-FOR to keep adjacent to the definition. It is the trampoline that
-\ makes this possible -- (LOC-OPEN) closes the outer word, and only then
-\ is HERE free for the CREATE that each local needs.
+\ LOCALS-FOR to keep adjacent to the definition. It is the BRANCH scavalco
+\ that makes this possible -- (LOC-OPEN) leaves FOO's own : open and just
+\ jumps over whatever comes next, so CREATE is free to splice each local's
+\ header right there.
 \
 \ Each name is parsed twice: >IN is rewound after the test against } (and
 \ against --) so that CONSTANT parses the very same name. All the names,
 \ the optional -- , and the } , must be on the SAME source line as the { .
 \
-\ On a malformed declaration the outer word survives as a do-nothing
-\ NOOP EXIT, but stays smudged (KNOWN ISSUE: since (LOC-OPEN) does not
-\ reveal it and QUIT never reaches the closing ; that would, the stub is
-\ left in the dictionary but unreachable by name -- see prompts/LOCALS-PLAN.md 14.5).
+\ On a malformed declaration the outer word survives as an unresolved
+\ BRANCH (offset still 0, so calling it -- unreachable, since it also
+\ stays smudged -- would spin), but stays smudged: (LOC-OPEN) does not
+\ reveal it and QUIT never reaches the closing ; that would (KNOWN ISSUE,
+\ carried over from the trampoline design -- see prompts/LOCALS-PLAN.md 14.5).
 
 : }  ( -- )
     #60 ERROR                       \ misplaced: } without {
