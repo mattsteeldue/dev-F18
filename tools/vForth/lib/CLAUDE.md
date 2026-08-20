@@ -118,9 +118,23 @@ headers, then the restore chain) used to desync `SEE`'s decoder after printing t
 as a definition's first cell as the unique signature of a `{`/`LOCALS` splice (no other
 core construct ever compiles `BRANCH` there) and jumps straight to the binding preamble
 via `LOC-SKIP`, the same target the CPU resolves at runtime. `SEE` on such a word
-therefore terminates and shows the binding preamble and real body, though not the local
-names or the restore chain themselves -- decoding the splice itself remains out of scope.
+therefore terminates and shows the binding preamble and real body, though not the
+restore chain itself -- decoding the splice remains out of scope.
 Verified on the emulator (`prompts/LOCALS-PLAN.md` section 17).
+
+**The preamble reads by name.** Each local gets a *second* header, same name but in the
+`DEFBINDS` vocabulary: a binder word that carries its own local's address and, executed,
+does the whole binding in one thread cell. `SEE SQZ` on `: SQZ { U V } U V + ;` prints
+`V U LIT n >R U V + EXIT` -- the binders named, last-declared first, then the cell that
+arms the restore chain. The binding code is **inlined** in the binder's `DOES>` body,
+never called: the body starts with the *caller's* return address on top (that is what
+`Enter_Ptr` pushes), which is exactly what `(LOC-BIND)`'s `R>` needs, and calling
+`(LOC-BIND)` from there would add a frame and steal the wrong address. Any future word
+reached through `DOES>` that juggles the return stack has to respect the same rule.
+`.WORD` is `>BODY NFA ID.`, resolving the name through the entry's mirror-ptr rather
+than the vocabulary chain, so `SEE` still names a binder after later scopes have reset
+`DEFBINDS` and orphaned its header. Sections 19-20 of the plan record the verification
+and the open question of replacing the remaining `LIT n >R` with a named word.
 
 A local is one permanent cell, not a frame slot, but the word is still **re-entrant**:
 `LOCALS` compiles a save of each cell's previous content onto the return stack, and

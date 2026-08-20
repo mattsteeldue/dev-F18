@@ -235,18 +235,19 @@ CREATE LOCAL-BIND-XTS   MAXLOCALS CELLS ALLOT
 \ its own CFA, which is a  CALL  into the maker's thread, where DOES> put
 \ a second  CALL Enter_Ptr : that Enter_Ptr pushes FOO's IP on the return
 \ stack and nothing else, so the DOES> body starts with FOO's own return
-\ address on top -- exactly what a directly compiled (LOC-BIND) would see.
-\ Calling (LOC-BIND) FROM the body would add one more level, and the R>
-\ inside it would steal the body's return address instead of FOO's (the
-\ bug of plan section 18.4). So the binding code is INLINED here, in the
-\ body itself, rather than called: no extra level, nothing to compensate.
-\ It is (LOC-BIND) / (LOC-BIND0) verbatim, minus their own call.
+\ address on top. Calling (LOC-BIND) from here adds ONE more level, and
+\ the R> inside it would steal the body's return address instead of
+\ FOO's (the bug of plan section 18.4). The level is fixed and known --
+\ binders never nest -- so the body compensates for it: it takes FOO's
+\ return address off the return stack before the call and puts it back
+\ after, so what (LOC-BIND) buries under ITS return address ends up
+\ under FOO's, where the restore chain expects it.
 
 : (LOC-BINDER-IN)   ( a -- )   CREATE ,
-    DOES>  @   R> SWAP DUP >R  DUP @ >R  ROT SWAP !  >R ;
+    DOES>  @   R> ROT ROT  (LOC-BIND)   >R ;
 
 : (LOC-BINDER-OUT)  ( a -- )   CREATE ,
-    DOES>  @   R> SWAP DUP >R  DUP @ >R  0 SWAP !  >R ;
+    DOES>  @   R> SWAP     (LOC-BIND0)  >R ;
 
 \ Each scope builds its OWN restore chain, instead of sharing one fixed
 \ table: a single shared table cannot represent an arbitrary mix of POP

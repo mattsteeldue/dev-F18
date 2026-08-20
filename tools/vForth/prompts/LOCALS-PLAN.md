@@ -1824,3 +1824,149 @@ stati interamente in `lib/LOCALS.f`, mai toccato `lib/see.f`.
 Se in futuro il beneficio sembrera' valere lo sforzo, la strada da valutare per prima
 e' la CODE word scritta a mano (18.6): evita l'indirezione DOES> alla radice invece di
 provare a farla convivere con `(LOC-BIND)`.
+
+---
+
+## 19. Le parole-binder funzionano -- il verdetto della 18 e' ribaltato (2026-08-20)
+
+La sezione 18 ha chiuso dicendo "non implementato, e' strutturale". La diagnosi era
+giusta nel sintomo e **sbagliata nella causa**: il livello di troppo sul return-stack
+non era il `DOES>`, era la **chiamata a `(LOC-BIND)`** fatta da dentro il corpo `DOES>`.
+
+Riletto `Enter_Ptr` una seconda volta: quando il corpo `DOES>` di un binder comincia a
+girare, in cima al return-stack c'e' **l'IP di FOO** -- esattamente quello che vedrebbe
+una `(LOC-BIND)` compilata in linea nel thread di FOO. Il `DOES>` di per se' non sposta
+niente. E' `(LOC-BIND)` che, essendo a sua volta una colon-definition, aggiunge il
+proprio frame: e' il suo `R>` che pesca l'indirizzo dentro il thread condiviso del
+maker invece che in quello di FOO. Tolta quella chiamata, il problema non esiste.
+
+### 19.1 Due varianti provate
+
+Entrambe partono dal testo della 18 e cambiano **solo** il corpo `DOES>` dei due maker:
+
+- **C -- inline** (`lib/LOCAL8.f`): il codice di `(LOC-BIND)` / `(LOC-BIND0)` e'
+  ricopiato dentro il corpo, meno la propria chiamata. Nessun livello in piu', niente
+  da compensare.
+
+      : (LOC-BINDER-IN)   ( a -- )   CREATE ,
+          DOES>  @   R> SWAP DUP >R  DUP @ >R  ROT SWAP !  >R ;
+
+- **B -- compensata** (`lib/LOCAL8B.f`): `(LOC-BIND)` viene chiamata davvero, ma il
+  corpo toglie l'indirizzo di ritorno di FOO dal return-stack prima della chiamata e ce
+  lo rimette dopo, cosi' quello che `(LOC-BIND)` seppellisce sotto il PROPRIO indirizzo
+  finisce sotto quello di FOO, dove la catena di ripristino se lo aspetta.
+
+      : (LOC-BINDER-IN)   ( a -- )   CREATE ,
+          DOES>  @   R> ROT ROT  (LOC-BIND)   >R ;
+
+Lo smoke test (`SQZ`, `SQ2`, `NST` annidati, `SPL` con output local) le passa entrambe,
+identiche. **Adottata la C**: un livello di chiamata in meno a ogni binding, e non si
+appoggia all'assunto "i binder non si annidano mai" su cui B invece si regge.
+
+### 19.2 Verifica completa della variante C
+
+`emu/repl.py`, binari build 2026-08-17, core invariato.
+
+| Caso | Atteso | Esito |
+|---|---|---|
+| `1 2 SQZ .` / `3 4 SQZ .` | `3` / `7` | ok |
+| `DEPTH` dopo lo smoke | `0` | ok -- nessun residuo |
+| `INCLUDE test/LOCALS-TESTS.f` | suite intera senza fallimenti | ok -- arriva al suo `LOCALS-TESTS done.` senza una riga di errore |
+| `DEPTH` dopo la suite | `0` | ok |
+| `SEE SQZ` | termina e mostra i nomi dei binder | ok -- `V U LIT -31244 >R U V + EXIT` |
+
+Il silenzio della suite e' significativo: `}T` (`lib/testing.f:75-84`) su mismatch
+stampa la riga sorgente piu' `MESSAGE .S` (msg#50 "Incorrect result", msg#51 "Wrong
+number of results"), quindi un fallimento sarebbe stato rumoroso. La suite copre
+entrambe le forme, 8 locali, `EXIT` anticipato, output locals e **la ricorsione**
+(`B-FACT 7` -> 5040, `B-RFACT`) -- cioe' proprio la rientranza che la 18 dava per rotta.
+
+L'unico rumore nel log e' un `ERROR msg#4` ("isn't unique") durante il caricamento delle
+dipendenze di `TESTING`: ridefinizione con `WARNING` a 0, non fatale, estranea a LOCALS.
+
+### 19.3 Nota di metodo
+
+`.WORD` e' `>BODY NFA ID.`: il nome si risale dalla mirror-ptr dell'entry, **non**
+seguendo la catena del vocabolario. Per questo `SEE` sa ancora chiamare `V` e `U` per
+nome dopo che una trentina di scope successivi hanno riazzerato `BND-VOC`, lasciando
+quelle header orfane. Qualunque parola creata per-scope resta quindi nominabile da
+`SEE`, anche se irraggiungibile da `FIND` -- fatto che serve alla sezione 20.
+
+### 19.4 Cosa resta della 18
+
+La 18.6 elencava come uniche strade superstiti la CODE word scritta a mano e il
+ripensamento di `(LOC-BIND)`. Non servono ne' l'una ne' l'altro: bastava non chiamare
+`(LOC-BIND)`. La 18 resta a verbale come diagnosi sbagliata utile -- il sintomo che
+descrive era reale e la sua analisi di `Enter_Ptr` corretta; e' il salto da "questa
+indirezione rompe" a "qualunque indirezione rompe" (18.5) che non reggeva.
+
+---
+
+## 20. Il literal della catena: `LIT n >R` -- ANALISI, DECISIONE APERTA (2026-08-20)
+
+Con i binder al loro posto, `SEE SQZ` mostra `V U LIT -31244 >R U V + EXIT`. Restano
+tre celle poco leggibili: l'indirizzo della catena di ripristino, compilato da
+`(LOC-CLOSE)` come letterale e spinto sul return-stack. Domanda dell'autore: si puo'
+sostituire con una `CONSTANT` precalcolata?
+
+**Si', ma non e' un risparmio.** Struttura di una entry (root `CLAUDE.md`): heap =
+`1 + len(nome) + 2 link + 2 xt`; dictionary = `2 mirror + 3 CALL Enter_Ptr + PFA`. Una
+parola per scope costa quindi ~7 byte di dictionary e ~9 di heap (nome di 4 caratteri)
+per togliere 2 o 4 byte di thread. Oggi `LIT n >R` sono 6 byte di thread e **zero**
+heap: la `CONSTANT` non riduce la memoria, la sposta -- e per giunta verso l'heap, che
+e' la risorsa piu' scarsa. Il guadagno e' interamente estetico, esattamente come lo era
+quello dei binder (che infatti costano anch'essi piu' di quanto risparmiano: una entry
+completa per locale contro 4 byte di thread).
+
+### 20.1 Le tre forme possibili
+
+| | thread | dict/scope | heap/scope | `SEE SQZ` |
+|---|---|---|---|---|
+| oggi | `[V][U][LIT][n][>R]` | -- | -- | `V U LIT -31244 >R U V + EXIT` |
+| **armer, 1 cella** | `[V][U][LOC}]` | +3 | +9 | `V U LOC} U V + EXIT` |
+| `CONSTANT` + `>R` | `[V][U][LOC-CHAIN][>R]` | +5 | +9 | `V U LOC-CHAIN >R U V + EXIT` |
+| fuso nell'ultimo binder | `[V][U]` | **-4** | 0 | `V U U V + EXIT` |
+
+L'**armer** e' la forma migliore delle due "con nome": una parola per scope che si fa
+carico anche del `>R`, cosi' le tre celle diventano una sola invece di due.
+
+    : (LOC-ARMER)  ( a -- )   CREATE ,
+        DOES>  @   R> SWAP >R >R ;
+
+E' lo stesso giro di return-stack dei binder e per la stessa ragione e' sicuro: il corpo
+parte con l'IP di FOO in cima, `R>` lo prende, `SWAP >R >R` rimette sotto l'indirizzo
+della catena e sopra l'IP -- l'`EXIT` del corpo torna nel thread di FOO e lascia la
+catena esattamente dove la lasciava `LIT n >R`. Fare invece `DOES> @ >R` sarebbe un
+disastro: l'`EXIT` del corpo salterebbe **subito** nella catena, al momento del binding.
+
+La terza forma non aggiunge parole: il binder del **primo** locale dichiarato (l'ultimo
+a girare) porta una seconda cella di PFA con l'indirizzo della catena, patchata da
+`(LOC-CLOSE)`, e arma lui dopo aver legato. Il corpo diventa
+`DUP @ ROT SWAP <bind> 2+ @ R> SWAP >R >R` -- il `ROT` del codice di bind arriva a tre
+celle di profondita' e non tocca il PFA lasciato sotto, verificato a mano. Costa due
+maker in piu' (il primo locale puo' essere un input o, con `{ -- A }`, un output) e due
+byte di PFA, e **risparmia** memoria. Prezzo: nessun marcatore, preambolo e corpo
+indistinguibili in `SEE`.
+
+### 20.2 Il vincolo sul nome: non `}`, non `LOCALS`
+
+Il nome naturale sarebbe `}` -- `SEE` stamperebbe `V U }`, identico al sorgente. **Non
+si puo'**: `CREATE` fa il controllo di ridefinizione, e un nome gia' presente in FORTH
+farebbe stampare `msg#4` "isn't unique" **a ogni scope**. `}` e `LOCALS` esistono
+entrambi. I binder si salvano solo perche' `U`, `V`, `N` non sono parole del core --
+un locale chiamato `DUP` farebbe scattare lo stesso rumore, cosa oggi non verificata.
+Serve quindi un nome che in FORTH non esista: `LOC}` o simile.
+
+Da dove parsarlo: `CREATE` legge il nome dallo stream. Nel form `{ ... }` la posizione
+del token `}` e' gia' sullo stack all'uscita del loop di `{` (oggi buttata via da
+`2DROP`), quindi basta `DROP >IN !` per rimbobinare -- stesso trucco gia' usato due
+volte nel modulo. Nel form legacy `LOCALS` non c'e' un token da riparsare: servirebbe
+un rewind aritmetico (`>IN @ 7 - 0 MAX`, dove 7 = `LOCALS` piu' il delimitatore),
+fragile, oppure un secondo ramo in `(LOC-CLOSE)` che nel form legacy lascia il letterale.
+
+### 20.3 Stato
+
+**Non implementato, decisione dell'autore in sospeso.** `lib/LOCALS.f` esce da questa
+sessione con `LIT n >R` invariato. Il compromesso da decidere e': 12 byte per scope
+(3 dict + 9 heap) per un marcatore leggibile, contro -4 byte per scope senza marcatore,
+contro zero lavoro lasciando il letterale.
