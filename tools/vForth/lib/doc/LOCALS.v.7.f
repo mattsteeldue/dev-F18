@@ -83,7 +83,7 @@
 \ than the raw LIT+xt pair the prologue used to compile.
 \
 \ BINDER WORDS. Each local also gets a second word, same name, in a
-\ separate vocabulary DEFBINDS: a DOES>-word that already knows its own
+\ separate vocabulary (DEFBINDS): a DOES>-word that already knows its own
 \ local's storage cell and, called, does what "LIT a (LOC-BIND)" used to
 \ do -- one thread cell in the prologue instead of three, and a name SEE
 \ can print instead of two raw primitives. See (LOC-MAKE) below.
@@ -200,6 +200,14 @@ CREATE LOCAL-BIND-XTS   MAXLOCALS CELLS ALLOT
 \ (see (LOC-CLOSE)), reached when the EXIT of the word being unwound
 \ jumps into it.
 
+: (LOC-BIND)  ( x a -- )            \ R: -- old a
+    R> SWAP DUP >R  DUP @ >R  ROT SWAP !  >R
+;
+
+: (LOC-BIND0)  ( a -- )             \ R: -- old a
+    R> SWAP DUP >R  DUP @ >R  0 SWAP !  >R
+;
+
 : (LOC-POP)   ( -- )                \ R: old a --
     R> R> R> !  >R
 ;
@@ -223,22 +231,8 @@ CREATE LOCAL-BIND-XTS   MAXLOCALS CELLS ALLOT
 \ local's own name, SEE shows that name in the binding preamble instead
 \ of "LIT n (LOC-BIND)".
 
-\ THE RETURN-STACK LEVEL. A binder is reached from FOO's thread through
-\ its own CFA, which is a  CALL  into the maker's thread, where DOES> put
-\ a second  CALL Enter_Ptr : that Enter_Ptr pushes FOO's IP on the return
-\ stack and nothing else, so the DOES> body starts with FOO's own return
-\ address on top -- exactly what a directly compiled (LOC-BIND) would see.
-\ Calling (LOC-BIND) FROM the body would add one more level, and the R>
-\ inside it would steal the body's return address instead of FOO's (the
-\ bug of plan section 18.4). So the binding code is INLINED here, in the
-\ body itself, rather than called: no extra level, nothing to compensate.
-\ It is (LOC-BIND) / (LOC-BIND0) verbatim, minus their own call.
-
-: (LOC-BINDER-IN)   ( a -- )   CREATE ,
-    DOES>  @   R> SWAP DUP >R  DUP @ >R  ROT SWAP !  >R ;
-
-: (LOC-BINDER-OUT)  ( a -- )   CREATE ,
-    DOES>  @   R> SWAP DUP >R  DUP @ >R  0 SWAP !  >R ;
+: (LOC-BINDER-IN)   ( a -- )   CREATE ,  DOES>  @ (LOC-BIND)  ;
+: (LOC-BINDER-OUT)  ( a -- )   CREATE ,  DOES>  @ (LOC-BIND0) ;
 
 \ Each scope builds its OWN restore chain, instead of sharing one fixed
 \ table: a single shared table cannot represent an arbitrary mix of POP
@@ -305,18 +299,6 @@ CREATE LOCAL-BIND-XTS   MAXLOCALS CELLS ALLOT
     HERE  LOC-CHAIN-START !         \ this scope's restore chain starts here
     #LOCALS @ 0 DO  I (LOC-STEP) ,  LOOP  \ #LOCALS is always >=1 here
     ['] EXIT ,
-
-    \ KNOWN BEHAVIOUR, not a bug: CONTEXT stays on DEFLOCALS (emptied) after
-    \ the closing ; -- nothing restores it until the next : (which resets
-    \ CONTEXT from CURRENT, see : itself) or an explicit FORTH. Harmless:
-    \ 2FIND (src/F18e.f) tries CONTEXT, then CURRENT, then FORTH outright,
-    \ and CURRENT is already correct -- restored by (LOC-MAKE) below on
-    \ every local. So every word typed right after ; is still found, via
-    \ 2FIND's second attempt. Fixing this for real would mean redefining ;
-    \ (save/call original, then OUTER-VOC @ CONTEXT !) -- the FLOATING/
-    \ NUMBER pattern -- which would cost every ; in the system a check and
-    \ would break the "LOCALS patches nothing" guarantee in lib/CLAUDE.md.
-    \ See prompts/LOCALS-PLAN.md section 21.
 
     LOC-VOC CONTEXT !               \ local names visible in the body
 

@@ -1970,3 +1970,50 @@ fragile, oppure un secondo ramo in `(LOC-CLOSE)` che nel form legacy lascia il l
 sessione con `LIT n >R` invariato. Il compromesso da decidere e': 12 byte per scope
 (3 dict + 9 heap) per un marcatore leggibile, contro -4 byte per scope senza marcatore,
 contro zero lavoro lasciando il letterale.
+
+## 21. `CONTEXT` resta su `DEFLOCALS` dopo `;` -- osservato, innocuo (2026-08-20)
+
+### 21.1 Il sintomo
+
+Dopo `: FOO { X } ... ;`, `CONTEXT` punta ancora a `DEFLOCALS` (svuotato) invece
+di tornare al vocabolario attivo prima dello scope (tipicamente `FORTH`).
+`CURRENT`, invece, e' gia' corretto: `(LOC-MAKE)` lo ripristina ad ogni local
+dichiarato (righe 361-362 di `lib/LOCALS.f`, vedi 3.4/13.x). Solo `CONTEXT`
+resta "sporco" finche' non arriva la prossima `:`, che lo azzera di nuovo
+(2.2: `: ` fa `CURRENT @ CONTEXT !`).
+
+### 21.2 Perche' non e' un bug funzionale
+
+Il vero motore di ricerca non e' `(FIND)` da solo ma `2FIND`
+(`src/F18e.f:4372-4398`), che prova in sequenza tre vocabolari:
+
+1. `CONTEXT` (qui: `DEFLOCALS`, vuoto -- fallisce sempre, silenziosamente)
+2. `CURRENT` (gia' ripristinato a `FORTH` da `(LOC-MAKE)` -- **qui trova tutto**)
+3. `FORTH` esplicito, come rete di sicurezza finale
+
+Quindi ogni parola digitata subito dopo la `;` di una definizione con `{ }`
+viene comunque trovata, tramite il secondo tentativo. L'unico costo e' un
+`(FIND)` fallito e silenzioso in piu' per ogni token interpretato, finche'
+non si digita di nuovo `:` (o `FORTH`). Nessuna word e' invisibile, nessun
+comportamento osservabile cambia -- solo lo stato di `CONTEXT` e' "sporco"
+tra una definizione e la successiva.
+
+### 21.3 Perche' non conviene ripararlo
+
+L'unico punto dove si sa che il corpo e' finito e' la `;` stessa (il
+ripristino e' un fatto compile-time, non runtime: non esiste un hook a fine
+riga che lo veda). Ripararlo davvero richiederebbe di ridefinire `;` per
+richiamare quella originale e poi fare `OUTER-VOC @ CONTEXT !` -- lo stesso
+pattern gia' usato da FLOATING per `NUMBER`/`INTERPRET` (`lib/CLAUDE.md`,
+"Patch-requiring libraries"). Due prezzi, entrambi pagati da OGNI `;` di
+OGNI definizione, non solo da quelle con locali:
+
+- si perderebbe la proprieta' oggi vera e documentata "LOCALS non patcha
+  nessuna parola core, `MARKER NO-LOCALS` scarica tutto in un colpo solo"
+  (`lib/CLAUDE.md`, sezione LOCALS) -- servirebbe un `NO-LOCALS` che
+  ripristini anche la `;` originale, come fa `NO-FLOATING` con `NUMBER`;
+- un controllo extra ad ogni chiusura di definizione nell'intero sistema,
+  per un effetto che oggi e' solo estetico.
+
+**Verdetto: non implementato.** Annotato qui e in `lib/LOCALS.f` come nota
+di comportamento noto, non come difetto da correggere.
