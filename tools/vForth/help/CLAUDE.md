@@ -28,6 +28,16 @@ Rules:
 - First line: word name (4-space indent), then stack effect.
 - Blank line after stack effect.
 - Description: plain prose, no markup, max ~64 columns.
+- **Maximum 21 lines total.** `HELP` (`inc/help.f` -> `VIEW-FILE-PAD`) streams the
+  file straight to the screen with no pagination/pause -- it just `TYPE`s every
+  line until EOF or `[BREAK]`. The ZX Spectrum Next text screen is 24 rows; a
+  file longer than 21 lines scrolls its own top off before the reader can see
+  it, or runs into the `ok` prompt. Count actual lines (blank separators
+  included, final trailing newline excluded) -- e.g. with Python:
+  `len(open('help/word.txt',encoding='ascii').read().split(chr(10))[:-1])`.
+  If a word needs more, trim prose rather than exceeding the limit: cut an
+  example, shorten a rationale, or push secondary detail into a "See also"
+  pointer to another HELP entry instead of restating it.
 - File ends with a blank line.
 - 7-bit ASCII only, no BOM, no smart quotes, no em-dash (use -).
 

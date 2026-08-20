@@ -35,3 +35,23 @@ real-hardware) check against the written checklist.
 To close this: promote `dev/DMA.f` to `lib/DMA.f`, then run the CSpect
 verification checklist already in the tutorial file.
 
+
+# Several lib/ modules have little to no per-word help/ coverage
+**2026-08-20**
+Found while auditing `help/` for FAT-filename-mapped word names (every
+`inc/` word with a mapped char now has its `help/*.txt`, plus `EXEC:`,
+`ASK-Y/N`, `BMP-LOAD"`). The gap turned out to be broader than the mapped
+names themselves: `lib/floating.f`, `lib/fixed88.f`, `lib/complex.f`,
+`lib/testing.f`, `lib/RPi0.f`, `lib/LED.f`, `lib/ZAP.f`/`ZAP~.f`,
+`lib/bleep.f`, `lib/mouse-ay-tester.f`, `lib/AFXFRAME-forth.f`,
+`lib/layer3.f` and `lib/MOUSE.f` have little or no per-word `help/` entries
+-- not even for their plain-named words (e.g. `F+`, `F-`, `FDUP`, `T{`,
+`}T` have none; only `help/floating.txt` documents the module as a whole).
+Documenting just the FAT-mapped subset of each module (`F<`, `F>`, `FP*`,
+`C*`, `AFX>AY`, `TILE-MODE:`, `ZAP"`, ...) would be incoherent with their
+undocumented plain-named siblings in the same file, so none of those were
+added -- this needs a deliberate per-module documentation pass instead.
+`?--`/`?}` in `lib/LOCALS.f` are the one confirmed exception: private
+parsing helpers, intentionally undocumented like `(LOC-BIND)`/`LOC-PFA`,
+not part of this gap.
+
