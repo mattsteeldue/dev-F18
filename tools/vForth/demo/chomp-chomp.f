@@ -81,9 +81,11 @@ decimal
   emitc emitc emitc
   emitc emitc emitc ;
 
-\ synchro-emit of 12 characters
+\ emit 12 characters
+\ This used to begin with sync-vid, which made the game speed a side
+\ effect of how many sprites were drawn: 5 sprites = 5 frames = ~10Hz.
+\ Pacing is now in one place, see pace below.
 : sync-emit ( c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 -- )
-  sync-vid
   emitc emitc emitc emitc
   emitc emitc emitc emitc
   emitc emitc emitc emitc ;
@@ -96,7 +98,22 @@ decimal
        variable  high-score 0 ,
        variable  counting
        variable  lives
-       variable  hunt 
+       variable  hunt
+
+\ Timing.  ticks is the single time base of the game: it drives the ghost
+\ speed accumulators, the scatter/chase timer and the colour cycles.
+\ tick-frames is how many 50Hz video frames one game tick lasts -- 5
+\ reproduces the cadence the game had when every sprite drawn cost a frame.
+       variable  ticks
+       variable  tick-frames
+5 tick-frames !
+
+\ one game tick: advance the clock, then wait tick-frames video frames.
+\ sync-vid is a halt, so it waits for the 50Hz interrupt regardless of
+\ the CPU clock -- SPEED! does not change the game cadence.
+: pace ( -- )
+  1 ticks +!
+  tick-frames @ 0 ?do sync-vid loop ;
 
 \ pacman eat a pill
 : pill-on
@@ -486,8 +503,11 @@ set-maze-run  \ ...and do it now
 .( Chomp.f - array )
 
 
-\ Array is an area 6 x 8 bytes
-create Array   6 08 * allot
+\ Array is an area 6 x 16 bytes
+\ Stride went from 8 to 16 to make room for the AI attributes (accum,
+\ speed, rev?).  Four places encode the stride and must agree: this
+\ ALLOT, sprite#, name-of and all-ghost.
+create Array   6 16 * allot
 
 \ current object pointer
 0 variable Sprite^            Sprite^   !
@@ -500,7 +520,7 @@ create Array   6 08 * allot
 \  n to sprite-no
 \  a to sprite^
 : sprite# ( n -- )
-  dup 3 lshift array +
+  dup 4 lshift array +
   sprite^ ! to sprite-no ;
 \
 
@@ -511,12 +531,12 @@ create Array   6 08 * allot
 
 \ set value v on attribute i for all ghosts
 : all-ghost  ( v i -- )
-    32 Array  +     \ limit is 32 = 4 * 8 
-    swap Array  +   \ index starts with first attribute 
-    do 
+    64 Array  +     \ limit is 64 = 4 * 16
+    swap Array  +   \ index starts with first attribute
+    do
         dup i c!    \ store value
-    08 +loop
-    drop ;          \ drop value    
+    16 +loop
+    drop ;          \ drop value
 
 
 
@@ -533,7 +553,7 @@ create Array   6 08 * allot
 \   n index-of cccc
 : name-of  ( n -- creates )
   <builds c, does> c@ dup
-  3 lshift Array + sprite^ !
+  4 lshift Array + sprite^ !
   to sprite-no ;
 
 
@@ -554,6 +574,11 @@ create Array   6 08 * allot
 5  index-of  x-pre
 6  index-of  y-pre
 7  index-of  maze
+
+\ AI attributes, added when the stride grew from 8 to 16
+ 8 index-of  accum    \ fractional speed accumulator, 0..255
+ 9 index-of  speed    \ increment per tick: 192 = 75%, 128 = 50%
+10 index-of  rev?     \ pending forced reversal, consumed at next cell
 
 
 
@@ -576,20 +601,73 @@ create Array   6 08 * allot
 \
 
 
+.( Chomp.f - scatter/chase )
+
+\ Periodically the ghosts stop chasing and head for their own corner.
+\ That rhythm is what makes the arcade game playable rather than
+\ merciless: it hands the player regular windows to breathe.  Durations
+\ are in game ticks (~10Hz), from the arcade's 7s / 20s / 5s.
+\ Defined here, ahead of the AI proper, because init-all and
+\ pacman-eat-pill already need reset-phases and force-reverse.
+create phase-tab
+  70 ,  200 ,
+  70 ,  200 ,
+  50 ,  200 ,
+  50 ,    0 ,           \ 0 = chase for the rest of the level
+8 constant phase-max
+
+variable phase-i
+variable phase-t
+variable scatter?       \ non-zero while in scatter mode
+
+: load-phase ( -- )
+  phase-i @ phase-max < if
+     phase-i @ dup + phase-tab + @ phase-t !
+     phase-i @ 1 and 0=
+  else
+     0 phase-t !  0
+  then
+  scatter? ! ;
+
+: reset-phases ( -- )
+  0 phase-i !  load-phase ;
+
+\ every ghost must turn round at its next cell
+: force-reverse ( -- )
+  1  0 rev?  all-ghost ;
+
+\ Advance the phase timer.  It is suspended while the ghosts are
+\ frightened and resumes into the same phase afterwards.
+: tick-phase ( -- )
+  hunt @ 1 = if
+     phase-t @ if
+        -1 phase-t +!
+        phase-t @ 0= if
+           1 phase-i +!
+           load-phase
+           force-reverse
+        then
+     then
+  then ;
+
+
 .( Chomp.f - ghosts )
 
 \ setup standard ghost colors
+\ Aligned with the arcade personalities: the colour now tells you which
+\ targeting rule a ghost follows.  This also frees blue (1) for the
+\ frightened state, which used to be white.
 : Ghost-color ( -- )
- Inky   1 sprite@ color c!  \ Blue
- Pinky  3 sprite@ color c!  \ Magenta
- Blinky 5 sprite@ color c!  \ Cyan
- Ted    2 sprite@ color c!  \ Red
+ Inky   5 sprite@ color c!  \ Cyan    - crossed vector, doubles Blinky's
+ Pinky  3 sprite@ color c!  \ Magenta - ambusher, aims 4 cells ahead
+ Blinky 2 sprite@ color c!  \ Red     - direct chaser
+ Ted    6 sprite@ color c!  \ Yellow  - Clyde's role (nearest to orange)
 ;
 
 
 \ setup scared ghost colors
 : Ghost-white ( -- )
- 7  0 color  all-ghost
+ 1  0 color  all-ghost      \ blue, as in the arcade
 ;
 
 
@@ -612,7 +690,10 @@ ghost-color \ and doit now
     Blinky xy-pos@ xy-pre!
     [char] T udg+
     0 face all-ghost
-; 
+    000 0 accum all-ghost
+    192 0 speed all-ghost    \ 75% of Pac-Man
+    000 0 rev?  all-ghost
+;
 
 
 \ Setup pacman appearance
@@ -683,6 +764,7 @@ cherry-init
     cherry-init
     99 counting !
     ghost-color 1 hunt !
+    reset-phases
     key-right LASTK c!
 ;
 
@@ -727,9 +809,7 @@ cherry-init
    [char] R UDG+
    sprite@ face  c!
    1  sprite@ y-pos c+!
-\ else 2 choose if key-up
-\  else key-down then
-\  sprite@ dir c!
+   key-right sprite@ dir c!   \ Pinky/Inky aim ahead of this
   then ;
 
 
@@ -744,9 +824,7 @@ cherry-init
    [char] P UDG+
     sprite@ face  c!
    -1 sprite@ y-pos c+!
-\ else 2 choose if key-up
-\  else key-down then
-\  sprite@ dir c!
+   key-left sprite@ dir c!
   then ;
 
 
@@ -758,9 +836,7 @@ cherry-init
    [char] Q UDG+
    sprite@ face  c!
    -1 sprite@ x-pos c+!
-\ else 2 choose if
-\  key-right else key-left then
-\  sprite@ dir c!
+   key-up sprite@ dir c!
   then ;
 
 
@@ -772,9 +848,7 @@ cherry-init
    [char] S UDG+
    sprite@ face  c!
    1  sprite@ x-pos c+!
-\ else 2 choose if
-\  key-left else key-right then
-\  sprite@ dir c!
+   key-down sprite@ dir c!
   then ;
 
 
@@ -804,8 +878,10 @@ cherry-init
    10 total d+! 
    [ 50 25 bip ] 2lit bleep 
    [ 50 39 bip ] 2lit bleep 
-   0 counting ! 
-   ghost-white 
+   0 counting !
+   ghost-white
+   128 0 speed all-ghost    \ frightened ghosts drop to 50%
+   force-reverse            \ and turn round on the spot
   then ;
 \
 
@@ -836,98 +912,233 @@ cherry-init
   then ; 
 
 
-( ghost-right )
-: ghost-right ( c -- )
-  xy-pos@ 1+ maze@
-  ?ghost-trail if
-     1  sprite@ y-pos c+!
+( ghost AI - geometry )
+
+\ The arcade rules are written for x=column, y=row.  This game is the
+\ other way round: x-pos is the ROW and y-pos is the COLUMN.  Everything
+\ below is already translated to (r,c) = (x-pos,y-pos).  Get that
+\ backwards and Pinky's bug and the tie-break come out mirrored, with no
+\ visible error to tell you.
+
+\ reverse of a direction: key-left+key-right = key-up+key-down = 109
+: opposite ( d1 -- d2 )
+  109 swap - ;
+
+\ the cell reached from (r,c) by one step in direction d
+: step-cell ( r c d -- r2 c2 )
+  case
+    key-up    of swap 1- swap endof
+    key-down  of swap 1+ swap endof
+    key-left  of 1-           endof
+    key-right of 1+           endof
+  endcase ;
+
+\ squared euclidean distance between two cells.  Squaring is enough:
+\ sqrt is monotonic so the ordering is identical, and we skip the root.
+\ Worst case here stays well inside a 16-bit cell.
+: dist2 ( r1 c1 r2 c2 -- n )
+  rot - dup * >r
+  - dup * r> + ;
+
+
+( ghost AI - targets )
+
+variable tgt-r
+variable tgt-c
+variable own-r          \ the deciding ghost's own cell, for Ted
+variable own-c
+
+\ Scatter corners, one per ghost, deliberately outside the maze so they
+\ can never be reached: the ghost just orbits its corner until the mode
+\ changes.  Indexed by ghost number.
+create scatter-tab
+  22 c, 23 c,           \ 0 Inky   bottom-right
+   0 c,  1 c,           \ 1 Pinky  top-left
+   0 c, 23 c,           \ 2 Blinky top-right
+  22 c,  1 c,           \ 3 Ted    bottom-left
+
+: scatter-cell ( n -- r c )
+  dup + scatter-tab +
+  dup c@ swap 1+ c@ ;
+
+\ Offset of n cells in direction d, reproducing the arcade's 8080
+\ overflow bug: when Pac-Man faces UP the offset also picks up a LEFT
+\ component of the same size.  Pinky's ambushes and the classic
+\ "head-fake" escape both depend on it, so it is kept on purpose.
+: dir-delta ( n d -- dr dc )
+  case
+    key-up    of dup negate swap negate endof   \ ( -n -n ) : the bug
+    key-down  of 0                      endof   \ ( n  0 )
+    key-left  of 0 swap negate          endof   \ ( 0 -n )
+    key-right of 0 swap                 endof   \ ( 0  n )
+    >r drop 0 0 r>
+  endcase ;
+
+\ the cell n steps ahead of Pac-Man
+: ahead ( n -- r c )
+  pacman sprite@ dir c@ dir-delta
+  pacman xy-pos@
+  >r rot + r> rot + ;
+
+\ Blinky, "Shadow": straight at Pac-Man's own cell.
+: blinky-target ( -- )
+  pacman xy-pos@ tgt-c ! tgt-r ! ;
+
+\ Pinky, "Speedy": four cells ahead of Pac-Man.
+: pinky-target ( -- )
+  4 ahead tgt-c ! tgt-r ! ;
+
+\ Inky, "Bashful": take the cell two ahead of Pac-Man, draw the vector
+\ from Blinky to it, and double it.  Inky hangs back while Blinky is far
+\ away and closes in as Blinky closes in -- he is the only one who
+\ depends on another ghost, so Blinky is moved first each tick.
+: inky-target ( -- )
+  2 ahead                       \ or oc
+  blinky xy-pos@                \ or oc br bc
+  rot dup + swap - tgt-c !      \ 2*oc - bc
+  swap dup + swap - tgt-r ! ;   \ 2*or - br
+
+\ Ted, in Clyde's "Pokey" role: charges while more than 8 cells away,
+\ peels off to his own corner once he gets closer.  Hence the loop:
+\ charge, touch the 8-cell ring, drift off, come back.
+: ted-target ( -- )
+  xy-pos@ own-c ! own-r !
+  pacman xy-pos@
+  2dup own-r @ own-c @ dist2
+  64 < if
+     2drop 3 scatter-cell
+  then
+  tgt-c ! tgt-r ! ;
+
+
+( ghost AI - choosing a direction )
+
+variable best-d
+variable best-n
+variable no-dir         \ the direction this ghost may not take
+variable found
+
+\ Consider one direction.  It survives only if it is not the forbidden
+\ reversal, is not a wall, and lands strictly closer to the target than
+\ anything tried so far.  Because the caller tries up, left, down, right
+\ in that order and the test is a strict <, ties break the arcade way --
+\ up > left > down > right -- for free.
+: try-dir ( r c d -- r c )
+  dup no-dir @ = if
+     drop
   else
-   2 choose if
-    key-down
-   else
-    key-up
-   then
-   sprite@ dir c!
+     >r 2dup r@ step-cell
+     2dup maze@ ?ghost-trail if
+        2dup tgt-r @ tgt-c @ dist2
+        dup best-n @ < if
+           best-n !  r@ best-d !
+        else
+           drop
+        then
+     then
+     2drop r> drop
+  then ;
+
+\ Greedy one-cell lookahead: there is no pathfinding anywhere in this
+\ file.  A ghost's whole personality is in WHERE its target sits, never
+\ in how it walks there.
+: choose-dir ( -- d )
+  32767 best-n !
+  sprite@ dir c@ dup best-d !
+  opposite no-dir !
+  xy-pos@
+  key-up    try-dir
+  key-left  try-dir
+  key-down  try-dir
+  key-right try-dir
+  2drop
+  best-n @ 32767 = if
+     no-dir @ best-d !    \ dead end: turning back is the only way out
   then
-;
+  best-d @ ;
 
+\ clockwise probe order, used only when frightened
+create cw-tab
+  key-up c, key-right c, key-down c, key-left c,
 
-( ghost-left )
-: ghost-left  ( c -- )
-  xy-pos@ 1- maze@
-  ?ghost-trail if
-    -1  sprite@ y-pos c+!
+: legal-dir? ( r c d -- f )
+  dup no-dir @ = if
+     drop 2drop 0
   else
-   2 choose if
-    key-up
-   else
-    key-down
-   then
-   sprite@ dir c!
-  then
-;
+     step-cell maze@ ?ghost-trail
+  then ;
+
+\ Frightened ghosts use no target at all: they pick a pseudo-random
+\ direction and, if it is blocked, step clockwise to the next one.
+: scared-dir ( -- d )
+  sprite@ dir c@ dup best-d !
+  opposite no-dir !
+  0 found !
+  4 choose
+  4 0 do
+     found @ 0= if
+        dup 3 and cw-tab + c@
+        dup >r
+        xy-pos@ rot legal-dir? if
+           r@ best-d !  1 found !
+        then
+        r> drop
+     then
+     1+
+  loop
+  drop
+  best-d @ ;
 
 
-( ghost-down )
-: ghost-down  ( c -- )
-  xy-pos@ swap 1+ swap maze@
-  ?ghost-trail if
-     1  sprite@ x-pos c+!
+( ghost movement )
+
+\ consume a pending forced reversal, set when the mode changed
+: apply-reverse ( -- )
+  sprite@ rev? c@ if
+     sprite@ dir c@ opposite sprite@ dir c!
+     0 sprite@ rev? c!
+  then ;
+
+\ Fractional speed, so ghosts can be slower than Pac-Man: pure add and
+\ compare, no multiply.  192/256 = 75% normally, 128/256 = 50% when
+\ frightened.  This replaces the FRAMES gate that never worked.
+: ghost-step? ( -- f )
+  sprite@ accum c@  sprite@ speed c@  +
+  dup 255 > if
+     256 -  sprite@ accum c!  1
   else
-   2 choose if
-    key-right
-   else
-    key-left
-   then
-   sprite@ dir c!
-  then
-;
+     sprite@ accum c!  0
+  then ;
 
-
-( ghost-up )
-: ghost-up    ( c -- )
-  xy-pos@ swap 1- swap maze@
-  ?ghost-trail if
-    -1  sprite@ x-pos c+!
+\ pick a direction, then step if the cell ahead is walkable
+: ghost-move ( -- )
+  hunt @ -1 = if scared-dir else choose-dir then
+  dup sprite@ dir c!
+  xy-pos@ rot step-cell
+  2dup maze@ ?ghost-trail if
+     sprite@ y-pos c!
+     sprite@ x-pos c!
   else
-   2 choose if
-    key-left
-   else
-    key-right
-   then
-   sprite@ dir c!
+     2drop
+  then ;
+
+\ Work out where ghost n wants to go, then leave ghost n selected: the
+\ target words select Pacman and Blinky as they work, so restoring the
+\ selection is not optional.
+: ghost-target ( n -- )
+  dup >r
+  scatter? @ if
+     scatter-cell tgt-c ! tgt-r !
+  else
+     dup sprite#
+     case
+       0 of inky-target   endof
+       1 of pinky-target  endof
+       2 of blinky-target endof
+       3 of ted-target    endof
+     endcase
   then
-;
-
-
-( ghost-move )
-: ghost-move ( c -- )
- case
-  key-right of
-   ghost-right endof
-  key-left  of
-   ghost-left  endof
-  key-up    of
-   ghost-up    endof
-  key-down  of
-   ghost-down  endof
- endcase ;
-\
-
-
-( ghost-decision )
-: ghost-decision ( -- )
-  xy-pos@ xy-pre@ d= if
-   4 choose
-   case
-   0 of key-left  endof
-   1 of key-down  endof
-   2 of key-up    endof
-   3 of key-right endof
-   endcase
-  then
-  sprite@ dir c!
-;
+  r> sprite# ;
 
 
 
@@ -1071,7 +1282,8 @@ cherry-init
    57 counting @ < if ghost-white then
    58 counting @ < if ghost-color then
    59 counting @ < if ghost-white then
-   60 counting @ < if ghost-color 1 hunt ! then
+   60 counting @ < if ghost-color 1 hunt !
+                      192 0 speed all-ghost then
   then
 ; 
 
@@ -1112,19 +1324,26 @@ cherry-init
 
 
 
+\ Blinky is moved before Inky, because Inky's target is built from
+\ Blinky's current cell.  The order of this table is not cosmetic.
+create ghost-order  2 c, 1 c, 0 c, 3 c,
+
 : move-four-ghosts
   4 0 do
-    i sprite# xy-pos@ xy-pre!
-    23672 @ -1 and hunt @ - 1- if
-  \   ghost-decision
-      sprite@ dir c@
-      ghost-move then
+    i ghost-order + c@              \ n
+    dup sprite# xy-pos@ xy-pre!
+    apply-reverse
+    ghost-step? if
+       dup ghost-target
+       ghost-move
+    then
     sprite-put
     xy-pos@ maze@
     sprite@ maze c!
     catch? if catch! then
+    drop
   loop
-; 
+;
 
 
 
@@ -1160,10 +1379,12 @@ needs .s
 
 
 : heart-beat
+  pace
   move-pacman
   move-four-ghosts
   put-cherry
   count-down
+  tick-phase
   dashboard
 \ debug
 ;

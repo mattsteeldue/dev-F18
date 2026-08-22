@@ -22,9 +22,19 @@ things as they were before import-ing this source file.
 
 Chomp-chomp.f
 -------------
-Simple pac-man like game. Your character can be controlled using keyboard 
-via arrows keys or using Kempston joystick. Ghosts movement are completely
-random. Once loaded, you have to give GAME to start it.
+Simple pac-man like game. Your character can be controlled using keyboard
+via arrows keys or using Kempston joystick. Each of the four ghosts follows
+its own arcade targeting rule: Blinky (red) heads straight for you, Pinky
+(magenta) aims four cells ahead to cut you off, Inky (cyan) doubles the
+vector running from Blinky to the cell ahead of you, and Ted (yellow)
+charges until he is within eight cells and then backs off to his corner.
+They alternate between chasing and scattering to their own corners, all
+turn round together whenever that mode changes, and they travel at 75% of
+your speed - 50% while frightened. Once loaded, you have to give GAME to
+start it.
+Game speed is a parameter rather than an accident of how many sprites get
+drawn: TICK-FRAMES holds how many 50Hz video frames one game tick lasts
+(5 by default), so  3 TICK-FRAMES !  makes the whole game quicker.
 To forget this demo you have to give COLD.
 This demo also come with a subdirectory named chomp-chomp that contains
 the result of execution of ZAP definition that is the simplest way to 
