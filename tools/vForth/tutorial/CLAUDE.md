@@ -471,9 +471,47 @@ Status as of 2026-07-05:
   control byte, not the palette RAM contents. **Awaiting CSpect
   verification** -- never run outside this session.
 
+- **064-scaled-integer-math.f (new, 2026-08-22)**: `DEMO` **confirmed on
+  CSpect** (2026-08-22); reference screenshot
+  `tutorial/064-scaled-integer-math.png`. `ZOOM-DEMO` **awaiting CSpect
+  verification** after being retargeted: it first aimed at the seahorse
+  valley (`-75 10 60 WINDOW`), which with `MAX-ITER 15` returns "inside"
+  for 95% of the pixels -- a correctly computed, entirely black screen.
+  A zoom is bounded by the ITERATION COUNT long before it is bounded by
+  the Q8.8 resolution, and any tutorial or demo that offers a zoom has to
+  say so. For that particular target both limits bite at once: raising
+  `MAX-ITER` to 40 only brings the view down from 95% to 90% "inside"
+  (at 0.60 across it really is almost all set -- the seahorses live in
+  the fissure between cardioid and period-2 disc), and shrinking the
+  span to the ~0.15 that would show them puts one pixel at 0.0006,
+  six times finer than the 1/256 Q8.8 resolves. **The seahorse valley is
+  unreachable in Q8.8**, whatever the iteration count -- worth knowing
+  before promising a zoom in any fixed-point demo. It now aims at the north bulb (`-50 60 120 WINDOW`, 49% inside)
+  and `+COLOR` spreads its 14 shades over whatever `MAX-ITER` is set to,
+  so raising the iteration count no longer requires a longer COLOR-TAB.
+  Fixed-point (Q8.8) integer
+  arithmetic, with the Mandelbrot set of `demo/brot.f` as the worked
+  example. The arithmetic half (`CENTI`, `S*`, `S/`, `SQ`, `.SCALED`,
+  `ITERATE`, `>C`, `WINDOW`) was verified in the headless emulator,
+  definition by definition, against the expected values listed in the
+  tutorial's own test block -- all match. The drawing half could not be:
+  `NEEDS GRAPHICS` fails under the headless emulator with "SETUP?
+  NextZXOS DOS call error" while loading `lib/GRAPHICS.f` -- so for any
+  tutorial that draws, headless validation stops at the arithmetic and
+  CSpect is the only way to see the picture.
+  While writing it, the same scaling bug was found and fixed in
+  `demo/brot.f`: `300 100 Scale */` computes 3.00*100/256 = 117 instead
+  of 3.00*256/100 = 768 (argument order of `*/`), and `H-SHIFT`/`V-SHIFT`
+  were left unscaled. The view therefore sat entirely inside the
+  cardioid (x in -0.86..-0.41, y in -0.39..0.37) and the demo painted an
+  almost entirely black screen. Both files now convert every window
+  parameter through the same `CENTI ( n -- n' ) Scale 100 */` word.
+
 Flag: 045 confirmed on CSpect (2026-07-10); 046 (including its new slide
 show) confirmed on CSpect (2026-07-10); 050 until its fix is confirmed on
-CSpect; 056 until confirmed on CSpect.
+CSpect; 056 until confirmed on CSpect; 064 `DEMO` and the corrected
+`demo/brot.f` confirmed on CSpect (2026-08-22), 064 `ZOOM-DEMO` until
+its retargeted view is confirmed too.
 
 
 ## 16. Hardware Sprites: slot vs pattern, palette offset (tutorial 053)
