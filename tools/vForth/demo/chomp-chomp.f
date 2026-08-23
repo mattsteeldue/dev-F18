@@ -36,6 +36,7 @@ NEEDS SPEED!            \ Sinclair ZX Spectrum Next - Run up to 28 MHz
 NEEDS CHOOSE            \ Brodie's random numbers
 
 NEEDS CASE              \ useful syntax CASE-OF
+NEEDS J                  \ outer loop index, used once by find-pills
 
 NEEDS BLEEP
 
@@ -665,15 +666,59 @@ variable scatter?       \ non-zero while in scatter mode
 ;
 
 
-\ setup scared ghost colors
-: Ghost-white ( -- )
- 1  0 color  all-ghost      \ blue, as in the arcade
-;
-
-
 ghost-color \ and doit now
 
+\ Color cycles: anelli di colore con rate (tick per colore) e lista colori
+: COLORS: ( rate count -- )
+    <builds  c, c,                 \ pfa: [count][rate][c1..cN]
+    does>  ( pfa -- c )
+        dup 1+ c@                  \ rate
+        ticks @ swap /             \ indice grezzo
+        over c@ mod                \ modulo count
+        + 2+ c@ ;
 
+\ anello di colore per fantasmi spaventati: blu/bianco, 1 tick ciascuno
+1 2 COLORS: SCARED-FLASH
+  1 c,  7 c,
+
+\ anello di colore per la frutta: rosso/giallo/magenta ogni 4 tick
+4 3 COLORS: FRUIT-CYCLE
+  2 c,  6 c,  3 c,
+
+\ anello di colore per le pillole di potere: verde (come il resto del
+\ labirinto) / bianco, ogni 3 tick -- il BRIGHT globale (game imposta
+\ 1 .bright una volta sola) si applica gia' a tutto lo schermo, quindi
+\ il bianco esce gia' come bianco brillante senza bisogno di toccare
+\ l'attributo BRIGHT qui.
+3 2 COLORS: PILL-FLASH
+  4 c,  7 c,
+
+\ counting value at which scared ghosts start flashing; frightened mode
+\ ends at 60, so the default reproduces the old cascade's last 4 ticks
+variable flash-at
+56 flash-at !
+
+\ color for frightened ghosts: solid blue most of time, flash at the end
+: scared-color ( -- c )
+  counting @ flash-at @ < if
+    1
+  else
+    SCARED-FLASH
+  then ;
+
+\ colour a sprite draws with: cherry pulses, ghosts turn scared, else
+\ each entity's own colour field.  sprite-no 4 < selects ghosts only
+\ (0-3): without it a scared Pac-Man (sprite-no 4) would flash too.
+: sprite-color ( -- c )
+  sprite-no 5 = if
+    FRUIT-CYCLE
+  else
+    sprite-no 4 < hunt @ -1 = and if
+      scared-color
+    else
+      sprite@ color c@
+    then
+  then ;
 
 \ Initialize all ghosts appearance
 : Ghost-init  ( -- )
@@ -747,12 +792,12 @@ cherry-init
 \   Blinky  sprite-put
 : sprite-put ( -- )
     sprite@ face  c@
-    sprite@ color c@  16  \ prepare .ink
+    sprite-color  16
     xy-pos@ swap      22  \ prepare .at
     sprite@ maze  c@
-    xy-pre@ swap      22  \ prepare .at  
+    xy-pre@ swap      22  \ prepare .at
     4 16
-    sync-emit             \ send all 12 chr  
+    sync-emit             \ send all 12 chr
 ;
 
 
@@ -879,7 +924,6 @@ cherry-init
    [ 50 25 bip ] 2lit bleep 
    [ 50 39 bip ] 2lit bleep 
    0 counting !
-   ghost-white
    128 0 speed all-ghost    \ frightened ghosts drop to 50%
    force-reverse            \ and turn round on the spot
   then ;
@@ -1172,7 +1216,7 @@ create cw-tab
 : inter-hunt
   0 27 do
    10 i .at sync-vid
-   7 16 bl emit emitc emitc
+   1 16 bl emit emitc emitc  \ scared ghost: blue, not the old white
    [udg] T emitc sync-vid
    bl bl emitc emitc
    6 16 emitc emitc
@@ -1249,7 +1293,9 @@ create cw-tab
   -1 lives +!
   lives @ 0= if
    high-score 2@ score 2@
-   dnegate d+ 0< if
+   dnegate d+ nip 0< if   \ d+'s sign lives in the high cell, which is on
+                          \ top; nip discards the low cell under it so 0<
+                          \ tests the right one and nothing leaks
      score 2@ high-score 2!
    then
    0. score 2!
@@ -1276,25 +1322,73 @@ create cw-tab
 
 
 : count-down
-  hunt @ -1 = if 
+  hunt @ -1 = if
    1  counting +!
-   56 counting @ < if ghost-color then
-   57 counting @ < if ghost-white then
-   58 counting @ < if ghost-color then
-   59 counting @ < if ghost-white then
-   60 counting @ < if ghost-color 1 hunt !
-                      192 0 speed all-ghost then
+   60 counting @ < if
+     ghost-color 1 hunt ! 192 0 speed all-ghost
+   then
   then
 ; 
 
 
 
+\ true while the cherry is still on the maze, waiting to be eaten
+: cherry-visible? ( -- f )
+  cherry xy-pos@ maze@ [udg] U = ;
+
+\ once visible, redraw every tick so FRUIT-CYCLE actually pulses;
+\ otherwise roll for a new cherry to appear
 : put-cherry
-  100 choose 0= if
+  cherry-visible? if
    cherry sprite-put
-   [udg] U xy-pos@ maze!
+  else
+   100 choose 0= if
+    cherry sprite-put
+    [udg] U xy-pos@ maze!
+   then
   then ;
 \
+
+\ Power pills are few and fixed once a maze loads, so their positions are
+\ scanned once (find-pills, called after every set-maze-run) instead of
+\ every heart-beat: flash-pills then just checks those 4 cached cells,
+\ same as put-cherry treats the one cherry position.
+4 constant pill-n
+create pill-x  pill-n allot
+create pill-y  pill-n allot
+
+\ scan the maze once and cache every power pill's (x,y); a maze with
+\ fewer than pill-n pills leaves the remaining slots at 0 (never matches
+\ a real row, so flash-pills' maze@ check on them just misses harmlessly)
+variable pill-found
+: find-pills ( -- )
+  pill-n 0 do 0 i pill-x + c!  0 i pill-y + c! loop
+  0 pill-found !
+  22 1 do
+    23 2 do
+      j i maze@ [udg] O = if
+        pill-found @ pill-n < if
+          j pill-found @ pill-x + c!
+          i pill-found @ pill-y + c!
+          1 pill-found +!
+        then
+      then
+    loop
+  loop ;
+
+\ redraw every power pill still uneaten with the current PILL-FLASH
+\ colour, then restore the maze's standard ink so nothing else (e.g.
+\ the dashboard's plain-text " score " label) inherits the flash colour
+: flash-pills ( -- )
+  PILL-FLASH .ink
+  pill-n 0 do
+    i pill-x + c@ i pill-y + c@   \ x y
+    2dup maze@ [udg] O = if
+      2dup .at [udg] O emitc
+    then
+    2drop
+  loop
+  4 .ink ;
 
 : key-decode ( c1 -- c2 )
   case
@@ -1383,6 +1477,7 @@ needs .s
   move-pacman
   move-four-ghosts
   put-cherry
+  flash-pills
   count-down
   tick-phase
   dashboard
@@ -1402,6 +1497,7 @@ needs .s
    ghost-color 1 hunt !
    init-all
    set-maze-run
+   find-pills
    interlude
    init-display
    key-right LASTK c!
@@ -1435,6 +1531,7 @@ needs .s
   decimal
   init-all
   set-maze-run
+  find-pills
   init-display
   run-game
   22 0 .at

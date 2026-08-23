@@ -409,6 +409,26 @@ symbol** and may appear in Forth source that targets the machine's display direc
 - `EMIT ( c -- )` may mask to 7-bit ASCII range (0-127).
 - `EMITC ( c -- )` emits the full character code (0-255) without masking -- use for UDG or   codes and extended ZX Spectrum characters (128-255). Control characters (0-31) that target the real hardware have each a peculiar meaning.
 
+**EMITC and ROM errors -- falls back to BASIC, not to the vForth `ok` prompt.**
+`EMITC` is `rst $10` (`project/vForth18_DOES/source/L0.asm:765`): it goes straight through
+the ZX ROM's ordinary character-output routine, the same one Sinclair BASIC's `PRINT`
+uses. That routine is where BASIC's control-code parser lives (`INK`/`PAPER`/`AT`/UDG
+codes/...), and it is **BASIC-dependent**: a malformed control-code argument (e.g. an
+out-of-range colour) raises a ROM error the same way it would from a BASIC program, which
+means the machine drops straight to the **BASIC** prompt -- not back to vForth's `ok`.
+The report line names a **BASIC error code letter** (`K` = "Invalid colour", the classic
+Spectrum ROM error set) followed by the **BASIC line number** of the launcher listing
+(`Forth18_loader.bas`) where the crash landed, e.g. `K Invalid colour, 150:1` -- `150` is
+not a vForth address or a game-related number, it is just where in the loader `RUN` was
+executing. Nothing is lost: the reference manual (.odt/.pdf) mentions in passing that
+whenever the machine falls back to BASIC "for any reason", `RUN` resumes vForth from
+where the block/blocks file left off. This is easy to trip over when composing raw
+control-code sequences by hand through `EMITC` (as opposed to going through wrapper words
+like `.INK`/`.AT` that keep arguments in range) -- see the `COLORS:` bug found in
+`demo/chomp-chomp.f` 2026-08-23 (an out-of-bounds table read fed EMITC a garbage colour
+byte and crashed to BASIC with exactly this error) for a worked example of the failure
+mode.
+
 
 ## FAT Filename Character Mapping
 
