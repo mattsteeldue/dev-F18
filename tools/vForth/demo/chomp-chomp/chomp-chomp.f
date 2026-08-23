@@ -37,6 +37,7 @@ NEEDS CHOOSE            \ Brodie's random numbers
 
 NEEDS CASE              \ useful syntax CASE-OF
 NEEDS J                  \ outer loop index, used once by find-pills
+NEEDS <>                 \ used by MAZE-CHECK (Stage 4)
 
 NEEDS BLEEP
 
@@ -480,11 +481,73 @@ decimal
     loop
     2drop ;
 
-\ prepare running image of maze
+\ Stage 4: mazes on Screen, editable with EDIT without recompiling.
+\ Screens 740-779 are reserved for chomp-chomp levels (40 Screen = 20
+\ mazes of 2 Screen/4 BLOCK each); confirmed free/overwritable by the
+\ author 2026-08-23 (740-776 were empty, 777-779 held obsolete unrelated
+\ experiments).  Maze #0 (level MOD n-mazes = 0) stays the compiled
+\ maze-base above -- kept as a permanent fallback so the ZAP standalone
+\ .bin does not depend on !Blocks-64.bin.  Disk maze n (n>=1, 1-based)
+\ lives on Screen MAZE-SCR0+2*(n-1) and +2*(n-1)+1: rows 0..20 (of the 32
+\ available), columns 0..20 are the maze-w(21) maze characters (same
+\ alphabet as maze-base); columns 21..63 and rows 21..31 are free/
+\ reserved and never read by the loader below.
+740 constant MAZE-SCR0
+   2 value   n-mazes     \ 0 = compiled maze-base; 1 = Screen 740/741
+   variable  level        \ 0-based; reset in game, advanced in phase-complete
+
+\ first BLOCK (of 4) holding disk maze n (n>=1, 1-based)
+: maze-blk0 ( n -- blk )
+    1- 4 * MAZE-SCR0 2* + ;
+
+\ write the 24-byte maze-run row shape from src (maze-w=21 raw chars)
+\ to dest, WITHOUT converting to UDG -- shared by the game loader below
+\ (which UDGizes right after) and by MAZE-CHECK (which wants the
+\ original characters).  A maze-base row is NOT [count=21][21 chars]:
+\ ," strips the source's leading alignment space (WORD skips leading
+\ blanks) but keeps the trailing one, so the compiled count is 22 (21
+\ real chars + 1 trailing space), followed by a stray 0x00 that ,"'s
+\ own "0 c," tacks on after every string.  Reproduce that exact shape
+\ here so a disk-loaded row is byte-for-byte identical to a compiled
+\ one after UDGize (confirmed via maze-base/maze-run DUMP, 2026-08-23).
+: raw-row! ( src dest -- )
+    >r
+    r@ 1+ maze-w cmove
+    bl r@ maze-w 1+ + c!
+     0 r@ maze-w 2 + + c!
+    maze-w 1+ r> c! ;
+
+\ address of the 64 raw bytes of row r (0..20) of disk maze n
+: maze-line ( n r -- a )
+    swap maze-blk0
+    swap 8 /mod
+    rot +
+    block
+    swap 64 * + ;
+
+\ load row r (0..20) of disk maze n into maze-run and UDGize it,
+\ mirroring what maze-copy does per row for the compiled path
+: load-maze-row ( n r -- )
+    dup >r
+    maze-line
+    r> 24 * maze-run +
+    2dup raw-row!
+    nip udgize ;
+
+: load-maze ( n -- )
+    maze-h 0 do
+        dup i load-maze-row
+    loop drop ;
+
+\ prepare running image of maze: level 0 keeps the original compiled
+\ path unchanged; any other level loads the matching disk maze
 : set-maze-run
-    maze-base
-    maze-run
-    maze-copy ;
+    level @ n-mazes mod
+    ?dup 0= if
+        maze-base maze-run maze-copy
+    else
+        load-maze
+    then ;
 
 
 set-maze-run  \ ...and do it now
@@ -1411,6 +1474,283 @@ variable pill-found
   loop
   4 .ink ;
 
+\ ===========================================================================
+\ MAZE-CHECK -- interpreter-only validator for a maze (compiled or on disk).
+\ Not called by the game.  Loads the RAW characters (no UDGize) of maze n
+\ into a scratch buffer separate from maze-run (so a live game is never
+\ disturbed), then runs a handful of structural checks, reporting every
+\ problem found instead of stopping at the first one.
+\
+\ Usage:  0 MAZE-CHECK   \ checks the compiled maze-base
+\         1 MAZE-CHECK   \ checks disk maze #1 (Screen 740/741)
+\ ===========================================================================
+
+create maze-check-buf  24 21 * allot
+
+\ address of raw character at (0-based row 0..20, column 1..maze-w) in
+\ maze-check-buf -- same column convention as maze^/maze@ above
+: check^ ( r c -- a )
+    swap 24 * maze-check-buf + + ;
+
+: wall-char? ( c -- f )
+    upper [char] A [char] N between ;
+
+\ same per-row copy maze-copy does, but WITHOUT the UDGize step
+: raw-copy-base ( a1 a2 -- )
+    maze-h 0 do
+        2dup 24 cmove
+        swap 24 + swap 24 +
+    loop
+    2drop ;
+
+: maze-check-load ( n -- )
+    ?dup 0= if
+        maze-base maze-check-buf raw-copy-base
+    else
+        maze-h 0 do
+            dup i maze-line
+            maze-check-buf i 24 * +
+            raw-row!
+        loop drop
+    then ;
+
+variable check-errors
+
+\ ---- individual checks -----------------------------------------------
+
+: check-nul ( -- )
+    maze-h 0 do
+        maze-w 0 do
+            j i 1+ check^ c@ 0= if
+                1 check-errors +!
+                cr ." NUL byte at row " j 1+ . ." col " i 1+ .
+            then
+        loop
+    loop ;
+
+variable door-count
+
+: check-door ( -- )
+    0 door-count !
+    maze-h 0 do
+        maze-w 0 do
+            j i 1+ check^ c@ [char] - = if
+                1 door-count +!
+            then
+        loop
+    loop
+    door-count @ 0= if
+        1 check-errors +!
+        cr ." no ghost-house door ('-') found"
+    then ;
+
+variable slash-count
+variable slash-row
+variable bslash-count
+variable bslash-row
+
+: check-tunnel ( -- )
+    0 slash-count !   0 bslash-count !
+    -1 slash-row !    -1 bslash-row !
+    maze-h 0 do
+        maze-w 0 do
+            j i 1+ check^ c@
+            dup [char] / = if
+                1 slash-count +!
+                j slash-row !
+            then
+            92 = if                      \ 92 = '\' -- avoid [char] \, which
+                1 bslash-count +!         \ would hand a bare backslash token
+                j bslash-row !            \ to the parser right after [char]
+            then
+        loop
+    loop
+    slash-count @ bslash-count @ <> if
+        1 check-errors +!
+        cr ." tunnel mismatch: " slash-count @ . ." '/' vs " bslash-count @ . ." '\'"
+    then
+    slash-count @ 0> if
+        slash-row @ bslash-row @ <> if
+            1 check-errors +!
+            cr ." tunnel '/' and '\' not on the same row"
+        then
+    then ;
+
+variable pill-count-check
+
+: check-pills ( -- )
+    0 pill-count-check !
+    maze-h 0 do
+        maze-w 0 do
+            j i 1+ check^ c@ [char] O = if
+                1 pill-count-check +!
+            then
+        loop
+    loop
+    pill-count-check @ pill-n <> if
+        1 check-errors +!
+        cr ." pill count mismatch: found " pill-count-check @ . ." expected " pill-n .
+    then ;
+
+\ ---- connectivity (flood-fill from Pac-Man's start cell) --------------
+
+512 constant ff-max
+create ff-stack  ff-max 2 * allot
+variable ff-sp
+variable ff-count
+
+: ff-addr ( -- a )  ff-sp @ 2* ff-stack + ;
+
+: ff-push ( r c -- )
+    ff-addr 1+ c!
+    ff-addr c!
+    1 ff-sp +! ;
+
+: ff-pop ( -- r c )
+    -1 ff-sp +!
+    ff-addr c@
+    ff-addr 1+ c@ ;
+
+variable ff-ok
+
+: ff-in-bounds? ( r c -- f )
+    -1 ff-ok !
+    dup 1 < if 0 ff-ok ! then
+    dup maze-w > if 0 ff-ok ! then
+    drop                              ( r )
+    dup 0 < if 0 ff-ok ! then
+    maze-h 1- > if 0 ff-ok ! then
+    ff-ok @ ;
+
+\ open = in bounds, not a wall letter, and not already visited (the
+\ flood-fill marks a visited cell by overwriting it with byte 1, which
+\ is not a legal maze character so it can never be confused with one)
+: ff-open? ( r c -- f )
+    2dup ff-in-bounds?
+    if
+        check^ c@
+        dup wall-char?
+        swap 1 = or 0=
+    else
+        2drop 0
+    then ;
+
+\ if (r,c) is open and unvisited: mark it visited and queue it
+: ff-try ( r c -- )
+    2dup ff-open? if
+        2dup check^ 1 swap c!
+        1 ff-count +!
+        ff-push
+    else
+        2drop
+    then ;
+
+: ff-visit ( r c -- )
+    2dup swap 1- swap ff-try     \ up:    (r-1, c)
+    2dup swap 1+ swap ff-try     \ down:  (r+1, c)
+    2dup 1- ff-try                \ left:  (r, c-1)
+    2dup 1+ ff-try                \ right: (r, c+1)
+    2drop ;
+
+: flood-fill ( start-r start-c -- n )
+    0 ff-count !
+    0 ff-sp !
+    ff-try
+    begin
+        ff-sp @ 0>
+    while
+        ff-pop ff-visit
+    repeat
+    ff-count @ ;
+
+\ A row's leading/trailing run of spaces is not corridor: the maze
+\ shape is not a rectangle (e.g. the ghost-house alcove rows), and those
+\ columns are genuinely outside the walkable area, never reached by any
+\ path -- comparing a raw non-wall cell count against the flood-fill
+\ would flag maze-base itself as "broken".  Instead, check that every
+\ cell that actually MATTERS for play -- a dot, a pill, a door, a tunnel
+\ mouth -- was reached: those characters never appear in the outside-
+\ shape filler, so this has no false positives on the compiled maze.
+: feature-char? ( c -- f )
+    dup [char] . =
+    over [char] O = or
+    over [char] - = or
+    over [char] / = or
+    swap 92 = or ;                \ 92 = '\'
+
+\ Pac-Man's start cell is hard-coded here the same way pacman-init hard-
+\ codes it (14 x-pos, 12 y-pos): row is 0-based for check^, so 14-1.
+\ flood-fill overwrites every reached cell with byte 1, so a feature
+\ character still showing its original glyph afterwards was never
+\ reached.
+: check-connectivity ( -- )
+    13 12 flood-fill drop
+    maze-h 0 do
+        maze-w 0 do
+            j i 1+ check^ c@ feature-char? if
+                1 check-errors +!
+                cr ." unreachable feature at row " j 1+ . ." col " i 1+ .
+            then
+        loop
+    loop ;
+
+\ maze-run's shape is not a rectangle (e.g. the tapered top/bottom rows
+\ and the ghost-house alcove), so "row 0/20 are all walls" is false even
+\ for maze-base itself: it has blank filler cells there too.  The
+\ property that actually matters is that NONE of those filler cells (or
+\ any cell on the outer edge of the maze-h x maze-w grid) is reachable -- maze^
+\ has no bounds check, so a reachable edge cell would let a future move
+\ compute a row/column outside the array.  Must run right after
+\ check-connectivity, which is what leaves the byte-1 reachability
+\ markers this reads.
+: check-perimeter ( -- )
+    maze-w 0 do
+        0 i 1+ check^ c@ 1 = if
+            1 check-errors +!
+            cr ." reachable cell on top border, col " i 1+ .
+        then
+        maze-h 1- i 1+ check^ c@ 1 = if
+            1 check-errors +!
+            cr ." reachable cell on bottom border, col " i 1+ .
+        then
+    loop
+    \ the tunnel row is a deliberate exception: its '/' and '\' mouths
+    \ are meant to reach column 1 / maze-w (that is how Pac-Man wraps
+    \ around), so skip left/right on whichever row check-tunnel found
+    \ them on -- everywhere else the edge must stay unreached.
+    maze-h 0 do
+        i slash-row @ <> if
+            i 1 check^ c@ 1 = if
+                1 check-errors +!
+                cr ." reachable cell on left border, row " i 1+ .
+            then
+        then
+        i bslash-row @ <> if
+            i maze-w check^ c@ 1 = if
+                1 check-errors +!
+                cr ." reachable cell on right border, row " i 1+ .
+            then
+        then
+    loop ;
+
+\ ---- driver -------------------------------------------------------------
+
+: MAZE-CHECK ( n -- )
+    0 check-errors !
+    maze-check-load
+    check-nul
+    check-door
+    check-tunnel
+    check-pills
+    check-connectivity
+    check-perimeter
+    check-errors @ 0= if
+        cr ." MAZE-CHECK: OK"
+    else
+        cr ." MAZE-CHECK: " check-errors @ . ." problem(s) found"
+    then ;
+
+
 : key-decode ( c1 -- c2 )
   case
   key+up of key-up endof
@@ -1517,6 +1857,7 @@ needs .s
    180  total D+!
    ghost-color 1 hunt !
    init-all
+   1 level +!
    set-maze-run
    find-pills
    interlude
@@ -1550,6 +1891,7 @@ needs .s
   180. total 2!
   0.   score 2!
   decimal
+  0 level !
   init-all
   set-maze-run
   find-pills
