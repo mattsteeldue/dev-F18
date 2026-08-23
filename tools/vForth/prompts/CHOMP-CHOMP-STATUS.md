@@ -1,4 +1,4 @@
-# chomp-chomp: stato della revisione (agg. 2026-08-23, sessione 2)
+# chomp-chomp: stato della revisione (agg. 2026-08-23, sessione 4)
 
 Nota di ripresa per continuare il lavoro da un'altra sessione.
 Piano approvato completo: `C:\Users\matteo\.claude\plans\glowing-mixing-haven.md`
@@ -6,115 +6,186 @@ Piano approvato completo: `C:\Users\matteo\.claude\plans\glowing-mixing-haven.md
 
 ## Dove siamo
 
-**Stadio 1 (AI dei fantasmi + pacing) — codice completo, aritmetica validata
-dalla suite nell'emulatore, resta solo la prova di giocabilita' su CSpect.**
-Stadi 2, 3 e 4 non iniziati.
+**Stadio 1 (AI dei fantasmi + pacing) — completo, confermato su CSpect.**
+**Stadio 2 (colori ciclici) — completo, confermato su CSpect.**
+**Stadio 3 — completo, CONFERMATO su CSpect 2026-08-23, sia
+l'Approccio A (font, poi abbandonato) sia l'Approccio B (UDG esteso,
+quello adottato) sia lo standalone via `ZAP`.** L'obiettivo originale
+del piano (font in RAM via CHARS/`rst $10`) e' stato tentato, fatto
+funzionare, poi **abbandonato e sostituito** da un approccio piu'
+semplice: estendere gli UDG oltre la lettera `U` invece di introdurre
+un font separato. L'Approccio B e' stato provato a schermo su CSpect:
+funziona. **`ZAP GAME` provato e funzionante**: trovata e corretta al
+volo una `NEEDS [']` mancante in `lib/ZAP.f` (bug pre-esistente, non
+introdotto da questa sessione), poi i tre `.bin` standalone rigenerati
+con successo e lanciati direttamente via `demo/chomp-chomp/game.bas`
+(bypassando `INCLUDE demo/chomp-chomp.f`) -- confermato funzionante.
+Vedi la sezione dedicata piu' sotto per la cronologia completa dello
+Stadio 3 (perche' si e' tentato il font, cosa e' andato storto, perche'
+si e' tornati sugli UDG). Stadio 4 (labirinti su Screen) non iniziato.
 
-Branch: `chomp-chomp-ghost-ai`. Il commit 44f1fc9 porta lo Stadio 1; sopra ci
-sono le correzioni della suite descritte piu' sotto (non ancora committate).
+Branch: `chomp-chomp-ghost-ai`.
+
+| Commit | Contenuto |
+|---|---|
+| `44f1fc9` | Stadio 1: personalita' dei fantasmi, pacer esplicito |
+| `a7a1fbf` | Suite di test dell'AI, tutta verde |
+| `a9efc32` | Stadio 2: `COLORS:`, `SCARED-FLASH`, `FRUIT-CYCLE`, `PILL-FLASH`,
+  fix stack leak in `ghost-catch`, fix colore `inter-hunt`; **confermato su
+  CSpect**. E' anche la baseline "pre-font" a cui e' stato fatto risalire
+  lo Stadio 3 (vedi sotto) -- byte-identica alla copia dell'autore
+  `version/20260820/demo/chomp-chomp-1.f`. |
+| `544c8e0` | Housekeeping: rinominata la copia pre-revisione in
+  `demo/chomp-chomp/chomp-chomp-0.f`; bozza post Discord. Nessun cambio al
+  gioco. |
 
 | File | Stato |
 |---|---|
-| `demo/chomp-chomp.f` | Stadio 1 completo, invariato dal commit |
-| `demo/README.txt` | voce riscritta: non dice piu' "ghosts movement are completely random" |
-| `test/CHOMP-AI-TESTS.f` | ~45 asserzioni, **tutte verdi**, stack vuoto |
-| `lib/ZAP.f`, `tutorial/059-standalone-executables.f` | corretto `ZAP CHOMP-CHOMP` -> `ZAP GAME` |
+| `demo/chomp-chomp.f` | Stadio 1+2+3 completi, **confermati su CSpect**
+  (schermo, non solo compilazione). Stadio 3 nella sua forma finale:
+  `UDGize` (rimessa) converte A-U *e* `.` (nuovo 22-esimo slot UDG,
+  lettera `V`) a tempo di `maze-copy`; nessun font personalizzato,
+  nessuna lettura di "ROM" a runtime. Banner `.( Chomp.f - X )` ->
+  `.( X )` (richiesta cosmetica dell'autore, 11 occorrenze). |
+| `demo/chomp-chomp/chomp-chomp.f` | **FATTO 2026-08-23**: copia del
+  master, confermata byte-identica dall'autore. `chomp-chomp-0.f` (la
+  vecchia copia pre-revisione, superata) rimossa dalla stessa cartella. |
+| `demo/chomp-chomp/game-core.bin` / `game-heap.bin` / `game-user.bin` | **FATTO
+  2026-08-23**: rigenerati con `ZAP GAME` da una sessione vForth viva
+  dopo il fix di `lib/ZAP.f` sotto; lanciati via `game.bas` e
+  confermati funzionanti standalone (senza `INCLUDE`). Spostati
+  dall'autore anche su W: (SD CSpect), non solo in locale. |
+| `lib/ZAP.f` | **Bug pre-esistente trovato e corretto dall'autore
+  2026-08-23**: mancava `NEEDS [']` dopo `MARKER TASK` -- una sessione
+  vForth pulita che caricava `ZAP` senza gia' avere `[']` in dizionario
+  falliva. Non e' un regressione di questa sessione; scoperto solo ora
+  perche' `ZAP GAME` non era mai stato riprovato dallo Stadio 3. |
+| `test/CHOMP-AI-TESTS.f` | ~45 asserzioni, tutte verdi (verificato sessione 2) |
+| `demo/README.txt` | riscritta per Stadio 1 (niente piu' "completely
+  random"); da rivedere di nuovo a fine Stadio 3/4 per i labirinti multipli |
 
-Non ancora fatto (previsto dal piano a fine lavoro): ricopiare il master su
-`demo/chomp-chomp/chomp-chomp.f` (oggi divergono: la copia e' la versione
-pre-modifica del 7 giugno) e rigenerare i `.bin` standalone con `ZAP GAME`
-(solo a mano, da sessione vForth viva). **Vanno fatti insieme**: copiare il
-sorgente senza rigenerare i binari renderebbe quella directory incoerente.
-Resta anche la nota "superata" sullo Screen 600.
+**Da sincronizzare**: `lib/ZAP.f` e `demo/chomp-chomp/chomp-chomp.f`
+sono nuovi/modificati nel repo PC ma non ancora passati dallo skill
+`/sync-cspect` -- l'autore ha spostato a mano i `.bin`/`game.bas` su
+W:, ma questi due file testuali potrebbero non essere allineati sulla
+SD finche' non gira un sync.
 
-## Cosa e' verificato
+## Stadio 3: cronologia (font in RAM tentato, poi sostituito da UDG esteso)
 
-- Nessun riferimento in avanti fra le nuove parole; nessuna collisione di nome
-  con parole core.
-- File ASCII a 7 bit, niente TAB, terminazione conforme alla regola di `INCLUDE`.
-- **`INCLUDE demo/chomp-chomp.f` compila da cima a fondo nell'emulatore
-  headless**, tutti i banner inclusi il nuovo `Chomp.f - scatter/chase`.
-- **L'aritmetica dell'AI e' verificata**: run del 2026-08-23, 2443 s totali,
-  tutte le asserzioni passano e `.S` finale non stampa nulla, cioe' stack
-  vuoto. L'unico messaggio nel log e' `ERROR msg#4` = "has already been
-  defined.", che e' benigno: `lib/testing.f:50` fa `: ERROR ERROR-XT @
-  EXECUTE ;` e quindi ridefinisce l'`ERROR` del core. Un fallimento sarebbe
-  stato rumoroso — il gestore vettorizzato `ERROR1` stampa la riga sorgente,
-  poi `MESSAGE` (`msg#50` "Incorrect result." o `msg#54`) e `.S` — e non fa
-  `QUIT`, quindi li avrebbe elencati tutti.
+**Approccio A (font in RAM via CHARS) -- funzionante, poi abbandonato.**
+Obiettivo originale del piano (Parte 5): ridefinire i codici 65-79 (A-O:
+14 muri + pillola grande) e 46 (`.`) con glifi propri via il meccanismo
+NextZXOS `CHARS`/`rst $10` (control-code 30/31), eliminando `UDGize`.
+Il test isolato del control-code 31 (`demo/charset-test.f`) e' passato
+su CSpect (quirk trovato: la patch sul bitmap va scritta *prima* di
+`31 EMITC 8 EMITC`, non dopo, o l'FPGA "aggancia" i vecchi glifi).
+Implementato in `demo/chomp-chomp.f` (`my-font`, `install-font`,
+`use-my-font`/`use-rom-font`) e confermato funzionante su CSpect, ma
+con tre problemi via via risolti nella stessa sessione:
 
-## Correzioni applicate alla suite (sessione 2)
+1. **Trail/pillola invalicabile, lampeggio assente** -- `maze-copy` non
+   chiamava piu' `UDGize`, quindi `maze-run` conteneva la lettera ASCII
+   `O` letterale, ma i controlli di movimento/incasso confrontavano
+   ancora col codice UDG `[udg] O`. Fix: confronti spostati su
+   `[char] O`.
+2. **Testo di caricamento illeggibile** -- `install-font` accendeva il
+   font subito, mescolando muri/pillola al testo delle istruzioni
+   d'uso. Fix: attivazione spostata just-in-time dentro `init-display`,
+   solo attorno a `maze.`.
+3. **Bug architetturale DOT**: il core di `.vforth` vive in
+   `$2000-$3FFF`, dove sotto dot-command la ROM classica non e' mai
+   attiva. Il passo che "salvava il font ROM" (`CHARS-VAR @ 256 +
+   my-font 768 cmove`) leggeva quindi garbage sotto DOT. Mitigato in
+   piu' round (blank a 128 block-graphic -- poi rimosso perche'
+   ridondante --, pillola/puntino spostati su UDG anche durante il
+   game loop, e infine il fix vero: azzerare esplicitamente il glifo
+   del codice 32 in `my-font`). Confermato funzionante su entrambe le
+   varianti DOES e DOT.
 
-I due difetti previsti, piu' un terzo che non era stato visto.
+**Approccio B (UDG esteso) -- quello adottato, sostituisce interamente
+l'Approccio A.** Dopo la conferma su CSpect dell'Approccio A, l'autore
+ha fatto un'osservazione decisiva: l'intero sforzo per un font separato
+nasceva dalla scarsita' percepita degli UDG (solo 21 lettere, A-U), ma
+il fix del punto 3 sopra ha dimostrato che **il codice UDG non ha
+davvero un limite a 21**: la routine di stampa ROM/NextZXOS legge
+semplicemente 8 byte a `(codice-144)*8` dalla tabella puntata da UDG,
+senza mai controllare che il codice sia `<= 164`. Si puo' quindi
+estendere la tabella con nuove lettere (`V`, `W`, ...) tanto quanto
+serve. Questo elimina il bisogno di un font separato -- e con esso
+*tutta* l'esposizione al bug DOT sopra, non solo la sua finestra
+`maze.`, perche' gli UDG sono dati compilati nel dizionario, mai letti
+dalla "ROM" a runtime.
 
-1. **Mancava `DECIMAL`.** Confermato: `lib/testing.f` finisce con
-   `HEX 24 CONSTANT MAX-BASE` / `HEX 20 CONSTANT #BITS-UD` e non ripristina la
-   base. Aggiunto `DECIMAL` subito dopo `NEEDS TESTING`, come fanno
-   `FIXED88-TESTS.f` e `FLOATING-TESTS.f` (e come fa `CORE-TESTS.f` all'inverso,
-   con un `HEX` esplicito).
-2. **`DO...LOOP` in interpretazione.** Incapsulato in
-   `: run-ticks ( n -- ) 0 ?do tick-phase loop ;`.
-3. **La sezione 5 (`choose-dir`) era sbagliata in 3 asserzioni su 5** — errore
-   nel file di test, non nel gioco. Le premesse sul labirinto erano false:
-   (5,10) e' `.` e non un muro, quindi *up* vinceva; e (4,5), la presunta
-   "sacca sigillata", e' `J`, cioe' **esso stesso un muro**.
+Decisione dell'autore: **regredire `demo/chomp-chomp.f` alla baseline
+pre-font** (`a9efc32`, salvata anche dall'autore come
+`version/20260820/demo/chomp-chomp-1.f`, confermata byte-identica) ed
+estendere `UDGize` per convertire anche `.` invece di introdurre
+`my-font`. Implementato:
 
-   L'indicizzazione di `maze^` e': riga 1-based, colonna 1-based sul primo
-   carattere visibile (l'offset 0 e' il byte di conteggio della stringa `,"`,
-   il 23 e' il NUL; passo 24). Tre ancore indipendenti la confermano: le tre
-   celle interne della casa dei fantasmi a (12,10..12), la porta `-` a
-   (11,11) e il buco nei puntini dove parte Pac-Man a (14,12).
+- `demo/chomp-chomp.f` ripristinato da `chomp-chomp-1.f` (== `a9efc32`,
+  Stadio 1+2 intatti, `UDGize`/`between`/`install-font` ecc. nella loro
+  forma originale).
+- Nuovo 22-esimo slot in `UDG_1`, lettera `V` (codice 165 = 144+21),
+  stesso bitmap piccolo-puntino gia' usato per `dot-glyph`
+  nell'Approccio A.
+- `UDGize` esteso: se il carattere e' `.` diventa `[udg] V` (non passa
+  per la formula generica `UDG+`, che si applica solo alle vere lettere
+  A-Z); altrimenti resta il comportamento originale (A-U -> UDG).
+- I quattro confronti che leggevano `.` letterale da `maze@`
+  (`?pac-trail`, `?ghost-trail`, `pacman-walk`, `pacman-eat-dot`)
+  aggiornati da `[char] .` a `[udg] V`, simmetrici a come gia'
+  funzionava `[udg] O`/`[udg] U`.
+- `UDGs` (utility di debug "mostra tutti gli UDG"): bound del loop
+  esteso da `[char] V` a `[char] W` per includere anche il nuovo slot.
+- Tutto l'apparato dell'Approccio A (`my-font`, `CHARS-VAR`,
+  `saved-chars`, `dot-glyph`, `install-font`, `use-my-font`,
+  `use-rom-font`, `maze->display`, la finestra just-in-time in
+  `init-display`/`game`) rimosso per intero -- non esiste piu' in
+  `demo/chomp-chomp.f`.
 
-   Celle sostitutive, simulate prima di scriverle:
-   - **(6,4)** — corridoio della riga 6 con `B` sopra e `C` sotto: solo
-     sinistra/destra aperte. Copre "lato piu' vicino", "pareggio" e "niente
-     inversione volontaria". Il pareggio vale ancora 26, come nel commento
-     originale.
-   - **(12,2)** — bocca del tunnel sinistro: per i fantasmi e' un vicolo cieco
-     vero, perche' `/` sta in `?pac-trail` ma **non** in `?ghost-trail`.
-4. L'intestazione prometteva "the suite calls init-all at the end" senza farlo.
-   Ora lo fa davvero: `init-all` ripristina posizioni, accumulatori, `hunt` e
-   le fasi, cioe' tutto quello che i test sporcano.
+`demo/charset-test.f` (il file di test isolato per il control-code 31)
+**non e' stato toccato**: resta nel repo come documentazione della
+scoperta sul meccanismo NextZXOS, anche se chomp-chomp non lo usa piu'.
 
-## Come far girare l'emulatore con questo gioco
+## Come far girare l'emulatore con questo gioco (invariato dalla sessione 2)
 
-`emu/repl.py` **non riesce** a caricare chomp-chomp con le impostazioni di
-serie: usa due euristiche per capire quando è tornato al prompt
-(`IDLE_INSTRS = 250_000`, `STEP_CAP = 60_000_000`) e il caricamento le supera,
-per cui si ferma **in silenzio, senza errore**. Non è un difetto del sorgente:
-anche la versione originale da git si ferma allo stesso modo.
+`emu/repl.py` non riesce a caricare chomp-chomp con le soglie di serie
+(`IDLE_INSTRS`/`STEP_CAP` troppo basse, si ferma in silenzio). Serve un
+driver che le alzi (`IDLE_INSTRS = 5_000_000`, `STEP_CAP = 3_000_000_000`)
+e lo lanci in background: un giro completo (boot + gioco + suite) impiega
+circa 41 minuti. Non aspettarlo con un `pgrep` sul nome dello script (la
+riga di comando del watcher contiene il proprio nome e matcha se stessa).
 
-Aggiro la cosa con un driver che importa `repl.py` e alza le soglie a
-`IDLE_INSTRS = 5_000_000` / `STEP_CAP = 3_000_000_000`, passando i comandi in
-`VF_LINES` separati da `|`. Un giro completo (boot + gioco + suite) ha impiegato
-**2443 s, ~41 minuti** il 2026-08-23 (boot 236 s, gioco 282 s, suite 1289 s),
-quindi va lanciato in background. Attenzione a non aspettarlo con un
-`while pgrep -f <nome-script>`: la riga di comando del watcher contiene essa
-stessa il nome dello script, quindi pgrep matcha se' stesso e il ciclo non
-esce mai.
+## Cosa resta da validare su CSpect (Stadio 1+2, gia' confermato)
 
-## Cosa resta da validare su CSpect (Stadio 1)
+Vedi il piano, Parte 8, per la lista completa dei controlli gia' eseguiti.
 
-Lo avvia l'autore (`cspect.bat 4`, poi `Forth18_loader.bas`), la sandbox non può
-lanciare GUI.
-
-1. con `tick-frames`=5 la velocità è indistinguibile da prima;
-2. i quattro fantasmi si comportano in modo visibilmente diverso;
-3. al cambio scatter/chase si girano tutti, a un frame di distanza;
-4. da spaventati vanno a caso **e** più lenti (conferma che il gate rotto della
-   vecchia riga 1118 è chiuso);
-5. nessuno resta incastrato nella casa centrale;
-6. `3 TICK-FRAMES !` e `8 TICK-FRAMES !` scalano la velocità in modo pulito.
+**FATTO 2026-08-23**: l'Approccio B (UDG esteso) confermato su CSpect a
+schermo, `ZAP GAME` confermato standalone via `game.bas`. Nessuna
+verifica pendente per lo Stadio 3.
 
 ## Scoperte laterali
 
-- **RISOLTO 2026-08-23.** `tutorial/059-standalone-executables.f` (riga 86) e
-  l'intestazione di `lib/ZAP.f` documentavano `ZAP CHOMP-CHOMP`, ma quella
-  parola non esiste: l'entry point e' `GAME`. Corretti entrambi in `ZAP GAME`.
-  Era un'incoerenza interna al tutorial stesso, che gia' alla riga 104 diceva
-  "produced by `ZAP GAME`" e elenca `game-core.bin`.
-- (non toccato) `pill-on` (riga ~119 di `demo/chomp-chomp.f`) è codice morto:
-  definito, mai chiamato.
-- (non toccato) Esiste una terza copia del gioco residente nei blocchi (`600 LOAD` →
-  601/610/630/650/660, maze su 615-616). Decisione presa: **dichiararla
-  superata**, senza aggiornarla.
+- **RISOLTO 2026-08-23.** `tutorial/059-standalone-executables.f` e
+  l'intestazione di `lib/ZAP.f` documentavano `ZAP CHOMP-CHOMP`, corretti in
+  `ZAP GAME`.
+- (non toccato) Esiste una terza copia del gioco residente nei blocchi
+  (`600 LOAD`). Decisione presa: dichiararla superata, senza aggiornarla.
+- **Nota dell'autore 2026-08-23** sul meccanismo di installazione font
+  (dall'Approccio A, non piu' in uso in chomp-chomp ma valida in
+  generale): su LAYER0 basta scrivere il nuovo puntatore in CHARS-VAR
+  (23606, $5C36) perche' la routine ROM di stampa lo prenda subito in
+  considerazione -- non serve il control-code NextZXOS `31 EMITC 8
+  EMITC`. E' backward compatibility con lo Spectrum classico (il trucco
+  storico "font custom via POKE 23606,..." leggeva gia' CHARS ad ogni
+  carattere stampato). Su LAYER11/LAYER12 (quelli usati da chomp-chomp)
+  la sequenza `31 EMITC 8 EMITC` restava invece necessaria -- e questo
+  spiega perche' il quirk trovato in `demo/charset-test.f` (patch del
+  bitmap prima del control-code) e' legato a quel path esplicito, non al
+  caso LAYER0.
+- **Scoperta chiave 2026-08-23**: il codice UDG (144-164, lettere A-U)
+  non ha un limite hardware/ROM a 21 voci -- la routine di stampa legge
+  semplicemente `(codice-144)*8` byte dalla tabella puntata dal
+  system-variable UDG, senza upper bound. Estendere la tabella con
+  lettere oltre `U` (`V`, `W`, ...) e' sicuro. Questa scoperta e' quella
+  che ha reso superfluo l'intero Approccio A (font in RAM) -- vedi sopra.

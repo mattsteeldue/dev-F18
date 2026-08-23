@@ -148,7 +148,7 @@ char  6  value    key-down
      10  value    key+down
 
 
-.( Chomp.f - UDG )
+.( UDG )
 
 decimal
 
@@ -172,13 +172,19 @@ decimal
         i c@ b.     cr
     loop ; 
 
-\ convert a counted-string at address a in UDG
-\ by converting each character between A and U in their UDG correspondants
+\ convert a counted-string at address a in UDG: each character
+\ between A and U becomes its UDG correspondant (see UDG+); '.' (the
+\ small dot) becomes the V UDG instead -- V is not a real wall/pill
+\ letter, it is a 22nd slot appended to UDG_1 on purpose for this.
 : UDGize ( a -- )
     count over + swap do
-        i c@ upper [char] A [char] U
-    between if
-            i c@ upper UDG+ i c!
+        i c@ [char] . = if
+            [udg] V i c!
+        else
+            i c@ upper [char] A [char] U
+        between if
+                i c@ upper UDG+ i c!
+            then
         then
     loop ;
 
@@ -189,7 +195,7 @@ decimal
 
 \ Utility: display all UDGs
 : UDGs
-    [char] V [char] A do
+    [char] W [char] A do
     i UDG+ emitc loop ;
 
 
@@ -408,10 +414,25 @@ hex
 %11101110  C,
 %01100110  C,
 
+\ V is the 22nd slot, one past the classic A-U/144-164 range, added to
+\ give '.' (the small dot) its own UDG instead of the plain ROM
+\ period.  Nothing in the ROM/NextZXOS print routine caps the UDG
+\ lookup at 21 entries -- it just reads 8 bytes at (code-144)*8 from
+\ the table UDG points to, so extending the table and using code 165
+\ ('V') is safe.  A small centered dot, 2x2 pixels.
+%00000000  C,
+%00000000  C,
+%00000000  C,
+%00011000  C,
+%00011000  C,
+%00000000  C,
+%00000000  C,
+%00000000  C,
+
 UDG_1 5C7B ! \ UDG
 
 
-.( Chomp.f - maze )
+.( maze )
 decimal
 21 constant maze-h
 21 constant maze-w
@@ -501,7 +522,7 @@ set-maze-run  \ ...and do it now
 ;
 
 
-.( Chomp.f - array )
+.( array )
 
 
 \ Array is an area 6 x 16 bytes
@@ -558,7 +579,7 @@ create Array   6 16 * allot
   to sprite-no ;
 
 
-.( Chomp.f - objects )
+.( objects )
 
 \ array index by name
 0  name-of  Inky
@@ -602,7 +623,7 @@ create Array   6 16 * allot
 \
 
 
-.( Chomp.f - scatter/chase )
+.( scatter/chase )
 
 \ Periodically the ghosts stop chasing and head for their own corner.
 \ That rhythm is what makes the arcade game playable rather than
@@ -652,7 +673,7 @@ variable scatter?       \ non-zero while in scatter mode
   then ;
 
 
-.( Chomp.f - ghosts )
+.( ghosts )
 
 \ setup standard ghost colors
 \ Aligned with the arcade personalities: the colour now tells you which
@@ -743,7 +764,7 @@ variable flash-at
 
 \ Setup pacman appearance
 
-.( Chomp.f - pac )
+.( pac )
 
 4 name-of Pacman
 
@@ -765,7 +786,7 @@ pacman-init
 
 
 
-.( Chomp.f - cherry )
+.( cherry )
 
 
 5 name-of Cherry
@@ -785,7 +806,7 @@ pacman-init
 cherry-init 
 
 
-.( Chomp.f - move )
+.( move )
 
 \ draw current sprite, well they aren't ZX Spectrum Next's Sprite, just UDG
 \ usage:
@@ -820,7 +841,7 @@ cherry-init
 : ?pac-trail  ( c -- )
     case
         bl       of 1 endof
-        [char] . of 1 endof
+        [udg]  V of 1 endof
         [udg]  U of 1 endof
         [udg]  O of 1 endof
         [char] / of 1 endof
@@ -835,7 +856,7 @@ cherry-init
 : ?ghost-trail  ( c -- )
     case
         bl       of 1 endof
-        [char] . of 1 endof
+        [udg]  V of 1 endof
         [udg]  U of 1 endof
         [udg]  O of 1 endof
         [char] - of 1 endof
@@ -933,7 +954,7 @@ cherry-init
 ( pacman-walk )
 : pacman-walk ( c -- )
   >r r@ [udg]  O =
-     r@ [char] . = or
+     r@ [udg]  V = or
      r> [udg]  U = or
   0= if
    pacman
@@ -1188,14 +1209,14 @@ create cw-tab
 
 \
 : pacman-eat-dot ( c -- )
-  [char] . = if
+  [udg] V = if
    1  score d+!
 \  [ 12 -12 bip ] 2lit
 \  bleep
   then ;
 
 
-.( Chomp.f - display )
+.( display )
 
 : init-display
  LAYER11 30 emitc 8 emitc
@@ -1211,7 +1232,7 @@ create cw-tab
 ;
 
 
-.( Chomp.f - Interlude course )
+.( Interlude course )
 
 : inter-hunt
   0 27 do

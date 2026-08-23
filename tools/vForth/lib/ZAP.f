@@ -17,6 +17,8 @@
 
 MARKER TASK
 
+NEEDS [']
+
 BASE @
 
 DECIMAL
