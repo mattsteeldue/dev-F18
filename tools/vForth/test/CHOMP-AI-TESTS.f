@@ -23,6 +23,10 @@
 
 NEEDS TESTING
 
+\ lib/testing.f ends in HEX (see MAX-BASE / #BITS-UD): the game is
+\ compiled decimal, so put the base back before any literal below.
+DECIMAL
+
 
 \ =========================================================================
 \ helpers: place an actor and set a target by hand
@@ -145,24 +149,34 @@ T{ 10 10 !ted  10 17 key-right !pac  ted
 \ =========================================================================
 \ 5. choosing a direction
 \ =========================================================================
-\ Row 6 of the maze is a long open corridor; (5,10) and (7,10) are walls,
-\ so at (6,10) only left and right are available.
+\ Cell coordinates here are the ones maze^ uses: row 1..21, and column
+\ 1..22 counting the first visible character of the row as 1 (column 0
+\ is the count byte of the ," string).  Anchors, if you need to re-check
+\ them: the ghost house interior is (12,10) (12,11) (12,12), its door is
+\ (11,11), and Pac-Man starts on the gap in the dots at (14,12).
+\
+\ Row 6 is the long open corridor "M...................J".  At (6,4)
+\ the row above holds a B and the row below a C, so only left and right
+\ are open and the choice is forced onto the horizontal.
 
 \ heading up (so down is the forbidden reversal): picks the nearer side
-T{ 6 10 key-up 0 !g   6  2 !tgt  choose-dir -> key-left  }T
-T{ 6 10 key-up 0 !g   6 20 !tgt  choose-dir -> key-right }T
+T{ 6 4 key-up 0 !g   6  2 !tgt  choose-dir -> key-left  }T
+T{ 6 4 key-up 0 !g   6 20 !tgt  choose-dir -> key-right }T
 
-\ A genuine tie: (6,9) and (6,11) are both 26 away from (1,10).  The
-\ scan order up > left > down > right with a strict < hands it to left.
-T{ 6 10 key-up 0 !g   1 10 !tgt  choose-dir -> key-left }T
+\ A genuine tie: (6,3) and (6,5) are both 26 away from (1,4).  The scan
+\ order up > left > down > right with a strict < hands it to left.
+T{ 6 4 key-up 0 !g   1  4 !tgt  choose-dir -> key-left }T
 
 \ Heading right with the target behind him: a ghost never volunteers to
 \ reverse, so he keeps going right even though left is closer.
-T{ 6 10 key-right 0 !g  6 2 !tgt  choose-dir -> key-right }T
+T{ 6 4 key-right 0 !g  6 2 !tgt  choose-dir -> key-right }T
 
-\ (4,5) is a sealed pocket of this maze: no legal exit at all.  Rather
-\ than freeze, the chooser falls back to turning round.
-T{ 4 5 key-right 0 !g   4 20 !tgt  choose-dir -> key-left }T
+\ (12,2) is the mouth of the left tunnel.  Ghosts may not use the
+\ tunnel -- "/" is in ?pac-trail but not in ?ghost-trail -- so for them
+\ the cell is a dead end: walls above and below, tunnel to the left.
+\ Heading left forbids the only way out, and rather than freeze the
+\ chooser falls back to turning round.
+T{ 12 2 key-left 0 !g   12 20 !tgt  choose-dir -> key-right }T
 
 
 \ =========================================================================
@@ -197,6 +211,9 @@ T{ 0 sprite#  key-right sprite@ dir c!  0 sprite@ rev? c!
 \ 8. scatter / chase phases
 \ =========================================================================
 
+\ DO...LOOP cannot run in interpret state, so the tick runs go in a word
+: run-ticks ( n -- )  0 ?do tick-phase loop ;
+
 \ a level begins in scatter, for 70 ticks
 T{ reset-phases  phase-t @ -> 70 }T
 T{ reset-phases  scatter? @ 0= -> 0 }T
@@ -204,18 +221,21 @@ T{ reset-phases  scatter? @ 0= -> 0 }T
 \ when the phase runs out the mode flips to chase for 200 ticks and every
 \ ghost is told to turn round
 T{ reset-phases  1 hunt !
-   70 0 do tick-phase loop
+   70 run-ticks
    scatter? @ 0=  phase-t @ -> -1 200 }T
 T{ 0 sprite# sprite@ rev? c@ -> 1 }T
 
 \ the timer is suspended while the ghosts are frightened
 T{ reset-phases  -1 hunt !
-   30 0 do tick-phase loop
+   30 run-ticks
    phase-t @ -> 70 }T
-1 hunt !
 
 
 \ =========================================================================
+\ The tests above scrambled the live actors, the speed accumulators, hunt
+\ and the phase timer.  init-all restores every one of them.
 
-CR .( CHOMP-AI-TESTS done - put the game back with: init-all ) CR
+init-all
+
+CR .( CHOMP-AI-TESTS done - game state restored by init-all ) CR
 
