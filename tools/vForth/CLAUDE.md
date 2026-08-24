@@ -528,6 +528,26 @@ byte must not be `0x20`. Trailing `0x0A`s are fine (the file may end with severa
 blank lines); trailing spaces on *interior* lines are harmless. Only the final two
 bytes matter.
 
+**Block-buffer starvation: an INCLUDEd file can lose its own source line.**
+`F_INCLUDE` reads each line into the **BLOCK 1 buffer** and sets `BLK` to 1, so
+the line being interpreted lives in the block buffer pool -- and that pool is
+**six buffers handed out round-robin** (`FIRST`/`PREV`/`USE`). A file that reads
+six other distinct blocks while interpreting therefore recycles the buffer
+holding its own current line: `WORD` re-reads BLOCK 1 from disk, gets the block
+file's metadata instead of the source line, and the interpreter walks off into
+it. **What it looks like is a random word "is undefined"** -- a *different* word
+on each run, because it depends on whatever the recycled buffer happened to
+hold. Nothing points at the real cause, and the file is usually blameless.
+
+Budget accordingly: an INCLUDEd source can afford roughly **four or five
+distinct blocks**, and re-reading an already-resident block costs nothing.
+Anything heavier belongs in a word that is *compiled* by the file and *executed
+from the `ok` prompt*, where input comes from TIB, `BLK` is 0, and no source
+line is at risk. Found 2026-08-24 via `test/CHOMP-MAZE-TESTS.f`, whose
+`MAZE-CHECK` reads three blocks per maze: checking three disk mazes touched nine
+distinct blocks and died on the sixth read, exactly when the round-robin came
+back round to BLOCK 1.
+
 **Editing note (trailing spaces):** there is **no need to strip trailing spaces**
 from source files -- only the final two bytes are constrained by the rule above.
 The guiding principle is the **minimal diff between commits**: do not produce changes

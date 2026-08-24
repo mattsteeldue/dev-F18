@@ -97,6 +97,14 @@ decimal
 23560  constant  LASTK    \ system variable : last key pressed
        variable  total 0 ,
        variable  score 0 ,
+\ How many plain dots the maze loaded right now holds -- counted by
+\ find-pills, which already walks the whole maze.  A phase is complete
+\ when score has caught up with total and every dot is worth one, so
+\ this is what total gets primed with: the count used to be hard-coded
+\ at 180 (the compiled maze's), which silently soft-locks any maze
+\ drawn with a different number of dots -- score steps over total
+\ instead of landing on it, and the level never ends.
+       variable  maze-dots
        variable  high-score 0 ,
        variable  counting
        variable  lives
@@ -174,15 +182,16 @@ decimal
     loop ; 
 
 \ convert a counted-string at address a in UDG: each character
-\ between A and U becomes its UDG correspondant (see UDG+); '.' (the
+\ between A and W becomes its UDG correspondant (see UDG+); '.' (the
 \ small dot) becomes the V UDG instead -- V is not a real wall/pill
-\ letter, it is a 22nd slot appended to UDG_1 on purpose for this.
+\ letter, it is a 22nd slot appended to UDG_1 on purpose for this, and
+\ W a 23rd one (the one-cell island wall the maze alphabet lacked).
 : UDGize ( a -- )
     count over + swap do
         i c@ [char] . = if
             [udg] V i c!
         else
-            i c@ upper [char] A [char] U
+            i c@ upper [char] A [char] W
         between if
                 i c@ upper UDG+ i c!
             then
@@ -196,7 +205,7 @@ decimal
 
 \ Utility: display all UDGs
 : UDGs
-    [char] W [char] A do
+    [char] X [char] A do
     i UDG+ emitc loop ;
 
 
@@ -430,6 +439,21 @@ hex
 %00000000  C,
 %00000000  C,
 
+\ W is the 23rd slot (code 166), added for the second batch of mazes.
+\ A wall cell strokes each of its edges that faces open floor, and the
+\ fourteen letters A-N are exactly the fourteen ways to do that with at
+\ least one edge left open -- the fifteenth, all four edges at once, was
+\ missing, so a one-cell island could not be drawn at all.  This is it:
+\ K's top arc over L's bottom arc.
+%00000000  C,
+%00011000  C,
+%00100100  C,
+%01000010  C,
+%01000010  C,
+%00100100  C,
+%00011000  C,
+%00000000  C,
+
 UDG_1 5C7B ! \ UDG
 
 
@@ -492,8 +516,15 @@ decimal
 \ available), columns 0..20 are the maze-w(21) maze characters (same
 \ alphabet as maze-base); columns 21..63 and rows 21..31 are free/
 \ reserved and never read by the loader below.
+\
+\ Maze 1 is the compiled maze converted as-is (it is what proved the
+\ loader); mazes 2 and 3 are new layouts.  Every maze has to leave the
+\ sprite spawn cells alone -- see check-spawn in MAZE-CHECK -- but the
+\ number of dots is free: total is primed from maze-dots at run time.
+\ util/chomp-maze.py renders a layout as pixels and runs the same
+\ structural checks headlessly, which is how these two were drawn.
 740 constant MAZE-SCR0
-   2 value   n-mazes     \ 0 = compiled maze-base; 1 = Screen 740/741
+   4 value   n-mazes     \ 0 = compiled maze-base; 1..3 = Screen 740..745
    variable  level        \ 0-based; reset in game, advanced in phase-complete
 
 \ first BLOCK (of 4) holding disk maze n (n>=1, 1-based)
@@ -1383,7 +1414,8 @@ create cw-tab
      score 2@ high-score 2!
    then
    0. score 2!
-   180. total 2!
+   0. total 2!
+   maze-dots @ total D+!
   then
   init-all
   interlude
@@ -1441,16 +1473,20 @@ create cw-tab
 create pill-x  pill-n allot
 create pill-y  pill-n allot
 
-\ scan the maze once and cache every power pill's (x,y); a maze with
-\ fewer than pill-n pills leaves the remaining slots at 0 (never matches
-\ a real row, so flash-pills' maze@ check on them just misses harmlessly)
+\ scan the maze once and cache every power pill's (x,y), counting the
+\ plain dots on the way; a maze with fewer than pill-n pills leaves the
+\ remaining slots at 0 (never matches a real row, so flash-pills'
+\ maze@ check on them just misses harmlessly)
 variable pill-found
 : find-pills ( -- )
   pill-n 0 do 0 i pill-x + c!  0 i pill-y + c! loop
   0 pill-found !
+  0 maze-dots !
   22 1 do
-    23 2 do
-      j i maze@ [udg] O = if
+    22 1 do
+      j i maze@
+      dup [udg] V = if 1 maze-dots +! then
+      [udg] O = if
         pill-found @ pill-n < if
           j pill-found @ pill-x + c!
           i pill-found @ pill-y + c!
@@ -1492,8 +1528,12 @@ create maze-check-buf  24 21 * allot
 : check^ ( r c -- a )
     swap 24 * maze-check-buf + + ;
 
+\ A-N are the fourteen wall strokes, W the fifteenth (the one-cell
+\ island); V is the dot's UDG slot, not a wall, so the range stops at N
+\ and W is tested apart
 : wall-char? ( c -- f )
-    upper [char] A [char] N between ;
+    upper dup [char] W =
+    swap [char] A [char] N between or ;
 
 \ same per-row copy maze-copy does, but WITHOUT the UDGize step
 : raw-copy-base ( a1 a2 -- )
@@ -1577,12 +1617,19 @@ variable bslash-row
     then ;
 
 variable pill-count-check
+variable dot-count-check
 
+\ pill-n power pills exactly (find-pills caches that many and no more),
+\ and at least one dot -- a maze with no dots can never be completed.
+\ The dot count itself is free: total is primed from it at run time.
 : check-pills ( -- )
     0 pill-count-check !
+    0 dot-count-check !
     maze-h 0 do
         maze-w 0 do
-            j i 1+ check^ c@ [char] O = if
+            j i 1+ check^ c@
+            dup [char] . = if 1 dot-count-check +! then
+            [char] O = if
                 1 pill-count-check +!
             then
         loop
@@ -1590,7 +1637,35 @@ variable pill-count-check
     pill-count-check @ pill-n <> if
         1 check-errors +!
         cr ." pill count mismatch: found " pill-count-check @ . ." expected " pill-n .
+    then
+    dot-count-check @ 0= if
+        1 check-errors +!
+        cr ." no dots: the phase could never be completed"
     then ;
+
+\ Where Pac-Man, the four ghosts and the cherry appear is hard-coded in
+\ pacman-init / ghost-init / ghost-eaten / cherry-init, not read from
+\ the maze, and each of them stores a blank as the cell it covers -- so
+\ a maze that puts anything else there loses that character the moment
+\ the sprite steps off it.  Ted starts on the ghost-house door, which
+\ is the one cell that must NOT be blank.
+\ r and c are check^'s own coordinates (row 0-based, column 1..maze-w),
+\ and so is what gets reported -- same convention as every check above
+: check-cell ( r c c1 -- )
+    >r 2dup check^ c@ r> <> if
+        1 check-errors +!
+        cr ." spawn cell at row " swap 1+ . ." col " .
+        ." holds the wrong character"
+    else
+        2drop
+    then ;
+
+: check-spawn ( -- )
+    13 12 bl check-cell            \ Pac-Man and the cherry
+    11 10 bl check-cell            \ Inky
+    11 11 bl check-cell            \ Blinky, and where an eaten ghost returns
+    11 12 bl check-cell            \ Pinky
+    10 11 [char] - check-cell ;    \ Ted, on the door
 
 \ ---- connectivity (flood-fill from Pac-Man's start cell) --------------
 
@@ -1742,10 +1817,11 @@ variable ff-ok
     check-door
     check-tunnel
     check-pills
+    check-spawn
     check-connectivity
     check-perimeter
     check-errors @ 0= if
-        cr ." MAZE-CHECK: OK"
+        cr ." MAZE-CHECK: OK, " dot-count-check @ . ." dots"
     else
         cr ." MAZE-CHECK: " check-errors @ . ." problem(s) found"
     then ;
@@ -1852,14 +1928,17 @@ needs .s
 
 
 
+\ every dot of the maze about to be played raises the bar score has to
+\ reach, so the count has to be taken AFTER find-pills has scanned the
+\ new maze -- not before set-maze-run, where the old fixed 180 sat
 : phase-complete
   score 2@ total 2@ d= if
-   180  total D+!
    ghost-color 1 hunt !
    init-all
    1 level +!
    set-maze-run
    find-pills
+   maze-dots @ total D+!
    interlude
    init-display
    key-right LASTK c!
@@ -1888,13 +1967,14 @@ needs .s
   0 .paper 0 .border 4 .ink
   1 .bright \ .perm
   interlude
-  180. total 2!
+  0.   total 2!
   0.   score 2!
   decimal
   0 level !
   init-all
   set-maze-run
   find-pills
+  maze-dots @ total D+!
   init-display
   run-game
   22 0 .at

@@ -35,6 +35,14 @@ start it.
 Game speed is a parameter rather than an accident of how many sprites get
 drawn: TICK-FRAMES holds how many 50Hz video frames one game tick lasts
 (5 by default), so  3 TICK-FRAMES !  makes the whole game quicker.
+Clearing a maze moves you on to the next one. The first is compiled into
+the game, so a standalone executable never depends on the block file; the
+others live on Screen 740 and up, two Screens each, and can be redrawn
+with EDIT without recompiling anything -  n MAZE-CHECK  then reports
+whether maze n still holds together (borders sealed, tunnel mouths
+paired, nothing walled off, the sprite start cells intact).
+util/chomp-maze.py does the same checks from the host, and draws the maze
+as pixels so a layout can be seen before it is played.
 To forget this demo you have to give COLD.
 This demo also come with a subdirectory named chomp-chomp that contains
 the result of execution of ZAP definition that is the simplest way to 
