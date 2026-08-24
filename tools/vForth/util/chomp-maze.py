@@ -101,14 +101,26 @@ def maze_blk0(n):
     return (n - 1) * 4 + MAZE_SCR0 * 2
 
 
+# Line 0 of each Screen is reserved for a title comment, so that INDEX
+# shows it instead of raw maze data (see maze-line in demo/chomp-chomp.f,
+# same shift, kept in sync by hand).  Screen A (even, absolute lines
+# 0..15) therefore holds only 15 maze rows (0..14, at absolute lines
+# 1..15); Screen B (odd, absolute lines 16..31) holds the remaining 6
+# (rows 15..20, at absolute lines 17..22).  Absolute lines 23..31 stay
+# free/metadata, as before.
+def maze_abs_line(r):
+    return r + 1 if r < 15 else r + 2
+
+
 def read_maze(n):
     if n == 0:
         return compiled_maze()
     data = open(BLOCKS, 'rb').read()
     rows = []
     for r in range(MAZE_H):
-        blk = maze_blk0(n) + r // 8
-        off = (blk - 1) * 512 + (r % 8) * 64
+        line = maze_abs_line(r)
+        blk = maze_blk0(n) + line // 8
+        off = (blk - 1) * 512 + (line % 8) * 64
         rows.append(data[off:off + MAZE_W].decode('latin1'))
     return rows
 
@@ -119,17 +131,24 @@ def write_maze(n, rows):
     data = bytearray(open(BLOCKS, 'rb').read())
     size = len(data)
     for r in range(MAZE_H):
-        blk = maze_blk0(n) + r // 8
-        off = (blk - 1) * 512 + (r % 8) * 64
+        line = maze_abs_line(r)
+        blk = maze_blk0(n) + line // 8
+        off = (blk - 1) * 512 + (line % 8) * 64
         data[off:off + 64] = rows[r].ljust(64).encode('ascii')
-    # Rows 21..31 of the two Screens are the level's metadata area, unused
-    # so far.  Label them rather than leaving them as they were: a raw
-    # block starts out full of NULs, and a NUL is the one character that
-    # stops LOAD dead without a word of explanation, should anyone ever
-    # point LOAD at these Screens.
-    for r in range(MAZE_H, 32):
-        blk = maze_blk0(n) + r // 8
-        off = (blk - 1) * 512 + (r % 8) * 64
+    # title lines, one per Screen (absolute lines 0 and 16)
+    for line, text in ((0, 'chomp-chomp maze %d' % n),
+                        (16, "chomp-chomp maze %d (cont'd)" % n)):
+        blk = maze_blk0(n) + line // 8
+        off = (blk - 1) * 512 + (line % 8) * 64
+        data[off:off + 64] = text.ljust(64).encode('ascii')
+    # Absolute lines 23..31 are the level's metadata area, unused so far.
+    # Label them rather than leaving them as they were: a raw block starts
+    # out full of NULs, and a NUL is the one character that stops LOAD dead
+    # without a word of explanation, should anyone ever point LOAD at
+    # these Screens.
+    for line in range(23, 32):
+        blk = maze_blk0(n) + line // 8
+        off = (blk - 1) * 512 + (line % 8) * 64
         data[off:off + 64] = METADATA_ROW.ljust(64).encode('ascii')
     assert len(data) == size, 'block file size must never change'
     open(BLOCKS, 'wb').write(data)

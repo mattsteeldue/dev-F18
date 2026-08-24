@@ -512,10 +512,15 @@ decimal
 \ experiments).  Maze #0 (level MOD n-mazes = 0) stays the compiled
 \ maze-base above -- kept as a permanent fallback so the ZAP standalone
 \ .bin does not depend on !Blocks-64.bin.  Disk maze n (n>=1, 1-based)
-\ lives on Screen MAZE-SCR0+2*(n-1) and +2*(n-1)+1: rows 0..20 (of the 32
-\ available), columns 0..20 are the maze-w(21) maze characters (same
-\ alphabet as maze-base); columns 21..63 and rows 21..31 are free/
-\ reserved and never read by the loader below.
+\ lives on Screen MAZE-SCR0+2*(n-1) and +2*(n-1)+1.  Line 0 of EACH of
+\ the two Screens is a title comment (so INDEX shows it instead of raw
+\ maze data), not maze data: maze rows 0..14 live at Screen-A lines
+\ 1..15 (15 rows) and rows 15..20 at Screen-B lines 1..6, i.e. absolute
+\ lines 17..22 (6 rows) -- see maze-line below, which is the only place
+\ that shift is encoded (util/chomp-maze.py mirrors it by hand).
+\ Columns 0..20 of a maze-row line are the maze-w(21) maze characters
+\ (same alphabet as maze-base); columns 21..63 and absolute lines 23..31
+\ are free/reserved and never read by the loader below.
 \
 \ Maze 1 is the compiled maze converted as-is (it is what proved the
 \ loader); mazes 2 and 3 are new layouts.  Every maze has to leave the
@@ -548,10 +553,14 @@ decimal
      0 r@ maze-w 2 + + c!
     maze-w 1+ r> c! ;
 
-\ address of the 64 raw bytes of row r (0..20) of disk maze n
+\ address of the 64 raw bytes of row r (0..20) of disk maze n.  r maps to
+\ absolute Screen-pair line r+1 (r<15, Screen A) or r+2 (r>=15, Screen B)
+\ to leave line 0 of each Screen free for the title comment above.
 : maze-line ( n r -- a )
     swap maze-blk0
-    swap 8 /mod
+    swap
+    dup 15 < if 1+ else 2 + then
+    8 /mod
     rot +
     block
     swap 64 * + ;
@@ -1958,7 +1967,7 @@ needs .s
 
 
 
-: game
+: play-level
   UDG_1 $5C7B ! \ UDG
   LAYER11 
   [ 2 ] LITERAL SPEED! 
@@ -1970,7 +1979,6 @@ needs .s
   0.   total 2!
   0.   score 2!
   decimal
-  0 level !
   init-all
   set-maze-run
   find-pills
@@ -1979,7 +1987,15 @@ needs .s
   run-game
   22 0 .at
   LAYER12 3 SPEED!
-; 
+;
+
+: game 0 level ! play-level ;
+
+
+\ same as GAME, but starting at the given level instead of always 0 --
+\ lets a disk maze be played straight from the prompt for testing,
+\ without first clearing the levels before it.  ( n -- )
+: test-level  level ! play-level ;
 
 \ BASE !
 

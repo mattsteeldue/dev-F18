@@ -446,9 +446,17 @@ payload a 448 byte, meno dei 504 necessari. Serve l'accesso diretto via `BLOCK`.
 
 Labirinto `N` = Screen `MAZE-SCR0 + 2N` e `+2N+1`:
 
-- righe 0..20 delle 32 disponibili = le 21 righe del labirinto;
-- colonne 0..22 di ciascuna riga = i 23 caratteri; colonne 23..63 libere per commenti;
-- righe 21..31 libere per i metadati del livello (nome, velocita', colori, frutta).
+- riga 0 di ciascuno dei due Screen (righe assolute 0 e 16) e' un commento
+  titolo, non dati -- cosi' INDEX mostra il titolo invece del contenuto.
+  **Nota 2026-08-24**: verificato che le colonne reali sono 0..20 (21
+  caratteri, non 23 come scritto inizialmente qui -- vedi lo storico
+  formato riga in `raw-row!`/`maze-line`, prompts/CHOMP-CHOMP-STATUS.md).
+- righe 1..15 (Screen A) = le prime 15 righe del labirinto (0..14);
+  righe assolute 17..22 (Screen B) = le restanti 6 (15..20);
+- colonne 0..20 di ciascuna riga dati = i 21 caratteri; colonne 21..63
+  libere per commenti;
+- righe assolute 23..31 libere per i metadati del livello (nome,
+  velocita', colori, frutta).
 
 Caricamento: per la riga `r` (0..20), `blocco = base + r/8`,
 `offset = (r mod 8)*64`; si copiano 23 byte nella riga `r` di `maze-run` (stride 24,

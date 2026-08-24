@@ -1,4 +1,4 @@
-# chomp-chomp: stato della revisione (agg. 2026-08-24, sessione 6)
+# chomp-chomp: stato della revisione (agg. 2026-08-24, sessione 8)
 
 Nota di ripresa per continuare il lavoro da un'altra sessione.
 Piano approvato completo: `C:\Users\matteo\.claude\plans\glowing-mixing-haven.md`
@@ -24,7 +24,8 @@ Vedi la sezione dedicata piu' sotto per la cronologia completa dello
 Stadio 3 (perche' si e' tentato il font, cosa e' andato storto, perche'
 si e' tornati sugli UDG).
 
-**Stadio 4 (labirinti su Screen) — completo, verificato headless.**
+**Stadio 4 (labirinti su Screen) — COMPLETO, tutti e quattro i livelli
+confermati a schermo (sessione 8, 2026-08-24).**
 Prima fetta 2026-08-23 (sessione 5): infrastruttura di caricamento,
 contatore di livello, `MAZE-CHECK`, e il labirinto attuale convertito
 come primo labirinto su disco (livello 1). Seconda fetta 2026-08-24
@@ -32,8 +33,20 @@ come primo labirinto su disco (livello 1). Seconda fetta 2026-08-24
 15-esimo glifo muro `W` che mancava all'alfabeto, il conteggio dei
 punti reso dinamico (era 180 fisso: un soft-lock silenzioso per
 qualunque labirinto disegnato diverso) e `util/chomp-maze.py`, che
-disegna e verifica un tracciato dall'host. Manca solo la conferma a
-schermo su CSpect -- vedi la sezione dedicata piu' sotto.
+disegna e verifica un tracciato dall'host. Sessione 7 (2026-08-24):
+`1 level ! GAME` (Screen 740/741) confermato a schermo indistinguibile
+dal livello 0 compilato, `ZAP GAME` rigenerato/confermato standalone,
+piu' `TEST-LEVEL` e i titoli di Screen (vedi sezione dedicata sotto).
+**Sessione 8 (2026-08-24)**: l'autore ha rifinito a mano i tracciati 2 e
+3 direttamente con `EDIT` (piazze aperte ridotte a corridoi, piu' in
+linea col canone Pac-Man) e **giocato tutti e quattro i livelli fino in
+fondo**, avanzamento automatico incluso -- criterio di successo esplicito
+di questa fetta, ora chiuso. Nuovi conteggi dopo la rifinitura (erano
+180/192/218): **maze 1 = 180, maze 2 = 179, maze 3 = 200** puntini (4
+pillole ciascuno); ricontrollato con `util/chomp-maze.py check` su tutti
+e quattro (0/1/2/3): tutti puliti, nessun errore strutturale. Le
+modifiche vivono gia' in `!Blocks-64.bin` nel repo (non serve nessun
+pull da CSpect: la sessione dell'autore scriveva sulla stessa copia).
 
 Branch: `chomp-chomp-ghost-ai`.
 
@@ -118,15 +131,22 @@ Branch: `chomp-chomp-ghost-ai`.
   saltava in silenzio proprio `V` e `W` -- cioe' rendeva invisibili i
   puntini e il glifo nuovo. |
 | `demo/README.txt` | riscritta per Stadio 1 (niente piu' "completely
-  random"); **aggiornata 2026-08-24** per i labirinti multipli,
-  `MAZE-CHECK` e `util/chomp-maze.py` |
+  random"); aggiornata 2026-08-24 (sessione 6) per i labirinti multipli,
+  `MAZE-CHECK` e `util/chomp-maze.py`; **aggiornata di nuovo 2026-08-24**
+  (sessione 8) per `TEST-LEVEL`, i titoli di Screen e la conferma che
+  tutti e quattro i livelli sono giocabili. |
+
+**Verificato 2026-08-24 (sessione 8): `!Blocks-64.bin` del repo e quello
+sull'immagine SD di CSpect (`C:\Zx\CSpect\cspect-next-2gb.img`, montata
+su `W:`) sono gia' **byte-identici** (stesso MD5) -- le modifiche
+dell'autore ai tracciati sono state fatte su una sessione che scriveva
+direttamente sulla copia del repo, quindi **non serve nessun pull ne'
+nessun `/sync-cspect blocks`** per allineare i Block.
 
 **Da sincronizzare**: `demo/chomp-chomp.f` e `demo/chomp-chomp/chomp-chomp.f`
-sono cambiati per lo Stadio 4 (sessioni 5 e 6) e non ancora ripassati
-dallo skill `/sync-cspect`. `!Blocks-64.bin` e' escluso di default dal
-sync (`blocks` va passato esplicitamente) -- gli Screen 740-745 scritti
-in queste due sessioni vanno quindi copiati sulla SD CSpect a parte,
-quando comodo, prima di provare i livelli 1-3 su CSpect.
+sono cambiati per lo Stadio 4 (sessioni 5, 6 e 7 -- `TEST-LEVEL`, i
+titoli di Screen) e non ancora ripassati dallo skill `/sync-cspect`
+(senza `blocks`: i Block sono gia' allineati, vedi sopra).
 
 ## Stadio 3: cronologia (font in RAM tentato, poi sostituito da UDG esteso)
 
@@ -389,6 +409,64 @@ gioco (`find-pills`/`maze-dots`) d'accordo con quello indipendente di
 (pillola isolata, fuga dal bordo, muro sulla partenza di Pac-Man, porta
 di Ted cancellata) tutte intercettate.
 
+## Sessione 7 (2026-08-24): TEST-LEVEL e titoli sulla riga 0 di ogni Screen
+
+Due richieste dell'utente dopo la conferma su CSpect di livello 1 e
+standalone (vedi sopra).
+
+**1. Nuovo word `TEST-LEVEL ( n -- )`** in `demo/chomp-chomp.f`, subito
+dopo `GAME`. E' `GAME` con `level !` al posto di `0 level !`: permette di
+giocare direttamente un labirinto su disco (es. `2 TEST-LEVEL`) senza
+dover prima finire i livelli precedenti -- `GAME` azzera sempre `level`
+(riga con `0 level !`, prima di `set-maze-run`), quindi `n level ! GAME`
+non funzionava (il valore veniva sovrascritto).
+
+**2. Riga 0 di ogni Screen riservata a un commento titolo**, cosi'
+`INDEX` mostra il titolo invece di dati grezzi del labirinto (richiesta
+esplicita dell'utente). Cambiati insieme, altrimenti l'uno rompe l'altro:
+
+- **`demo/chomp-chomp.f`**, `maze-line`: la riga `r` (0..20) del
+  labirinto ora mappa alla riga assoluta di Screen `r+1` (r<15, Screen A)
+  o `r+2` (r>=15, Screen B) invece di `r` diretto -- lascia libera la riga
+  0 di ciascuno dei due Screen. Effetto: Screen A (pari) ha 15 righe
+  utili (0..14 alle righe assolute 1..15), Screen B (dispari) le
+  restanti 6 (15..20 alle righe assolute 17..22). Tutto il resto
+  (`raw-row!`, `load-maze-row`, `load-maze`, `MAZE-CHECK` via
+  `maze-check-load`) passa gia' da `maze-line`, quindi si e' adattato
+  automaticamente: **un solo punto di verita'** modificato.
+- **`util/chomp-maze.py`**: stessa formula (`maze_abs_line`), tenuta a
+  mano in sincronia col Forth (nessun meccanismo automatico -- annotato
+  in entrambi i file). `write_maze` ora scrive anche le due righe titolo
+  (`"chomp-chomp maze N"` / `"chomp-chomp maze N (cont'd)"`, righe
+  assolute 0 e 16) e sposta l'area metadati libera da 21..31 a 23..31.
+- **Migrazione di `!Blocks-64.bin`**: i tre labirinti gia' su disco
+  (1, 2, 3) sono stati letti col vecchio schema (script pre-modifica),
+  poi riscritti con `write_maze` nuovo -- backup del file prima della
+  migrazione in scratchpad. **Verificato**: round-trip byte-per-byte
+  identico (`diff` sui 21x21 caratteri), `check` Python pulito su tutti
+  e tre con lo stesso conteggio puntini di prima (180/192/218), le due
+  righe titolo lette correttamente ai byte-offset attesi, e la
+  dimensione del file invariata (16777216 byte).
+- **Non verificato headless in Forth**: far girare `emu/repl.py` su
+  questo gioco richiede le soglie alzate e ~41 minuti (vedi sotto);
+  sproporzionato per un cambio meccanico gia' validato byte-per-byte lato
+  Python. **Aggiornamento sessione 8**: l'autore ha giocato tutti e
+  quattro i livelli e ha aperto `EDIT` sugli Screen 740-745 per rifinire
+  i tracciati -- conferma indiretta ma solida che la riga 0/16 funziona
+  da titolo e non viene letta come dato dal loader.
+- **Titoli ritoccati a mano dall'autore, con una piccola incoerenza**: il
+  testo scritto da `write_maze` era senza parentesi
+  (`"chomp-chomp maze N"` / `"...N (cont'd)"`); ora sugli Screen si legge
+  `( chomp-chomp maze N )` sulla riga 0 di tutti e tre, ma sulla riga 16
+  solo il maze 3 e' bilanciato (`chomp-chomp maze 3 (cont'd)`, senza `(`
+  iniziale ma comunque valido come testo libero); maze 1 e 2 hanno
+  `( chomp-chomp maze N (cont'd)` -- due `(` aperte, nessuna chiusa.
+  Innocuo (l'area non viene mai letta da `LOAD`), ma se l'autore vuole
+  uniformarle la forma piu' pulita e' `( chomp-chomp maze N, cont'd )`.
+  Non toccato in questa sessione: sono modifiche dell'autore, non mie.
+- **`demo/chomp-chomp/chomp-chomp.f`**: ricopiato dal master 2026-08-24
+  (sessione 7), verificato byte-identico (`diff`).
+
 ## Come far girare l'emulatore con questo gioco (invariato dalla sessione 2)
 
 `emu/repl.py` non riesce a caricare chomp-chomp con le soglie di serie
@@ -406,32 +484,24 @@ Vedi il piano, Parte 8, per la lista completa dei controlli gia' eseguiti.
 schermo, `ZAP GAME` confermato standalone via `game.bas`. Nessuna
 verifica pendente per lo Stadio 3.
 
-**PENDENTE (Stadio 4, sessioni 5 e 6)**: i livelli 1-3 (labirinti
-caricati dagli Screen 740-745) non sono ancora stati provati a schermo
--- solo verificati headless (vedi sopra). Prima di provarli va
-rigenerata la SD CSpect: `demo/chomp-chomp.f` via `/sync-cspect`, e gli
-Screen 740-745 di `!Blocks-64.bin` a parte (il sync esclude i blocchi di
-default). Al tavolo:
+**FATTO 2026-08-24 (sessione 7)**: punto 1 (`1 level ! GAME` indistinguibile
+dal livello 0) e punto 4 (`ZAP GAME` rigenerato standalone con dentro lo
+Stadio 4) confermati su CSpect.
 
-0. Da una sessione vForth viva (anche su emulatore):
-   `INCLUDE demo/chomp-chomp.f`, `INCLUDE test/CHOMP-MAZE-TESTS.f`, poi
-   **`DISK-MAZE-TESTS` al prompt** -- la parte della suite che tocca i
-   labirinti 2 e 3, che non puo' girare dentro un INCLUDE.
-1. `1 level ! GAME` deve giocarsi indistinguibile dal livello 0.
-2. `2 level ! GAME` e `3 level ! GAME`: i tracciati nuovi devono
-   **apparire come li disegna `util/chomp-maze.py render`**. E' qui che
-   si vede se la regola dei glifi regge anche dove il render dice di si'
-   -- in particolare i raccordi dove un muro sottile si attacca al
-   bordo (glifo `N` sul bordo, non `A`) e i quattro pilastri isolati
-   `W` in fondo al maze 3, che sono il glifo nuovo mai visto a schermo.
-3. Lasciar completare uno schema in gioco deve caricare il livello
-   successivo da solo (`phase-complete` avanza `level`), e il livello
-   **deve finire**: e' la conferma a schermo che il conteggio dinamico
-   dei puntini funziona su un labirinto che non ne ha 180. Il maze 3
-   (216 puntini) e' il caso che con il vecchio 180 fisso non sarebbe
-   finito mai.
-4. I `.bin` standalone in `demo/chomp-chomp/` sono superati dallo
-   Stadio 4 e vanno rigenerati con `ZAP GAME` quando comodo.
+**FATTO 2026-08-24 (sessione 8)**: punti 2 e 3 sotto -- i livelli 2/3 e
+l'avanzamento automatico -- confermati su CSpect: l'autore ha rifinito a
+mano i tracciati 2 e 3 (`EDIT`, piazze ridotte a corridoi) e giocato
+tutti e quattro i livelli fino in fondo, avanzamento automatico incluso.
+**Stadio 4 e' quindi chiuso** -- nessun punto pendente resta dal piano,
+Parte 8. Il punto 0 (`DISK-MAZE-TESTS` headless dal prompt) non risulta
+rilanciato in questa sessione: se serve un riscontro automatico sui
+nuovi conteggi (180/179/200), va comunque rifatto, ma non e' bloccante
+dato il playtest reale gia' fatto.
+
+Confermato anche il titolo: l'autore ha aperto `EDIT` sugli Screen
+740-745 per rifinire i tracciati e ne ha approfittato per personalizzare
+i due titoli in stile commento Forth (`( ... )`) -- vedi la piccola
+incoerenza di parentesi annotata sopra.
 
 ## Scoperte laterali
 
