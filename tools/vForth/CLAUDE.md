@@ -443,9 +443,22 @@ When working with word names (help files, NEEDS lines, documentation), always us
 | `/` | `%` |
 | `*` | `&` |
 | `\|` | `$` |
+| `\` | `_` |
 | `<` | `{` |
 | `>` | `}` |
 | `"` | `~` |
+
+Source of truth: `NDOM_PTR`/`NCDM_PTR` in `project/vForth18_DOES/source/L3.asm`
+(`MAP-FN`), 9 entries -- the table above used to list only 8 and silently
+omitted `\` (illegal in FAT/Windows filenames as a path separator).
+
+**Known collision: `:` and `\` both map to `_`.** A file named `inc/_.f`,
+`lib/_.f` or `help/_.txt` is therefore ambiguous between the two words. As
+of this writing neither word has an `inc/doc/` or `help/` file of its own,
+so the collision is latent, not live. If one is ever added, give it a
+distinct filename (e.g. `colon.f`/`colon.txt` for `:`, `bslash.f`/
+`bslash.txt` for `\`) and keep `_.f`/`_.txt` as a combined entry covering
+both, since `NEEDS`/`HELP` will always resolve either word to that name.
 
 ## NEEDS mechanism
 

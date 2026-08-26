@@ -108,7 +108,23 @@ Dot-version shows a jammed character-set, see next demo instead.
 
 Layer3-Demo2.f
 --------------
-This #2 demo is almost identical to #1, but all data are loaded from SD where 
+This #2 demo is almost identical to #1, but all data are loaded from SD where
 we previously saved running Layer3-Demo2-setup.f auxiliary source file.
 For this reason, dot-version works as fine as non-dot version.
+
+
+
+Brot.f
+------
+Mandelbrot set on Layer 2, computed entirely in 16-bit scaled (fixed point)
+integers: the value n stands for n/256. The arithmetic is explained step
+by step in tutorial 064. Entry point is DEMO, which draws the default
+view and waits for any key before switching back to the text screen.
+Zoom by setting a new view before calling DEMO again:
+  cx cy span WINDOW  ( hundredths, e.g. -50 60 120 WINDOW )
+  DEMO
+Mind the iteration count: the loop gives up after 15 rounds and calls the
+point "inside", so a view aimed close to the boundary - the seahorse
+valley, e.g. -75 10 60 WINDOW - comes out almost entirely black. Deeper
+views need more iterations, and more shades in COLOR-TAB.
 

@@ -205,7 +205,7 @@ decimal
 
 \ Utility: display all UDGs
 : UDGs
-    [char] X [char] A do
+    [char] Z 1+ [char] A do
     i UDG+ emitc loop ;
 
 
@@ -452,6 +452,42 @@ hex
 %01000010  C,
 %00100100  C,
 %00011000  C,
+%00000000  C,
+
+\ X, Y, Z are the 24th-26th slots (codes 167-169), one fruit type per
+\ maze level (see FRUIT-GLYPH below) -- same trick as V/W: the UDG
+\ table has no real upper bound, only the alphabet A-N/O.../W is
+\ meaningful to UDGize (maze data), these three never appear in maze
+\ text and are only ever poked into a sprite's FACE field directly.
+\ X: orange -- a plain filled disc with a small stem.
+%00000000  C,
+%00111000  C,
+%01111100  C,
+%11111110  C,
+%11111110  C,
+%01111100  C,
+%00111000  C,
+%00000000  C,
+
+\ Y: banana -- a diagonal curved band.
+%00000010  C,
+%00000110  C,
+%00001110  C,
+%00011100  C,
+%00111000  C,
+%01110000  C,
+%11000000  C,
+%00000000  C,
+
+\ Z: apple -- filled disc like the orange, but with a wider stem/leaf
+\ notch on top so the two are told apart even though both are round.
+%00011000  C,
+%00100000  C,
+%01101110  C,
+%11111111  C,
+%11111111  C,
+%01111110  C,
+%00111100  C,
 %00000000  C,
 
 UDG_1 5C7B ! \ UDG
@@ -894,8 +930,20 @@ pacman-init
 
 5 name-of Cherry
 
+\ one fruit per maze level, cycling with n-mazes so it always matches
+\ the maze in play: cherry, orange, banana, apple, then round again.
+\ Score grows with the level, arcade-style.
+create fruit-glyph
+  [char] U c,  [char] X c,  [char] Y c,  [char] Z c,
+create fruit-score
+  10 c,  20 c,  30 c,  40 c,
+
+: fruit-idx ( -- n ) level @ n-mazes mod ;
+: fruit-glyph@ ( -- c ) fruit-idx fruit-glyph + c@ UDG+ ;
+: fruit-score@ ( -- n ) fruit-idx fruit-score + c@ ;
+
 : cherry-init
-  Cherry [char] U UDG+
+  Cherry fruit-glyph@
      sprite@ face  c!
   14 sprite@ x-pos c!
   12 sprite@ y-pos c!
@@ -945,7 +993,7 @@ cherry-init
     case
         bl       of 1 endof
         [udg]  V of 1 endof
-        [udg]  U of 1 endof
+        fruit-glyph@ of 1 endof
         [udg]  O of 1 endof
         [char] / of 1 endof
         [char] \ of 1 endof
@@ -960,7 +1008,7 @@ cherry-init
     case
         bl       of 1 endof
         [udg]  V of 1 endof
-        [udg]  U of 1 endof
+        fruit-glyph@ of 1 endof
         [udg]  O of 1 endof
         [char] - of 1 endof
         0 swap
@@ -1058,7 +1106,7 @@ cherry-init
 : pacman-walk ( c -- )
   >r r@ [udg]  O =
      r@ [udg]  V = or
-     r> [udg]  U = or
+     r> fruit-glyph@ = or
   0= if
    pacman
    xy-pos@ xy-pre@ d=
@@ -1072,12 +1120,12 @@ cherry-init
 
 ( pacman-eat-cherry )
 : pacman-eat-cherry ( c -- )
-  [udg] U = if
-   10 score d+!
-   10 total d+!
+  fruit-glyph@ = if
+   fruit-score@ score d+!
+   fruit-score@ total d+!
    [ 50 29 bip ] 2lit bleep
    [ 50 36 bip ] 2lit bleep
-  then ; 
+  then ;
 
 
 ( ghost AI - geometry )
@@ -1459,7 +1507,7 @@ create cw-tab
 
 \ true while the cherry is still on the maze, waiting to be eaten
 : cherry-visible? ( -- f )
-  cherry xy-pos@ maze@ [udg] U = ;
+  cherry xy-pos@ maze@ fruit-glyph@ = ;
 
 \ once visible, redraw every tick so FRUIT-CYCLE actually pulses;
 \ otherwise roll for a new cherry to appear
@@ -1469,7 +1517,7 @@ create cw-tab
   else
    100 choose 0= if
     cherry sprite-put
-    [udg] U xy-pos@ maze!
+    fruit-glyph@ xy-pos@ maze!
    then
   then ;
 \
@@ -1918,12 +1966,18 @@ needs .s
 
 
 
+\ put-cherry/flash-pills draw first so Pac-Man and the ghosts, drawn
+\ after, always win the cell visually: both redraw their glyph every
+\ tick straight onto the maze data's say-so (still O / still the fruit
+\ glyph), with no idea a sprite is currently sitting on that same cell,
+\ so whichever draws last wins the pixel.  A ghost sitting on the power
+\ pill used to lose to the very next flash-pills call.
 : heart-beat
   pace
-  move-pacman
-  move-four-ghosts
   put-cherry
   flash-pills
+  move-pacman
+  move-four-ghosts
   count-down
   tick-phase
   dashboard
@@ -1943,8 +1997,8 @@ needs .s
 : phase-complete
   score 2@ total 2@ d= if
    ghost-color 1 hunt !
-   init-all
-   1 level +!
+   1 level +!    \ before init-all: cherry-init reads FRUIT-GLYPH@ off
+   init-all       \ the level about to be played, not the old one
    set-maze-run
    find-pills
    maze-dots @ total D+!

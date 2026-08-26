@@ -1,4 +1,4 @@
-# chomp-chomp: stato della revisione (agg. 2026-08-24, sessione 8)
+# chomp-chomp: stato della revisione (agg. 2026-08-26, sessione 9)
 
 Nota di ripresa per continuare il lavoro da un'altra sessione.
 Piano approvato completo: `C:\Users\matteo\.claude\plans\glowing-mixing-haven.md`
@@ -502,6 +502,69 @@ Confermato anche il titolo: l'autore ha aperto `EDIT` sugli Screen
 740-745 per rifinire i tracciati e ne ha approfittato per personalizzare
 i due titoli in stile commento Forth (`( ... )`) -- vedi la piccola
 incoerenza di parentesi annotata sopra.
+
+## Sessione 9 (2026-08-26): un frutto diverso per livello
+
+Richiesta dell'autore: variare il tipo di frutto invece della sola ciliegia
+fissa. Implementato come nell'arcade originale -- un frutto per maze
+level, punteggio crescente:
+
+- **Tre nuovi UDG**, codici 167-169 (lettere `X`/`Y`/`Z`), stesso
+  meccanismo di V/W (Stadio 3/4): nessun limite reale oltre i 21 storici,
+  queste tre lettere non ricadono mai nell'intervallo `A`-`W` che
+  `UDGize` converte dal testo labirinto, quindi non c'e' rischio di
+  collisione con l'alfabeto dei muri. `X` = arancia (disco pieno con
+  gambo), `Y` = banana (banda diagonale), `Z` = mela (disco con
+  intaccatura/gambo piu' largo per distinguerla dall'arancia).
+- **`fruit-glyph`/`fruit-score`** (tabelle `create ... c,`, stesso idioma
+  di `pill-x`/`scatter-tab`) indicizzate da `fruit-idx` (`level @
+  n-mazes mod`, stessa formula di `set-maze-run`): livello 0 = ciliegia
+  (10 pt), 1 = arancia (20), 2 = banana (30), 3 = mela (40), poi ricicla.
+  Nessun cambio al colore: il frutto continua a pulsare con
+  `FRUIT-CYCLE` (rosso/giallo/magenta) invariato per tutti i tipi --
+  variano solo forma e punteggio.
+- Ogni punto del codice che confrontava una cella con `[udg] U` (la
+  ciliegia fissa) ora chiama `fruit-glyph@`: `cherry-init`,
+  `cherry-visible?`, `put-cherry`, `pacman-eat-cherry`, `pacman-walk`,
+  `?pac-trail`, `?ghost-trail` -- altrimenti il frutto di un livello
+  diverso dal primo sarebbe stato trattato come muro invalicabile da
+  Pac-Man e fantasmi, o mai raccolto.
+- **Riordino in `phase-complete`**: `1 level +!` spostato **prima** di
+  `init-all` (che chiama `cherry-init`) invece che dopo -- altrimenti
+  `cherry-init` avrebbe letto ancora il livello appena concluso e messo
+  il frutto sbagliato per il livello in arrivo. `set-maze-run` era gia'
+  dopo l'incremento, quindi il suo comportamento non cambia.
+- `UDGs` (utility di debug) esteso da `[char] X` a `[char] Z 1+` come
+  limite del loop, per mostrare anche i tre nuovi glifi.
+- **Non verificato headless**: stesso limite gia' documentato per la
+  sessione 7 -- `emu/repl.py` con le soglie di serie si ferma in
+  silenzio (STEP_CAP di default insufficiente anche solo per compilare
+  il file, non solo per giocarci; servirebbero soglie elevate e
+  probabilmente una buona frazione dei ~41 minuti del giro completo).
+  Verificato invece a mano: tracciata la semantica di `Cherry`/`sprite@`/
+  `name-of` per confermare che `fruit-glyph@` sostituisce `[char] U
+  UDG+` allo stesso punto dello stack; ricalcolati i codici UDG attesi
+  (167/168/169, nessuna collisione con l'alfabeto muri `A`-`W`); nessuna
+  parola nuova introdotta senza una definizione precedente nel file
+  (`level`/`n-mazes` sono gia' in scope al punto di `fruit-idx`).
+  **Da confermare su CSpect**: le quattro forme si vedono correttamente
+  sui quattro livelli, il punteggio cresce come atteso, il frutto resta
+  attraversabile su tutti e quattro i livelli.
+
+**Piccolo fix di ordine display, stessa sessione**: l'autore ha segnalato
+che quando un fantasma passa sopra la pillola grande, la pillola vince
+visivamente invece del fantasma. Causa: `flash-pills` e `put-cherry`
+ridisegnano il proprio glifo ogni tick guardando solo il dato di mappa
+(`maze@`, che resta `O`/il glifo del frutto finche' Pac-Man non lo
+mangia -- i fantasmi non lo cancellano mai), senza sapere che un
+fantasma occupa gia' quella cella sullo schermo; ed erano chiamati
+**dopo** `move-pacman`/`move-four-ghosts` in `heart-beat`, quindi
+vincevano loro l'ultima scrittura sulla cella. Fix: spostati **prima**
+di `move-pacman`/`move-four-ghosts` -- Pac-Man e i fantasmi si
+ridisegnano per ultimi e vincono la cella. Nessun cambio ai dati di
+gioco (`maze-run` non viene mai toccato da `flash-pills`/`put-cherry`,
+solo lo schermo), quindi il fix e' puramente visivo. Non verificato
+headless per lo stesso motivo di sopra; da confermare su CSpect.
 
 ## Scoperte laterali
 
