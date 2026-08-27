@@ -119,8 +119,9 @@ CREATE TUT-TABLE
     H" tutorial/062-error-messages.f"  ,
     H" tutorial/063-blocks-as-assets.f" ,
     H" tutorial/064-scaled-integer-math.f" ,
+    H" tutorial/065-fedora-silhouette.f" ,
 
-64 CONSTANT TUT-MAX
+65 CONSTANT TUT-MAX
 
 
 \ ---------------------------------------------------------------------------

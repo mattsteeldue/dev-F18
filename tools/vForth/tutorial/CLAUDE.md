@@ -506,12 +506,36 @@ Status as of 2026-07-05:
   cardioid (x in -0.86..-0.41, y in -0.39..0.37) and the demo painted an
   almost entirely black screen. Both files now convert every window
   parameter through the same `CENTI ( n -- n' ) Scale 100 */` word.
+- **065-fedora-silhouette.f (new, 2026-08-27)**: ported from
+  `demo/Fedora.f` (Patrick Kaell's "Fedora", a silhouette plotted slice
+  by slice with a one-cell-per-column depth buffer). Critical
+  verification performed while writing it (section 6 of the tutorial):
+  the depth buffer `RR` (642 bytes / 321 cells) is safe -- exhaustive
+  check of all 28929 `(outerI,innerI)` pairs gives `X1` in `[3,317]`,
+  never negative, three cells inside the buffer's own bound. But the
+  original `demo/Fedora.f` ended with a bare `CLS FEDORA`, drawing into
+  whatever graphic mode happened to be active, unlike `demo/brot.f`
+  (tutorial 064) which always opens with an explicit `LAYER2 CLS`. `X1`
+  reaches 317, which fits only `LAYER12`'s `H-RANGE=512` -- every other
+  mode caps at 256 and would silently drop 4032 of 28929 plotted points
+  (13.9%, verified by simulation) via `COORD-CHECK`'s silent clipping:
+  no crash, just a hat with its brim sheared off on one side. `NEEDS
+  GRAPHICS`'s own `SETUP` auto-selects `LAYER12` on first load if the
+  hardware is already in its `LAYER12` boot default (sec.13), which is
+  why a bare `CLS FEDORA` right after booting happened to look
+  complete -- but `NEEDS` is a no-op once `GRAPHICS` is already loaded,
+  so nothing re-syncs the mode if an earlier demo left the display on
+  `LAYER0`/`LAYER2`. Fixed in both `demo/Fedora.f` and the tutorial: a
+  `DEMO` word now opens with an explicit `LAYER12 CLS` and restores it
+  afterwards, the same "switch in, restore out" discipline as `BROT`.
+  **Awaiting CSpect verification** -- never run outside this session.
 
 Flag: 045 confirmed on CSpect (2026-07-10); 046 (including its new slide
 show) confirmed on CSpect (2026-07-10); 050 until its fix is confirmed on
 CSpect; 056 until confirmed on CSpect; 064 `DEMO` and the corrected
 `demo/brot.f` confirmed on CSpect (2026-08-22), 064 `ZOOM-DEMO` until
-its retargeted view is confirmed too.
+its retargeted view is confirmed too; 065 `DEMO` and the corrected
+`demo/Fedora.f` until confirmed on CSpect.
 
 
 ## 16. Hardware Sprites: slot vs pattern, palette offset (tutorial 053)

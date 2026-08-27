@@ -460,6 +460,10 @@ distinct filename (e.g. `colon.f`/`colon.txt` for `:`, `bslash.f`/
 `bslash.txt` for `\`) and keep `_.f`/`_.txt` as a combined entry covering
 both, since `NEEDS`/`HELP` will always resolve either word to that name.
 
+An audit of every defined name in the core (`project/vForth18_DOES/source/`),
+`inc/` and `lib/` found no other collision under this mapping -- `:`/`\` is
+the only pair that lands on the same filename anywhere in the tree.
+
 ## NEEDS mechanism
 
 `NEEDS` is compiled into `forth18e.bin` -- available immediately at startup.
