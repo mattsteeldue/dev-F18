@@ -12,7 +12,11 @@
 \
 \ Stage 1 (done): sound engine swapped from ROM BEEP to the AY chip
 \ (Turbo Sound Next) -- see NEEDS AY and sound-init/bip/bleep below.
-\ Still uses old-fashion UDG's for graphics (that is Stage 2 and on).
+\ Stage 2 (implemented, awaiting CSpect confirmation): the six mobs
+\ (Pac-Man, four ghosts, fruit) are drawn with real hardware sprites
+\ instead of UDG text-cell glyphs -- see NEEDS SPRITE and the "hw
+\ sprites" section before sprite-put.  The maze itself (walls, dots,
+\ pills) is still text, unchanged.
 \
 \
 \ .( Chomp-Chomp GAME ) 
@@ -48,6 +52,7 @@ NEEDS J                  \ outer loop index, used once by find-pills
 NEEDS <>                 \ used by MAZE-CHECK (Stage 4)
 
 NEEDS AY                 \ Stage 1: AY sound instead of NEEDS BLEEP/ROM BEEP
+NEEDS SPRITE              \ Stage 2: hardware sprites instead of UDG glyphs
 
 
 \ wait for next interrupt, to sync video frame
@@ -736,7 +741,7 @@ set-maze-run  \ ...and do it now
     maze-run
     22 1 do
         cr space sync-vid
-        20  025 23 i - 16 +  bip swap bleep
+        20  23 i - 16 +  bip swap bleep
         dup count gtype 24 +
     loop
     drop
@@ -1039,19 +1044,133 @@ create fruit-score
 cherry-init 
 
 
+.( hw sprites )
+
+\ ---------------------------------------------------------------------
+\ Stage 2: hardware sprites for the six mobs (Pac-Man, four ghosts,
+\ fruit), replacing the UDG text-cell glyph the old sprite-put drew
+\ with sync-emit.  The maze (walls/dots/pills) stays text on LAYER11,
+\ untouched -- see prompts/CHOMP-CHOMP-NEXT-PLAN.md, Stage 2.
+\
+\ A hardware sprite is a real overlay: it no longer overwrites the text
+\ cell underneath it the way sync-emit did, so the old sprite-put's
+\ other half (redrawing sprite@ maze c@ at the previous cell, to
+\ restore whatever dot/pill/blank was there before the mob moved
+\ off) is gone -- there is nothing left to restore.  One direct
+\ consequence: the old "last one drawn wins the pixel" behaviour (a
+\ ghost's glyph silently hiding the fruit glyph in the same text cell,
+\ or Pac-Man's glyph implicitly erasing the fruit when he eats it) does
+\ NOT happen for free any more -- two independent sprites now simply
+\ overlap.  The one place this mattered functionally (not just
+\ cosmetically) is the fruit: it must be explicitly SPRITE-HIDEn when
+\ it stops being visible, or a stale cherry sprite would keep showing
+\ after being eaten.  See put-cherry below.
+\ ---------------------------------------------------------------------
+
+decimal
+
+\ Pixel offset between hardware sprite coordinate (0,0) and the
+\ top-left corner of LAYER11's 256x192 paper area (the dev guide's
+\ sprite-chapter "border compensation", sec.3.4).  32,32 is the
+\ documented default -- NOT yet cross-checked against this game's own
+\ LAYER11 setup.  If mobs land off-grid on CSpect, these two are the
+\ first thing to nudge.
+32 constant MOB-X-ORIGIN
+32 constant MOB-Y-ORIGIN
+
+\ Sentinel background colour written into every palette bank (see
+\ mob-palette).  Chosen to not equal any of the eight ink-rgb values
+\ below -- unlike the tutorial 053 identity-palette default ($E3),
+\ which IS magenta and would silently swallow Pinky (ink 3) if reused
+\ here now that the palette is no longer the identity mapping.
+$01 constant MOB-TRANSPARENT
+
+\ RGB332 byte for each of the 8 classic Spectrum ink numbers, BRIGHT
+\ variant (this game always runs 1 .BRIGHT -- see play-level).  Ink
+\ bit0=B, bit1=R, bit2=G (the ULA's own encoding); RGB332 packs R,G as
+\ 3 bits (0 or 7) and B as 2 bits (0 or 3):
+\   0 black $00   1 blue $03   2 red $E0   3 magenta $E3
+\   4 green $1C   5 cyan $1F   6 yellow $FC   7 white $FF
+create ink-rgb
+  $00 c, $03 c, $E0 c, $E3 c, $1C c, $1F c, $FC c, $FF c,
+
+\ Program every palette bank (offset 0..7, the _pattern attribute in
+\ the SPRITE struct) so index 0 reads MOB-TRANSPARENT and index 1
+\ reads that bank's ink colour.  mob-pattern-from-udg below only ever
+\ writes pixel value 0 or 1, so the other 14 slots per bank are never
+\ read.
+: mob-palette ( -- )
+    %00100000 $43 reg!
+    0 $40 reg!
+    256 0 do
+        i 15 and 1 = if
+            i 4 rshift 7 and ink-rgb + c@
+        else
+            MOB-TRANSPARENT
+        then
+        $41 reg!
+    loop
+    MOB-TRANSPARENT $14 reg!  \ global transparency colour
+;
+
+\ Turn one 8x8 UDG bitmap into a 16x16 sprite pattern, unscaled (rows
+\ and columns 8-15 of the pattern stay transparent) so a mob stays the
+\ same on-screen size as the old UDG glyph.  Pixel value 1 = fore-
+\ ground, recoloured per-sprite through the palette-offset attribute
+\ (sprite-color, below); 0 = MOB-TRANSPARENT.
+: mob-pattern-from-udg ( char -- )
+    SPRITE-BUFFER SPRITE-BUFLEN erase
+    UDG@                          ( rowaddr )
+    8 0 do                        \ J = row 0..7
+        dup J + c@                ( rowaddr rowbyte )
+        8 0 do                    \ I = col 0..7, MSB first
+            dup 7 I - rshift 1 and if
+                1 SPRITE-BUFFER J 16 * I + + c!
+            then
+        loop
+        drop                      ( rowaddr )
+    loop
+    drop
+;
+
+\ Which pattern slot (0-8) each glyph letter uploads to.  The four
+\ ghosts share one body pattern (T) -- they differ only by colour, via
+\ the palette-offset attribute, never by shape.
+create mob-glyphs
+  [char] R c,  [char] P c,  [char] Q c,  [char] S c,
+  [char] T c,
+  [char] U c,  [char] X c,  [char] Y c,  [char] Z c,
+9 constant mob-glyph-count
+
+\ Reverse lookup: UDG+ code (144-169 range) -> pattern slot 0-8.
+create mob-patid  26 allot
+
+: face>patid ( udgcode -- id )
+    144 - mob-patid + c@ ;
+
+: mob-upload-patterns ( -- )
+    mob-glyph-count 0 do
+        i mob-glyphs + c@                     ( char )
+        dup UDG+ 144 - mob-patid + i swap c!  ( char )
+        mob-pattern-from-udg                  ( )
+        i SPRITE-INIT
+    loop
+;
+
 .( move )
 
-\ draw current sprite, well they aren't ZX Spectrum Next's Sprite, just UDG
+\ draw current sprite as a real ZX Spectrum Next hardware sprite.
 \ usage:
 \   Blinky  sprite-put
 : sprite-put ( -- )
-    sprite@ face  c@
-    sprite-color  16
-    xy-pos@ swap      22  \ prepare .at
-    sprite@ maze  c@
-    xy-pre@ swap      22  \ prepare .at
-    4 16
-    sync-emit             \ send all 12 chr
+    sprite@ face  c@  face>patid   SPRITE _spriteid !
+    sprite-color                   SPRITE _pattern  c!
+    xy-pos@                        ( row col )
+    8 * MOB-X-ORIGIN +             ( row xpix )
+    swap 8 * MOB-Y-ORIGIN +        ( xpix ypix )
+    SPRITE _ycoord !               ( xpix )
+    SPRITE _xcoord !
+    SPRITE Sprite-no SPRITE-UPDATE
 ;
 
 
@@ -1452,12 +1571,14 @@ create cw-tab
 .( display )
 
 : init-display
+ SPRITES-ON  mob-palette  mob-upload-patterns
  LAYER11 30 emitc 8 emitc
  0 .paper 0 .border 4 .ink
  cls maze.
  0 20 .at ." high "
  high-score 2@
  <# # # # # # # #> type
+ 5 SPRITE-HIDE          \ no stale fruit sprite from a previous level
  5 0 do
   i  sprite#
   sprite-put
@@ -1506,6 +1627,7 @@ create cw-tab
 
 
 : interlude
+  SPRITES-OFF  \ avoid stale mob sprites frozen behind the text splash
   inter-sound cls
   7 .ink
   10 30 .at
@@ -1592,7 +1714,11 @@ create cw-tab
   cherry xy-pos@ maze@ fruit-glyph@ = ;
 
 \ once visible, redraw every tick so FRUIT-CYCLE actually pulses;
-\ otherwise roll for a new cherry to appear
+\ otherwise roll for a new cherry to appear.  A hardware sprite is an
+\ overlay, not a text overwrite (see the "hw sprites" section above),
+\ so the not-visible/no-spawn case must SPRITE-HIDE the fruit slot
+\ explicitly -- nothing else erases it now that Pac-Man eating the
+\ fruit no longer draws over its text cell.
 : put-cherry
   cherry-visible? if
    cherry sprite-put
@@ -1600,6 +1726,8 @@ create cw-tab
    100 choose 0= if
     cherry sprite-put
     fruit-glyph@ xy-pos@ maze!
+   else
+    5 SPRITE-HIDE
    then
   then ;
 \
@@ -2122,6 +2250,7 @@ needs .s
   maze-dots @ total D+!
   init-display
   run-game
+  SPRITES-OFF
   22 0 .at
   LAYER12 3 SPEED!
 ;

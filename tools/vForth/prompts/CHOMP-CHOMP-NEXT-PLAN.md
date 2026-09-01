@@ -133,6 +133,21 @@ swap that touches no collision/AI/maze-data code. **Needs CSpect**:
 does it sound right, and does the startup swoosh still play alongside
 the maze draw.
 
+**2026-09-01 -- follow-on decided, deferred to Stage 4.** The raw-AY
+`bip`/`bleep` here still block the game loop for the sound's whole
+duration (`0 do sync-vid loop`) and are functionally "the same beep,
+just on a different chip" -- no envelope, no background playback.
+`lib/afxplay.f`/`AFXFRAME` (tutorial 050/055) is the natural next step:
+same audible tones, but driven from a `.afx`-format frame buffer through
+the interrupt-driven player, so a sound effect no longer has to freeze
+gameplay while it plays. Doing this now would mean hand-rolling an ISR
+just for sound, ahead of and separate from Stage 4's own ISR work; doing
+it as *part* of Stage 4 means the interrupt plumbing is built once and
+carries both the game-tick clock and `AFXFRAME`. See Stage 4 below for
+the design questions this still needs to settle (blocking drop-in vs.
+background/fire-and-forget; generated-on-the-fly vs. hand-authored
+envelopes).
+
 ---
 
 ## Stage 2 -- Hardware sprites for the six mobs
@@ -175,6 +190,81 @@ maze loader.
 
 **Depends on**: nothing (sound in Stage 1 is unrelated). Blocks Stage 3.
 
+**Status (2026-09-01): implemented, awaiting CSpect confirmation.** A new
+reusable module, `lib/SPRITE.f` (`NEEDS SPRITE`), extracts the hardware
+sprite engine from tutorial 053 (ports, the `SPRITE-OB` struct,
+`SPRITE-INIT`/`SPRITE-UPDATE`/`SPRITE-HIDE`, `SPRITES-ON`/`SPRITES-OFF`) into
+a loadable library, leaving the tutorial itself untouched; only
+`SPRITE-LOAD<` (reading a whole `.spr` file) stayed tutorial-only, since
+chomp-chomp-next builds its patterns programmatically instead.
+`demo/chomp-chomp-next/chomp-chomp.f` adds a "hw sprites" section right
+before `sprite-put` (which it replaces) with:
+
+- **Patterns generated from the existing UDG bitmaps**, not new art:
+  `mob-pattern-from-udg` unpacks each 8x8 1-bit UDG letter (R/P/Q/S for
+  Pac-Man's four facings, T for the ghost body -- shared by all four ghosts,
+  since they differ only by colour -- and U/X/Y/Z for the four fruit types,
+  9 patterns total) into the top-left 8x8 of an otherwise-transparent 16x16
+  sprite pattern, unscaled, so mobs stay the same on-screen size as before.
+- **Colour via the palette-offset attribute, not per-colour patterns**:
+  `mob-palette` programs 8 palette banks (offset 0-7, one per classic
+  Spectrum ink number) so a pattern's foreground pixel (value 1) reads that
+  bank's RGB332 ink colour and its background (value 0) reads a sentinel
+  `MOB-TRANSPARENT` ($01). This is deliberately NOT the identity-palette
+  shortcut tutorial 053 uses for its own demo: identity maps ink 3
+  (magenta, Pinky's colour) to RGB332 $E3, which is also the *default*
+  transparency key -- reusing it here would make Pinky invisible. `sprite-put`
+  just stores `sprite-color` (an ink 0-7, unchanged from before) into the
+  `_pattern` attribute field each draw.
+- **Hardware slot = `Sprite-no`** (0-3 ghosts, 4 Pac-Man, 5 fruit) -- the
+  same numbering `name-of` already assigned, so `sprite-put` needs no new
+  slot-allocation logic.
+- **Position**: `cell * 8 + origin`, unscaled (LAYER11 is the plain 256x192
+  ULA mode this game runs in, 32x24 cells of 8x8 -- confirmed by reading
+  `inc/layer11.f`, not assumed). `MOB-X-ORIGIN`/`MOB-Y-ORIGIN` (32,32) are
+  the documented Next "border compensation" default for aligning sprite
+  (0,0) with the paper area's top-left corner (dev guide sec.3.4) -- this
+  is the one number in the whole stage that is a guess, not derived from
+  reading this game's own code, and the first thing to adjust if mobs land
+  off-grid on CSpect.
+
+**A hardware sprite is an overlay, not a text overwrite -- this changes
+more than the drawing call.** The old `sprite-put` had a second half,
+invisible in the plan text above: `sprite@ maze c@`/`c!` bookkeeping that
+redrew whatever dot/pill/blank was under a mob's *previous* cell, because
+overwriting a text cell to draw a mob destroyed whatever was there before.
+A hardware sprite never touches the text layer, so that bookkeeping is now
+dead code (left in place, e.g. in `move-four-ghosts`, rather than risk
+deleting something not fully traced) and nothing needs restoring -- but the
+flip side is that nothing erases a mob's *own* sprite either when it should
+disappear. The one place this bit for real: the fruit. `put-cherry` used to
+rely on Pac-Man's glyph implicitly overdrawing the fruit's text cell when he
+ate it; with independent hardware sprites that overdraw never happens, so
+`put-cherry` now calls `5 SPRITE-HIDE` explicitly whenever the fruit is
+neither visible nor freshly spawning. `init-display` also hides the fruit
+slot defensively (no stale sprite from a previous level) and `interlude`
+calls `SPRITES-OFF` before its text splash, so mobs don't appear frozen
+behind it between levels/lives.
+
+Verified only in isolation (same caveat as Stage 1: the full game file is
+impractical to run headless -- and this session found piping it through
+`emu/repl.py` via `INCLUDE`/`cat | repl.py` is not just slow but unreliable,
+losing its place partway with no error surfaced, matching the documented
+`INCLUDE`/`NEEDS` block-buffer-starvation bug when nested `NEEDS` calls
+share `BLOCK 1`; a short snippet piped directly as top-level REPL input,
+Stage 1's own method, avoids that and is what was used here). `lib/SPRITE.f`
+loads cleanly stand-alone. A standalone copy of `mob-palette`,
+`mob-pattern-from-udg`, `mob-upload-patterns` and `face>patid` (against a
+minimal stand-in UDG table) ran without error, and `face>patid` returned the
+expected pattern ids (R->0, T->4, Z->8) for all three glyph classes
+(Pac-Man facing, ghost body, fruit). **Not verified even in isolation**: the
+`sprite-put` coordinate/attribute arithmetic itself (traced by hand against
+`SPRITE-UPDATE`'s stack comments, not executed), and everything that can
+only be judged visually -- pattern shapes, the eight ink colours, the
+`MOB-X-ORIGIN`/`MOB-Y-ORIGIN` alignment, six sprites moving/overlapping
+correctly, and the fruit-hide behaviour. **Needs CSpect**, more than Stage 1
+did.
+
 ---
 
 ## Stage 3 -- Palette-driven color effects
@@ -211,11 +301,31 @@ remains an unimplemented design plan (`prompts/IM2-HW-PLAN.md`). If the
 author later wants proper hardware-IM2 daisy-chain priority, that is a
 separate prerequisite project, not a blocker here.
 
+**Also folds in the Stage 1 sound follow-on (decided 2026-09-01):**
+migrate `bip`/`bleep` off raw AY register writes and onto
+`lib/afxplay.f`'s `AFXFRAME` (tutorial 050/055), sharing the ISR this
+stage installs for the game clock. Two design questions to settle when
+this stage is picked up:
+- **Blocking drop-in vs. background/fire-and-forget.** Either `bip`/
+  `bleep` build a small `.afx` buffer and still play it with a blocking
+  loop (same feel as today, only the mechanism changes), or sound
+  becomes a `AFX-CH-DESC` store (tutorial 055's `FIRE`/`SFX-START`
+  pattern) and plays in the background while the game keeps moving --
+  a real gameplay change, not just a mechanism swap.
+- **Generated-on-the-fly vs. hand-authored envelopes.** Either a helper
+  synthesises N identical frames from the current `(period frames)`
+  pair (reproduces exactly today's flat-volume tone through the new
+  engine), or each event (pill/cherry/ghost-eaten/swoosh) gets a
+  hand-written frame sequence with a real attack/decay envelope --
+  closer to an arcade effect, but no longer "the same sound".
+
 **Why fourth**: an architectural cleanup best done once the draw path is
 cheap (Stage 2) and before the heaviest stage (Stage 5), where a stable,
 CPU-decoupled clock matters most. Purely internal -- should be
-indistinguishable from Stage 3 in play, confirmed by the game feeling
-identical in pace on CSpect.
+indistinguishable from Stage 3 in play (game pacing), confirmed by the
+game feeling identical in pace on CSpect; the sound engine swap is the one
+part of this stage that IS meant to be user-visible/audible, per the two
+questions above.
 
 **Depends on**: Stage 2 (for the pacing headroom to matter). Not required by
 Stage 3.
