@@ -120,8 +120,9 @@ CREATE TUT-TABLE
     H" tutorial/063-blocks-as-assets.f" ,
     H" tutorial/064-scaled-integer-math.f" ,
     H" tutorial/065-fedora-silhouette.f" ,
+    H" tutorial/066-kempston-joystick.f" ,
 
-65 CONSTANT TUT-MAX
+66 CONSTANT TUT-MAX
 
 
 \ ---------------------------------------------------------------------------

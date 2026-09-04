@@ -74,7 +74,7 @@ Overview"; `LICENSE.md` (MIT, 1990-2026, Matteo Vitturi).
    183 by the author under three identities (`Matteo Vitturi` 131, `Matteo` 41,
    `mvitturi` 11) and 1 by `Claude`. This is a **single-maintainer project**.
 2. **ZX Spectrum Next hobbyist programmers** -- the target of `tutorial/`
-   (66 numbered tutorials), `help/` (461 on-machine help files), `demo/`, and
+   (67 numbered tutorials), `help/` (461 on-machine help files), `demo/`, and
    the public release pipeline that produces
    `download/vForth_18_NextZXOS_YYYYMMDD.zip`
    (`.claude/skills/release-rebuild/SKILL.md` step 4).
@@ -263,7 +263,6 @@ the same tree as `C:\Zx\Forth\F18` -- see section 8.4 for that divergence.
 | `tools/vForth/` | The whole project | The nextsync mirror places vForth under `tools/` on the SD card, so the path is the deployment path | **Critical** |
 | `home/` | ZX-side user files (RaspPI0, tutorial assets, Mouse, vForth20) | SD-card `home` directory; untracked | Low |
 | `nextzxos/` | `browser.cfg`, `esxemu.sys` and friends | NextZXOS configuration on the SD card; untracked | Low |
-| `sh/last_sign.sh` | One shell script | Peripheral utility; no reference found from the rest of the tree | Low |
 
 ## 3.2 `tools/vForth/` level
 
@@ -275,7 +274,7 @@ the same tree as `C:\Zx\Forth\F18` -- see section 8.4 for that divergence.
 | `emu/` | Python headless emulator (`emulator.py` 35 KB, `z80_instructions.py` 69 KB), `repl.py`, 9 `test_*.py`, `trace_words.py` | The only automated way to run vForth without hardware or CSpect | **High** |
 | `test/` | 159 `.f` files: 7 suites plus per-word tests | ANS-Forth conformance and regression, run *on the machine* | **High** |
 | `help/` | 461 `.txt` files, one per word, max 21 lines each | Consumed by the on-machine `HELP` command (`inc/help.f` -> `VIEW-FILE-PAD`) | **High** |
-| `tutorial/` | 66 numbered `.f` tutorials + `bmp/`, `afx/` assets | The teaching track; banded 000-029 language, 030-059 hardware, 060+ advanced | **High** |
+| `tutorial/` | 67 numbered `.f` tutorials + `bmp/`, `afx/` assets | The teaching track; banded 000-029 language, 030-059 hardware, 060+ advanced | **High** |
 | `util/` | `blocks2txt.pl`, `putscr.pl`, `asm2hex.py`, `gen-dict-structure.py`, `odt-hygiene.py`, `chomp-maze.py`, `sync2sd.ps1`, `verify2sd.ps1`, `mountw.ps1`, `sd-sync.config.ps1`, `blank-blocks.ps1` | PC-side tooling: block file <-> text, ODT maintenance, SD deployment | **High** |
 | `.claude/` | 11 commands, 5 skills, 1 agent, settings | **The process automation layer.** In the absence of CI, these encode the build/release/deploy procedures | **High** |
 | `doc/` | The reference manual (`.odt` + `.pdf`, two dated generations), `doc/previous/` (older manuals), `doc/txt/` (dated `!Blocks-64.bin` dumps), plus hardware notes (`AY-3-8910.md`, `tilemap.md`, `NextZXOS_and_esxDOS_APIs.md`, `zx-next-dev-guide-r3.md`), `memory-map.txt`, `RELEASE-BUILD.md` | The published documentation. **The `.odt`/`.pdf` must never be edited automatically** (root `CLAUDE.md`) | **High** |
@@ -367,8 +366,10 @@ QUIT  -- L2.asm:175
 
 1. **AUTOEXEC is self-disarming.** `L2.asm:218` carries the comment
    `dw AUTOEXEC // autoexec, patched to noop`. If you are wondering why your
-   change to Screen 11 "did not take" after typing `ABORT`, this is why. You
-   need a fresh COLD from the loader. **Confidence: High.**
+   change to Screen 11 "did not take" after typing `ABORT`, this is why. A
+   fresh COLD from the loader re-arms it; alternatively, `lib/restore-autoexec.f`
+   patches the call site back to `AUTOEXEC` in-place, without a reboot.
+   **Confidence: High.**
 2. **A failed block-file open does not stop the boot** in the DOES variant. You
    reach `ok` in an inconsistent state (root `CLAUDE.md` Boot Sequence, point 1).
    A confusing `BLOCK`-related failure later is often really this.
@@ -385,9 +386,38 @@ a pointer to executable Z80:
 - a **CODE word**'s CFA is the machine code itself;
 - a **colon definition**'s CFA is a 3-byte `call Enter_Ptr` (`Colon_Def` macro,
   `system.asm:206-210`);
-- `EXECUTE` is therefore just `jp (hl)`;
+- `EXECUTE`'s CFA (`L0.asm:140-141`) is literally a single `ret`. `ret` pops
+  the top of whatever `SP` currently points at straight into PC -- and since
+  **`SP` doubles, promiscuously, as the Forth calculation-stack pointer**
+  (`system.asm:5-11`, `L0.asm:141` register comment, root `CLAUDE.md`'s
+  register map), the value it pops here is *xt*, the argument `EXECUTE` was
+  called with. The effect is exactly `POP HL` + `JP (HL)`, except `HL` is
+  never touched -- `ret` performs the pop-then-jump as one atomic step,
+  landing directly on *xt* without a working register in between. This is
+  a distinct mechanism from "next" below: "next" is a real `jp (ix)`
+  instruction that dispatches into a word's CFA by loading `HL` first (it
+  does not consume anything off `SP`); `EXECUTE`'s `ret` is the same
+  "land on an address and start running it" outcome reached through the
+  Z80's own call/return machinery, riding on the fact that `SP` is shared
+  with the data stack.
 - "next" is `jp (ix)` (`next` macro, `system.asm:63`), 2 T-states cheaper than a
   direct `jp`, which is why **IX is reserved and must never be clobbered**.
+  `IX` is not hardwired to `Next_Ptr` by the hardware, only by convention: it
+  is loaded once, at `COLD`/`WARM` (`L2.asm:277`, `ld ix, Next_Ptr`), and
+  `Next_Ptr` itself (`L0.asm:86-110`) is what actually fetches the next
+  thread cell into `HL` and does the real `jp (hl)` into the word's CFA --
+  `jp (ix)` only ever reaches that one fixed routine.
+
+  **[Speculative -- not implemented.]** Because that binding is just a
+  register load, and the address is even exposed to Forth as the core
+  constant `(NEXT)` (`Constant_Def CNEXT, "(NEXT)", Next_Ptr`, `L1.asm:150`),
+  retargeting `IX` at run time to a different routine -- one that does its own
+  bookkeeping and then falls through to the real fetch-and-`jp (hl)` above --
+  would splice code into *every single word dispatch* without patching any
+  word's CFA. This is precisely the hook a `TRACE` facility (or a profiler)
+  would want, and no other point in the core sees every dispatch like this
+  one does. Nothing of the kind exists in this codebase today; treat this as
+  an idea worth flagging, not a documented mechanism.
 
 **Split dictionary.** Every `New_Def` writes into *two* address ranges in one
 macro expansion (`system.asm:123-170`):
@@ -432,6 +462,19 @@ Source: `main.asm:57-70`, `system.asm:5-11`, root `CLAUDE.md`. **Confidence: Hig
 
 Note the consequence of `SP` being the data stack: **an unbalanced stack is a
 corrupted machine stack**. `ABORT` explicitly repairs it (`S0 @ ... SP!`).
+
+`SP` is not merely *labeled* the data stack -- it is the real Z80 stack
+pointer, so every `call`/`ret`/`push`/`pop` the CPU executes shares it with
+Forth's data stack. Two places in the core exploit this **promiscuously**,
+in opposite directions: `EXECUTE`'s bare `ret` (4.3) pops a Forth stack cell
+(*xt*) straight into PC, turning ordinary Forth data into a jump target; and
+a colon-definition's CFA (`call Enter_Ptr`) does the reverse -- the `call`
+pushes the return address (which is the word's PFA) onto that same stack,
+and `Enter_Ptr`'s very first act (`L1.asm:36`, `pop bc`) lifts it straight
+back off before any Forth code can see it, using it to reload the IP.
+Neither leaves a stray cell behind, but both only work because `push`/`pop`/
+`call`/`ret` and `DUP`/`DROP`/`EXECUTE` are, at the hardware level, the same
+stack.
 
 ## 4.5 Memory layout, computed not hardcoded
 
@@ -497,7 +540,7 @@ layer split; they are not declared anywhere as such. **Confidence: Medium.**
 | **C5** | **Host OS interface** | esxDOS/NextZXOS syscalls, ROM calls, paging | `F_OPEN`..`F_READDIR`, `M_P3DOS`, `MMU7!`, `REG@`/`REG!`, `+ORIGIN` | `next-opt0.asm`, `next-opt1.asm` |
 | **C6** | **Display & graphics** | ULA, Layer 2 (several resolutions), Layer 3 tilemap, sprites, copper, palettes | `LAYERnn`, `PLOT`, `DRAW`, `PAINT`, `SPRITE`, `TILE-MODE:`, `COPPER` | `lib/LAYER*.f`, `lib/GRAPHICS*.f`, `lib/SPRITE.f`, `lib/copper.f`, `lib/TILE80*.f`, `lib/layer3.f` |
 | **C7** | **Audio** | Beeper, AY-3-8912, AFX sound board | `BLEEP`, `AY!`, `AFX>AY`, `AFXFRAME` | `lib/bleep.f`, `lib/AY.f`, `lib/AFXFRAME*.f`, `lib/afxplay*.f` |
-| **C8** | **Input** | Keyboard, keyboard matrix, mouse | `KEY`, `CURS`, `MOUSE` | `L0.asm` (KEY), `lib/MOUSE.f`, `lib/mouse-*tester.f` |
+| **C8** | **Input** | Keyboard, keyboard matrix, mouse, Kempston joystick | `KEY`, `CURS`, `MOUSE`, `P@` | `L0.asm` (KEY, P@), `lib/MOUSE.f`, `lib/mouse-*tester.f`; joystick has no dedicated word/library -- `demo/chomp-chomp.f` reads it directly with `31 P@` (Kempston port) |
 | **C9** | **Numeric extensions** | Floating point, fixed-point Q8.8, complex, double | `F+` `F>D`, `FIXED88`, `C*` | `lib/floating.f`, `lib/fixed88.f`, `lib/complex.f`, `lib/FP-INTERFACE.f` |
 | **C10** | **Development tools** | Editor, decompiler, dump, tracing, testing, locals | `EDIT`, `SEE`, `DUMP`, `WORDS`, `WHERE`, `.S`, `LOCATE`, `USED-BY`, `T{`/`}T`, `{ ... }` | `lib/edit.f`, `lib/editor.f`, `lib/see.f`, `lib/testing.f`, `lib/LOCALS.f`, `lib/locate.f`, `lib/used-by.f` |
 | **C11** | **Session persistence** | Snapshotting the whole live system to blocks | `SAVE-SYSTEM`, `RESTORE-SYSTEM`, `PERSISTENCE` | `lib/PERSISTENCE.f` |
@@ -1253,7 +1296,8 @@ Confidence: High** (documented with reproduction detail).
 | **`emu/README.md` is stale** -- claims blocks are "not yet integrated" when the emulator boots through `BLK-INIT` and `11 LOAD`; its memory map disagrees with `system.asm` | I5, I6 in section 8.4 | High |
 | **`doc/memory-map.txt` is stale** -- stamped build 2025-08-15, contradicts `system.asm` on buffer count and addresses | I3 | High |
 | **The manual is a manual-labour bottleneck** -- `.odt`/`.pdf` prepared by hand, with a machine-checked gate to catch the human error of renaming without editing, plus an accumulating-cruft problem (18617 residual Word bookmarks removed in one pass) | `.claude/skills/release-rebuild/SKILL.md` 1a-1c | High |
-| **No tutorial for the fixed-point screens 590-595**; `demo/brot.f` and `demo/Fedora.f` not promoted to tutorials | `TODO.md` | High |
+| **No tutorial for the fixed-point Q8.8/12.4 screens 590-595** in `!Blocks-64.bin` -- distinct from the point below, still open | `TODO.md` ("Missing tutorial: fixed-point Q8.8/12.4 arithmetic", 2026-08-22) | High |
+| **Corrected from an earlier draft of this audit**: `demo/brot.f` and `demo/Fedora.f` are already promoted to tutorials -- tutorial 064 wraps `demo/brot.f` (both files' own header say "explained step by step in tutorial 064"), tutorial 065 wraps `demo/Fedora.f` ("...in tutorial 065"). `TODO.md`'s matching entry ("Promote demo/brot.f and demo/Fedora.f to tutorial/", 2026-08-22) is itself stale and belongs in `TODO-DONE.md` | `demo/brot.f:6`, `demo/Fedora.f:6`, `tutorial/064-scaled-integer-math.f`, `tutorial/065-fedora-silhouette.f` | High |
 
 ## 13.5 Dead / redundant code
 
