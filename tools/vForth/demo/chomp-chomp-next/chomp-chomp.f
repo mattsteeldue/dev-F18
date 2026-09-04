@@ -1164,7 +1164,7 @@ create mob-patid  26 allot
 \   Blinky  sprite-put
 : sprite-put ( -- )
     sprite@ face  c@  face>patid   SPRITE _spriteid !
-    sprite-color                   SPRITE _pattern  c!
+    sprite-color  4 lshift         SPRITE _pattern  c!
     xy-pos@                        ( row col )
     8 * MOB-X-ORIGIN +             ( row xpix )
     swap 8 * MOB-Y-ORIGIN +        ( xpix ypix )
