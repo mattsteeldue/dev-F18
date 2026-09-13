@@ -81,7 +81,7 @@ $dash    = "2026-07-04"           # = DASH
 $old_dash= "2026-06-14"           # = OLD_DASH (build precedente, dal passo 0)
 $pfx     = "vForth1.8-core-en-"   # = PFX rilevato
 $base    = "C:\zx\forth\F18\tools\vForth"
-$pdftotext = "C:\Users\matteo\Downloads\Install\poppler-26.02.0\Library\bin\pdftotext.exe"
+$pdftotext = "$base\util\poppler-26.02.0\Library\bin\pdftotext.exe"
 $odt = "$base\doc\$pfx$ver.odt"; $pdf = "$base\doc\$pfx$ver.pdf"
 
 # --- esistenza ---

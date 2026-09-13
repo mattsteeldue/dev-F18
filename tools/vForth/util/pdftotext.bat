@@ -1,1 +1,1 @@
-C:\Users\matteo\Downloads\Install\poppler-26.02.0\Library\bin\pdftotext.exe %1     
+%~dp0poppler-26.02.0\Library\bin\pdftotext.exe %1     

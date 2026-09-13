@@ -281,7 +281,7 @@ the same tree as `C:\Zx\Forth\F18` -- see section 8.4 for that divergence.
 | `src/` | `F18e.f` (163 KB) plus F15/F16/F17 ancestors, `Z80N-asm.f`, `Z80N-Assembler-Dictionary.txt` | The historical self-hosting Forth form of the core | Medium |
 | `prompts/` | 30 plans/analyses (`LOCALS-PLAN.md` 101 KB, `CHOMP-CHOMP-*`, `LAYER24-PLAN.md`, `REVIEW-*`), plus `done/` and `grok/` | Design record. Root `CLAUDE.md`: "Plans go in `prompts/`, never the project root" | Medium |
 | `demo/` | Example programs and games: `chomp-chomp` (with a standalone binary triple), `raycast.f`, `brot.f`, `cosmic-conquest.f`, `Fedora.f`, dot-command demos | Showcase + source of tutorial material | Medium |
-| `version/` | 9 dated build snapshots + `new-build.bat`, `new-version.bat`, `pkzip25.exe` | Historical archive and the public-release scripts. **Never modify the snapshots** (root `CLAUDE.md` build-number convention). Untracked | Medium |
+| `version/` | 9 dated build snapshots + `new-build.bat`, `new-version.bat`, and a leftover unused `pkzip25.exe` copy (the scripts now call `util/pkzip25.exe` by explicit path instead) | Historical archive and the public-release scripts. **Never modify the snapshots** (root `CLAUDE.md` build-number convention). Untracked | Medium |
 | `forum/` | 36 `.f` files: community/forum snippets (`aydemo.f`, `copper-bmp.f`, `draw-line.f`, several `brot*.f` variants) | Scratch/experimental corner | Low |
 | `dev/` | `DMA.f`, `IM2-HW.f` | Staging area for modules not yet promoted to `lib/`. `dev/DMA.f` blocks tutorial 054 (`TODO.md`) | Low but **actionable** |
 | `!Blocks-64.bin` | 16 MB block store, at the repo root next to the binaries | The Forth screen filesystem; also the error-message table | **Critical** |
@@ -694,7 +694,7 @@ communication. **Confidence: High.**
 | **CSpect** | 2.12.30 (per `main.asm` header) | Primary interactive test environment | Not present here |
 | **MAME (Next core)** | -- | Secondary test environment; must not run concurrently with CSpect | Not present here |
 | **poppler `pdftotext`** | -- | Release gate: verifying the manual's internal date | **Yes** (`/usr/bin/pdftotext`) |
-| **pkzip25.exe** | bundled in `version/` | Building the public release zip | Windows-only |
+| **pkzip25.exe** | bundled in `util/` (called by explicit path from `version/new-build.bat`; an older unused copy still sits in `version/`) | Building the public release zip | Windows-only |
 | **nextsync** | -- | WiFi sync from the repo root to a real Next's SD card | Not in repo |
 | **VS Code + DeZog** | -- | Source-level debugging (`DEBUGGING equ 1` sets ORIGIN to `$8080`) | `main.asm:120-125`, `project/*/.vscode/` |
 

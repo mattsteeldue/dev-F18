@@ -6,6 +6,8 @@ if "%1"=="" goto NO_PARAM
 
 set BUILD=%1
 
+: eseguibile vendorizzato in util\ (script gira da CWD variabili, quindi path assoluto)
+set PKZIP=%~dp0..\util\pkzip25.exe
 
 : verifica che ci sia la directory BUILD
 :
@@ -61,7 +63,7 @@ if exist c:\Zx\GitHub\vforth-next\download\vForth_18_NextZXOS_%BUILD%.zip del /q
 : in download resta solo la build corrente: le precedenti vanno in older\
 move c:\Zx\GitHub\vforth-next\download\vForth_18_NextZXOS_*.zip c:\Zx\GitHub\vforth-next\download\older\ 2>nul
 
-pkzip25 -add -rec -times=all -dir=current c:\Zx\GitHub\vforth-next\download\vForth_18_NextZXOS_%BUILD%.zip *
+"%PKZIP%" -add -rec -times=all -dir=current c:\Zx\GitHub\vforth-next\download\vForth_18_NextZXOS_%BUILD%.zip *
 
 
 : _____________________________________________________
@@ -114,11 +116,11 @@ echo   5. Da ultimo: Crea zip file per Microdrive e Disciple ?
 : pause
 
 cd c:\Zx\Forth\F18\
-: pkzip25 -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_8Microdrives_%BUILD%.zip     c:\Zx\Forth\F18\M?.mdr
-: pkzip25 -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_DISCiPLE_%BUILD%.zip         c:\Zx\Forth\F18\Forth?.img
+: "%PKZIP%" -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_8Microdrives_%BUILD%.zip     c:\Zx\Forth\F18\M?.mdr
+: "%PKZIP%" -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_DISCiPLE_%BUILD%.zip         c:\Zx\Forth\F18\Forth?.img
 
-: pkzip25 -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_8Microdrives_%BUILD%.zip     c:\Zx\Forth\F18\!Blocks7.TAP
-: pkzip25 -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_DISCiPLE_%BUILD%.zip         c:\Zx\Forth\F18\!Blocks7.TAP
+: "%PKZIP%" -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_8Microdrives_%BUILD%.zip     c:\Zx\Forth\F18\!Blocks7.TAP
+: "%PKZIP%" -add -dir=no c:\Zx\GitHub\vforth-next\download\vForth16m_DISCiPLE_%BUILD%.zip         c:\Zx\Forth\F18\!Blocks7.TAP
 
 
 : _____________________________________________________

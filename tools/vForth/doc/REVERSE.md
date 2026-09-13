@@ -757,8 +757,8 @@ had to be corrected -- see `emu/emulator.py:295-302`. **Confidence: High.**
 | **imdisk** | System | Mounts the CSpect SD image as `W:` | Not pinned |
 | **CSpect** | `C:\Zx\CSpect\` | Emulated verification with real graphics/sound | v2.12.30 named in `main.asm:49`; image `cspect-next-2gb.img` |
 | **MAME** (Next core) | System | Alternative emulator | Mentioned only as a **conflict** to guard against |
-| **pdftotext** (poppler) | `C:\Users\<user>\Downloads\Install\poppler-26.02.0\...` | The release gate that checks the PDF manual's internal date | Path hardcoded in `release-rebuild/SKILL.md` |
-| **pkzip25** | System | Builds the download ZIP | `version/new-build.bat` |
+| **pdftotext** (poppler) | `util/poppler-26.02.0/...` (now vendored in-repo) | The release gate that checks the PDF manual's internal date | Path in `release-rebuild/SKILL.md` is now repo-relative (`$base\util\...`) |
+| **pkzip25** | `util/pkzip25.exe` (now vendored in-repo; invoked via `%PKZIP%` = `%~dp0..\util\pkzip25.exe`) | Builds the download ZIP | `version/new-build.bat` |
 | **NextSync** (Jari Komppa, 2020) | `nextsync.py` at the git root | WiFi deployment to real hardware, TCP 2048 | Vendored, third-party |
 | **VS Code + DeZog** | -- | Source-level Z80 debugging (`DEBUGGING equ 1`, origin `$8080`) | `project/*/.vscode/` |
 
@@ -1186,7 +1186,7 @@ What exists instead:
 | # | Risk | Evidence | Severity |
 |---|---|---|---|
 | R1 | **Single point of knowledge.** 188 commits, effectively one committer; the release pipeline hardcodes one machine's paths. | `git log`; `version/new-build.bat`; `sd-sync.config.ps1:6` | **High** |
-| R2 | **The toolchain is unpinned and out of tree.** SjASMPlus, Python, Perl, poppler, pkzip25 all live at absolute paths outside the repo, with no version recorded. A different SjASMPlus release could change output bytes with nothing to detect it. | `.claude/commands/build.md`; absence of any manifest | **High** |
+| R2 | **The toolchain is unpinned and out of tree.** SjASMPlus, Python, Perl still live at absolute paths outside the repo, with no version recorded. A different SjASMPlus release could change output bytes with nothing to detect it. (Poppler and pkzip25 are now exceptions since this analysis: both were copied into `util/` -- `util/poppler-26.02.0/` and `util/pkzip25.exe` -- and `version/new-build.bat` now calls the latter by explicit path instead of relying on system PATH. Still unmanaged binaries, not manifest-tracked dependencies, and version/new-build.bat also carries an older, unused `version/pkzip25.exe` copy left over from before this fix.) | `.claude/commands/build.md`; absence of any manifest | **High** |
 | R3 | **The repository cannot be built where it currently sits.** Every script assumes `C:\Zx\Forth\F18`; this checkout is at `D:\Zx\Forth\F18`. | Working directory vs. hardcoded paths | **High** (blocks a newcomer immediately) |
 | R4 | **Triple maintenance of the same kernel.** `vForth18_DOES` (master), `vForth18_DOT` (twin, aligned "immediately") and `src/F18e.f` (aligned **by hand**, cadence "Maintained by hand!"). No diff tool, no test, no CI enforces any of it. | `CLAUDE.md` "The Three Codebases"; `project/CLAUDE.md` | **High** |
 | R5 | **The DOT variant is untested and, right now, mis-deployed.** No emulator harness; deployed binary is 7 months behind its source. | `emu/repl.py:28-29`; MD5 + banner comparison | **Medium-High** |
