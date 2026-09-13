@@ -612,8 +612,19 @@ graph LR
    `INCLUDE` always loads.
 7. **The heap (MMU7 name space) is the scarce resource**, not the code space.
    Every name, every `H"` string and every `ABORT"` message competes for the same
-   8K page -- which is exactly why the library convention is `?ERROR` with a
-   numbered message rather than `ABORT"` (`CLAUDE.md` "Error reporting").
+   8K page -- the one currently mapped at `$E000-$FFFF`. **The heap address
+   space, however, extends over 8 theoretical pages**: a heap-pointer `ha` is a
+   single 16-bit cell whose top 3 bits are a page number relative to the base
+   heap page (`$20-$27`, i.e. 32-39) and whose low 13 bits are the byte offset
+   from `$E000` within it -- so 8 x 8K = 64K is the structural ceiling of the
+   heap, fixed by the `ha` format rather than by the MMU. Only one of those
+   pages is visible at a time, which is why `FAR ( ha -- a )` must re-map before
+   every access, and why widening the page count would break `ha` everywhere
+   (`FAR`, `>FAR`, `HP@`, `SKIP-HP-PAGE`, ...). Scarcity is therefore per-page
+   pressure inside a bounded 64K space, which is exactly why the library
+   convention is `?ERROR` with a numbered message rather than `ABORT"`
+   (`CLAUDE.md` "Error reporting"; `lib/CLAUDE.md` "Heap-pointer format";
+   `prompts/HEAP-PAGE-PARAM-PLAN.md` "Vincolo strutturale").
 
 ---
 
