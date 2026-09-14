@@ -261,6 +261,29 @@ dal layout. Va bene lasciarlo, ma il commento fuorviante andrebbe corretto.
 3. **Il BLOCK 1 diventa di fatto non persistibile**: se qualcuno lo marcasse
    `UPDATE`, non verrebbe mai riscritto (ne' dalla rotazione, ne' da `FLUSH`).
    Dato cosa contiene, e' un effetto desiderabile -- ma va scritto.
+
+   **Impatto pratico, workflow dell'autore.** Oggi il numero di build nel primo
+   blocco di `!Blocks-64.bin` viene aggiornato "un po' da pirata" con `EDIT`
+   (che scrive 1-2 byte nel buffer residente del BLOCK 1) seguito da `FLUSH`
+   per persisterlo su disco -- distinto dalla patch diretta sul file che fa
+   la skill `/bump-build` (par. 3.3), che non passa mai dal buffer. Dopo
+   questa fix, `FLUSH` **non scrivera' piu'** quel buffer (e' pinnato, mai
+   sfrattato). Il workflow interattivo equivalente diventa:
+
+   ```forth
+   1 BLOCK 1 0 R/W
+   ```
+
+   (`1 BLOCK` rende residente/aggiorna il buffer; `1` e' il numero di
+   blocco passato a `R/W`, che fa `1-` internamente; `0` = flag falso =
+   scrittura, per simmetria con `ZERO READ_WRITE` gia' usato internamente da
+   `BUFFER` in fase di sfratto, `L3.asm:96-98`). Da lanciare **subito dopo**
+   l'`EDIT` dei byte, al posto di `FLUSH` -- `R/W` scrive incondizionatamente
+   il contenuto corrente del buffer, quindi va invocato solo quando si e'
+   sicuri che il buffer contenga i byte voluti (non un residuo di riga da
+   un `INCLUDE`/`EVALUATE` precedente). Da aggiungere all'help/annotazione
+   della skill `/bump-build` e a qualunque nota per l'autore su come
+   editare a mano il primo blocco dopo questa patch.
 4. **Nessuna regressione sulla lettura dei metadati**: gia' oggi, dopo un
    `INCLUDE`, `1 BLOCK` restituisce l'ultima riga di sorgente invece dei
    metadati finche' il buffer non viene riciclato. Il pin rende permanente un
