@@ -2,7 +2,7 @@
 
 ## Context
 
-`demo/chomp-chomp.f` (Stages 1-4 of `prompts/CHOMP-CHOMP-PLAN.md`, all confirmed
+`demo/chomp-chomp.f` (Stages 1-4 of `planners/CHOMP-CHOMP-PLAN.md`, all confirmed
 on CSpect) is explicitly the "Phase 1" / "before" half of a plan that already
 named its own sequel. Two existing notes point at the same target:
 

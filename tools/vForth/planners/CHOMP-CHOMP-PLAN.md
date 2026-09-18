@@ -1,5 +1,13 @@
 # Revisione di demo/chomp-chomp.f — personalita' dei fantasmi, pacing esplicito, colori ciclici, labirinti per livello
 
+> **Stato (2026-09-18).** Stadi 1-4 completi e confermati su CSpect (2026-08-24,
+> cronologia in `situation/CHOMP-CHOMP-STATUS.md`); il piano era stato archiviato.
+> **Riaperto** per lo **Stadio 5** (Parte 10): i labirinti su Screen, cosi' come
+> li legge lo Stadio 4, sono incompatibili con lo standalone prodotto da `ZAP`
+> (vedi `planners/ZAP-BASIC-LOADER-PLAN.md`). Rimedio: precaricarli in una pagina
+> RAM da 8K che `ZAP` salva gia'. Le Parti 0-9 restano come storia del lavoro
+> fatto; dove la Parte 10 le supera, lo dice esplicitamente (6.4).
+
 ## Context
 
 `demo/chomp-chomp.f` e' un Pac-Man in vForth per ZX Spectrum, scritto in modalita'
@@ -450,7 +458,7 @@ Labirinto `N` = Screen `MAZE-SCR0 + 2N` e `+2N+1`:
   titolo, non dati -- cosi' INDEX mostra il titolo invece del contenuto.
   **Nota 2026-08-24**: verificato che le colonne reali sono 0..20 (21
   caratteri, non 23 come scritto inizialmente qui -- vedi lo storico
-  formato riga in `raw-row!`/`maze-line`, prompts/CHOMP-CHOMP-STATUS.md).
+  formato riga in `raw-row!`/`maze-line`, situation/CHOMP-CHOMP-STATUS.md).
 - righe 1..15 (Screen A) = le prime 15 righe del labirinto (0..14);
   righe assolute 17..22 (Screen B) = le restanti 6 (15..20);
 - colonne 0..20 di ciascuna riga dati = i 21 caratteri; colonne 21..63
@@ -480,6 +488,13 @@ autosufficiente. Spostando tutto su blocchi, lo standalone dipenderebbe dalla pr
 di `!Blocks-64.bin`. **Si tiene quindi il tracciato attuale compilato come labirinto
 #0 di ripiego**, con i blocchi che forniscono i livelli 1..N e un fallback al #0 se la
 lettura fallisce. Lo standalone continua a funzionare da solo.
+
+> **Superato dalla Parte 10 (2026-09-18).** Come implementato nello Stadio 4 il
+> ripiego copre solo il livello 0: `set-maze-run` chiama `BLOCK` a ogni livello
+> `>= 1`, e lo standalone non apre mai `!Blocks-64.bin` (il `COLD` patchato da
+> `ZAP` salta `BLK-INIT`). Lo standalone "funziona da solo" solo fino al primo
+> schema completato. I `.bin` pubblicati in `demo/chomp-chomp/` (2026-08-23) sono
+> precedenti allo Stadio 4, per questo il problema non si e' ancora visto.
 
 ### 6.5 Validatore
 
@@ -553,6 +568,13 @@ oltre questo gioco; se resta pulito vale un `inc/chars!.f` (decisione a valle).
 Formato e range Screen, loader in `set-maze-run`, contatore di livello, `MAZE-CHECK`,
 conversione del tracciato attuale come primo Screen (verifica che la pipeline preservi
 il comportamento), poi i nuovi tracciati che sfruttano i glifi in piu'.
+
+### Stadio 5 — Labirinti precaricati in pagina 8K (riaperto 2026-09-18)
+
+Dettaglio completo nella Parte 10. In breve, tutto in `demo/chomp-chomp.f` piu' i
+test: `maze-slot`, `LOAD-MAZES` (unico lettore di blocchi, da prompt),
+`set-maze-run` riscritto su `FAR` + `maze-copy`, contatore `mazes-ready`, guardia
+su `HP@`; poi `ZAP GAME` e prova dello standalone **senza** `!Blocks-64.bin`.
 
 ### Altri file
 
@@ -642,3 +664,301 @@ restano validi identici: cambia il glifo che rappresenta ogni cella, non il trac
 E il palette cycling annotato in 4.4 e' esattamente il punto in cui la versione Next
 puo' superare questa senza toccare la logica. Il capstone "before/after" mette a
 confronto le due presentazioni a parita' di logica di gioco.
+
+---
+
+## Parte 10 — Labirinti precaricati in una pagina 8K (Stadio 5)
+
+> **NOTA DI RIPRESA (sessione interrotta 2026-09-18) -- le sezioni 10.3-10.10
+> qui sotto sono la PRIMA stesura e vanno riviste secondo questi punti:**
+>
+> 1. **Pagina: l'autore propone le ultime due pagine heap (+6 e +7, fisiche
+>    `$26`/`$27` = banco 16K 19)** invece della +1: elimina alla radice
+>    l'invariante `HP@ $2000 U<` (i nomi dovrebbero superare 48K per toccarle).
+>    **Correzione da riportare all'autore:** `SAVE-HEAP` di `lib/ZAP.f` **non**
+>    salva tutte le 8 pagine -- salva solo `$0000 FAR` e `$2000 FAR` (banco 16);
+>    i blocchi per i banchi 17/18/19 sono **commentati** (righe 104-132). Quindi
+>    +6/+7 richiede: (a) ZAP che salvi anche il banco 19 (`heap3.bin`), da
+>    agganciare al piano ZAP 9.1 -- il conteggio dinamico basato su `HP@` NON lo
+>    vedrebbe, serve una riga esplicita/srotolata nello Screen interpretativo;
+>    (b) il loader standalone con `LOAD "heap3.bin" BANK 19`; (c) verifica su
+>    CSpect che `LOAD ... BANK 19` funzioni in DOES senza prenotazione presso
+>    NextZXOS (stesso status del banco 16 di oggi). Proposta: labirinti in +7
+>    (`maze-slot` = `9 LSHIFT $E000 + FAR`; verificato che `TO_FAR_rout` decodifica
+>    `ha $E000` -> pagina `$27`), +6 riservata a usi futuri (metadati di livello,
+>    o seconda pagina per 32 labirinti). Riscrivere 10.3 (scelta + tabella
+>    alternative), 10.4, 10.5, 10.7 (guardia quasi superflua), 10.8, 10.10
+>    (il piano ZAP ora VA toccato: sez. 9.1, 10 fase 3, 13 file toccati).
+> 2. **Nuovo word di sviluppo `n RELOAD-MAZE`**: ricarica nella pagina il solo
+>    labirinto `n` dopo averlo modificato nei block, senza ricompilare il gioco.
+>    Fatti verificati per progettarlo:
+>    - `EDIT` (`lib/edit.f`, `NEEDS EDIT`) si usa dopo `LIST` e **esce con
+>      `QUIT`** (Edit+Q, riga 139): non torna al chiamante, quindi un unico word
+>      "edita e ricarica" NON e' possibile. Flusso: `n-screen LIST EDIT` ... Q,
+>      poi `n RELOAD-MAZE` (eventualmente un `n EDIT-MAZE` che fa solo `LIST EDIT`
+>      sullo Screen A del labirinto; lo Screen B si raggiunge con Edit+N).
+>    - i buffer modificati hanno `UPDATE` ma non sono scritti fino a sfratto/FLUSH:
+>      `BLOCK` restituisce comunque il buffer aggiornato, quindi la ricarica vede la
+>      modifica anche senza FLUSH; far comunque fare `FLUSH` a RELOAD-MAZE per
+>      persistere.
+>    - proposta: fattorizzare `maze>slot ( n -- )` (le 21 righe BLOCK-poi-FAR);
+>      `LOAD-MAZES` = slot 0 + ciclo di `maze>slot`; `RELOAD-MAZE` = controlli
+>      (`1 <= n < mazes-ready`) + `n MAZE-CHECK` + copia solo se
+>      `check-errors @ 0=` -- un labirinto rotto non entra nella pagina.
+>      Se `n` e' il livello in corso, `set-maze-run` va rieseguito dal chiamante.
+> 3. **Nota generale (non problema per chomp-chomp):** editare un labirinto su
+>    emulatore/hardware richiede `EDIT` + `EDITOR` nel dizionario, non piccoli.
+>    Chomp-chomp non e' sotto pressione di memoria. Regola da scrivere: caricarli
+>    dopo un `MARKER` (es. `MARKER -DEV  NEEDS EDIT`) e fare `-DEV` prima di `ZAP`,
+>    cosi' non finiscono nel deliverable; oppure editare da PC (`util/putscr.pl`)
+>    e usare sul Next solo `RELOAD-MAZE`, che non richiede `EDIT`.
+> 4. **Misura `HP@`/`HERE` dopo `INCLUDE demo/chomp-chomp.f` ancora da fare**
+>    (interrotta). Driver salvato in `emu/_measure_chomp_hp.py` (non versionato):
+>    `python emu/_measure_chomp_hp.py` con Python 3.14; alza `IDLE_INSTRS` perche'
+>    l'INCLUDE ha pause lunghe; dura >10 min, lanciarlo in background. Il primo
+>    tentativo ha mostrato l'INCLUDE arrivare fino a `course` ma non i numeri.
+>    Con la scelta +6/+7 la misura serve solo come dato informativo (10.8).
+
+### 10.1 Il conflitto
+
+Lo Stadio 4 ha reso i labirinti **editabili con `EDIT`** leggendoli dai blocchi
+**a ogni cambio di livello**: `set-maze-run` -> `load-maze` -> `maze-line` ->
+`BLOCK`, chiamato da `play-level` e da `phase-complete`. E' la scelta giusta per
+lo sviluppo e quella sbagliata per la distribuzione:
+
+- lo standalone prodotto da `ZAP` e' `core.bin` + `user.bin` + `heap.bin`, e basta:
+  `!Blocks-64.bin` non fa parte del deliverable;
+- anche se ci fosse, lo standalone non lo aprirebbe: `ZAP` scrive l'xt del gioco e
+  `BYE` nelle prime due celle del corpo di `COLD`, quindi `WARM` -> `BLK-INIT` non
+  viene mai eseguito e non esiste un file-handle di blocchi valido;
+- `SAVE-USER` precarica nei sei buffer i blocchi dei **messaggi**: i buffer sono
+  gia' occupati e non possono ospitare anche i labirinti.
+
+Risultato: lo standalone gioca il livello 0 (il labirinto compilato) e al primo
+schema completato chiama `BLOCK` su un handle inesistente. La Parte 6.4 lo dava
+per risolto; non lo e' (vedi la nota aggiunta li').
+
+Vincolo da non perdere: **l'editabilita' su Screen resta**. Si cambia *quando* i
+blocchi vengono letti, non *dove* stanno i labirinti.
+
+### 10.2 L'idea: leggere i blocchi una volta, prima di `ZAP`
+
+Un word `LOAD-MAZES`, eseguito dal prompt, legge **tutti** i labirinti su Screen e
+li copia in una pagina RAM da 8K. Da li' in poi il gioco non tocca piu' un blocco:
+`set-maze-run` copia dalla pagina a `maze-run`. `ZAP` salva la pagina insieme al
+resto, e lo standalone la ritrova gia' piena.
+
+Perche' una pagina heap e non il dizionario: 504 byte per labirinto, fino a 16
+labirinti = 8K. Il code space e' la risorsa scarsa del deliverable
+(`ZAP-BASIC-LOADER-PLAN.md` sez. 2: ~12 KB liberi con il gioco caricato, e ogni
+byte speso li' toglie margine proprio al momento di salvare); la pagina heap costa
+**zero byte di dizionario**.
+
+### 10.3 Quale pagina: la seconda meta' del banco 16
+
+**Scelta: la pagina heap relativa 1 (fisica `$21`), cioe' la seconda pagina 8K
+del banco 16K numero 16.** E' l'unica che non costa nulla fuori dal gioco:
+
+- `SAVE-HEAP` di `lib/ZAP.f` salva **gia'** `$0000 FAR` e `$2000 FAR` (pagine
+  heap 0 e 1), e lo Screen interpretativo di `ZAP-BASIC-LOADER-PLAN.md`
+  (righe 8-10) fa lo stesso;
+- il loader standalone fa **gia'** `LOAD "heap.bin" BANK 16`, che rimette entrambe
+  le pagine al loro posto.
+
+**Nessuna modifica a `ZAP`, al loader BASIC, ne' al piano ZAP.**
+
+L'indirizzo si ottiene da un heap-pointer `ha` (bit 15-13 = pagina relativa 1)
+passato a `FAR`, **mai** con `$21 MMU7!`: cosi' la scelta segue la base dell'heap
+se un giorno `HEAP-PAGE-PARAM-PLAN.md` la rendera' configurabile.
+
+**Invariante che rende la scelta sicura: i nomi del dizionario devono restare
+nella pagina heap 0**, cioe' `HP@ $2000 U<` per tutta la sessione fino a `ZAP`.
+Se `HP` sconfinasse nella pagina 1 (il core lo fa da solo, via `SKIP-HP-PAGE`,
+quando l'offset supera il watermark `$1F80`) le intestazioni dei nuovi word
+sovrascriverebbero i labirinti **in silenzio**. Margine misurato: 10.8.
+
+Alternative scartate:
+
+| Alternativa | Perche' no |
+|---|---|
+| allocare con `HALLOT` a partire da `HP` | `HP` e' monotono: non si puo' riservare la pagina 1 lasciando i nomi nella pagina 0. Allocando per primi si spreca il resto della pagina 0 e i nomi del gioco finiscono nella pagina 2, che `ZAP` non salva |
+| una pagina alta dell'heap (`$27`, banco 19) | serve un `SAVE-HEAP` multi-banco e una riga `LOAD ... BANK 19` nel loader: lega questo lavoro alla fase 3 del piano ZAP; e `HP@` non la "vede", quindi il conteggio dinamico dei banchi (ZAP 9.1) la salterebbe |
+| una pagina chiesta a NextZXOS | il numero di pagina non e' fisso, e il loader non saprebbe dove ricaricarla |
+| lasciare i labirinti nel dizionario (`,"` come il #0) | fino a 8K di code space, proprio la risorsa che il piano ZAP protegge; e si perde l'editabilita' |
+
+### 10.4 Layout della pagina
+
+16 **slot da 512 byte**; lo slot `k` contiene il labirinto `k` (`level MOD
+n-mazes`), **compreso lo slot 0**, copia del labirinto compilato `maze-base`:
+
+```
+slot k  =  ha $2000 + k*512            ( k 9 LSHIFT $2000 + )
+  +0    21 righe x 24 byte, forma esatta di una riga di maze-run:
+        [count=22][21 caratteri][BL][0]  -- caratteri CRUDI, non UDGizzati
+  +504  8 byte liberi (metadati futuri: righe 23..31 dello Screen,
+        cioe' velocita', frutta, colori per livello -- Parte 6.2)
+```
+
+- **Forma di `maze-run`, caratteri crudi.** Il caricamento a runtime diventa
+  esattamente `maze-copy` (cmove di 24 byte + `udgize` per riga), lo stesso word
+  che oggi serve il labirinto compilato; e `MAZE-CHECK` potrebbe un giorno
+  validare lo slot invece dei blocchi.
+- **Slot da 512 = `9 LSHIFT`**, nessuna moltiplicazione; uno slot allineato non
+  scavalca mai la fine della pagina.
+- **Capacita': 16 labirinti** (il compilato + 15 su Screen). Gli Screen riservati
+  740-779 ne ospitano 20: il limite piu' stretto e' la pagina, e `LOAD-MAZES`
+  deve rifiutare `n-mazes > 16`. Con righe compattate a 21 byte si arriverebbe a
+  18: non vale la complicazione finche' i labirinti sono 4.
+
+### 10.5 I word
+
+**`maze-slot ( k -- a )`** -- `9 LSHIFT $2000 + FAR`. Mappa la pagina su MMU7 e
+restituisce l'indirizzo reale, valido fino al prossimo `FAR`/`HEAP` o I/O.
+
+**`LOAD-MAZES ( -- )`** -- l'unico word del gioco che legge blocchi, da eseguire
+dal **prompt** (vedi 10.6):
+
+```
+verifica  n-mazes 16 <=  e  HP@ $2000 U<
+slot 0  <- maze-base                        (come raw-copy-base, senza udgize)
+per n = 1 .. n-mazes-1, per r = 0 .. 20:
+    n r maze-line        \ PRIMA il blocco: I/O +3DOS, puo' rimappare MMU7
+    n maze-slot r 24 * + \ POI la pagina
+    raw-row!
+n-mazes mazes-ready !
+```
+
+L'ordine dentro il ciclo **non e' negoziabile**: `BLOCK` passa da +3DOS, che
+ripristina il banking di sistema e toglie la pagina heap da MMU7 (`lib/CLAUDE.md`,
+"MMU7 is a general RAM-paging gateway"). `FAR` va richiamato **dopo** ogni
+`BLOCK`, riga per riga. E' la stessa trappola del piano ZAP 4.1, dove un
+`F_WRITE` da `$E000` ha scritto 0 byte senza segnalare errore: qui darebbe un
+labirinto scritto nella pagina sbagliata, altrettanto in silenzio.
+
+**`mazes-ready`** -- `VARIABLE` nel dizionario: quanti slot sono validi (0 dopo un
+`INCLUDE`). Sta nel code space, quindi `ZAP` la salva in `core.bin` **coerente**
+con la pagina che lo stesso `ZAP` salva in `heap.bin`.
+
+**`set-maze-run`** riscritto:
+
+```
+level @ n-mazes mod
+dup mazes-ready @ < if    maze-slot maze-run maze-copy
+                    else  drop  maze-base maze-run maze-copy  then
+```
+
+Nessun `BLOCK`, mai. Senza pagina caricata (`mazes-ready` = 0) ogni livello
+degrada al labirinto compilato: il gioco resta giocabile, solo monotono -- un
+ripiego che, a differenza di quello della 6.4, vale davvero per tutti i livelli.
+`maze-copy` legge dalla finestra `$E000` e scrive in `maze-run`; `udgize` lavora
+solo sulla destinazione, quindi MMU7 non si muove fra il `FAR` e l'ultima riga
+copiata.
+
+`load-maze` / `load-maze-row` escono dal percorso di gioco: servono solo a
+`LOAD-MAZES` (o spariscono, assorbiti da lui). `maze-line`, `maze-blk0` e
+`raw-row!` restano: li usano anche `MAZE-CHECK` e i test.
+
+### 10.6 Quando si esegue `LOAD-MAZES`: dal prompt, non da `INCLUDE`
+
+`LOAD-MAZES` legge 3 blocchi per labirinto -- 9 oggi, 45 a pagina piena. Eseguito
+da una riga di un file incluso ricadrebbe **esattamente** nel bug di starvation
+dei buffer documentato nel `CLAUDE.md` di root (trovato proprio con
+`test/CHOMP-MAZE-TESTS.f`): al sesto blocco distinto il buffer del BLOCK 1 con la
+riga sorgente viene riciclato. Quindi:
+
+- la riga `set-maze-run  \ ...and do it now` a fine sezione labirinti **resta**
+  (con `mazes-ready` = 0 copia solo `maze-base`, nessun blocco);
+- `LOAD-MAZES` **non** viene chiamato dal sorgente, e **nemmeno** da `GAME`: nello
+  standalone `GAME` non deve poter arrivare a `BLOCK`, e non ha modo di sapere se
+  il file dei blocchi e' aperto;
+- il messaggio d'uso stampato a fine `INCLUDE` va aggiornato.
+
+Flusso risultante:
+
+```
+sviluppo:     INCLUDE demo/chomp-chomp.f   LOAD-MAZES   GAME
+editare:      n EDIT ...                   LOAD-MAZES   GAME     (niente ricompilazione)
+distribuire:  INCLUDE demo/chomp-chomp.f   LOAD-MAZES   ZAP GAME
+```
+
+Il prezzo dell'editabilita' e' un comando in piu' dopo ogni modifica: `EDIT`
+scrive i blocchi, non la pagina.
+
+**Da decidere con l'autore:** `GAME` deve avvisare quando `mazes-ready` e' 0 (una
+riga prima dell'`interlude`)? In sviluppo aiuta; nello standalone comparirebbe
+solo se si e' dimenticato `LOAD-MAZES` prima di `ZAP` -- che e' esattamente il
+caso in cui conviene vederlo.
+
+### 10.7 Guardia su `HP`
+
+L'invariante di 10.3 va verificato in due punti, perche' fra `LOAD-MAZES` e `ZAP`
+l'utente puo' ancora definire altro (`NEEDS ZAP` da solo aggiunge ~234 byte di
+nomi):
+
+1. in `LOAD-MAZES`, prima di scrivere la pagina;
+2. in `set-maze-run`, solo se `mazes-ready` > 0: `HP@ $2000 U< 0=` -> errore. Costa
+   un confronto per livello e trasforma un labirinto corrotto in un messaggio.
+
+Quale messaggio: `demo/` e' codice applicativo, quindi `ABORT"` sarebbe lecito
+(`CLAUDE.md` root, "Error reporting"), ma costa `NEEDS ABORT"` e heap. Meglio
+`?ERROR` con un messaggio esistente di memoria esaurita, se la tabella (`9 LOAD`)
+ne ha uno adatto; altrimenti `ABORT"`. Decisione a valle, non bloccante.
+
+### 10.8 Margine misurato
+
+Dall'immagine `demo/chomp-chomp/game-heap.bin` (ZAP del 2026-08-23, Stadio 3):
+la pagina heap 0 e' occupata fino all'offset **6125**, quindi `HP` era circa a
+6100 su 8064 utili (watermark `$1F80`). Sessione pulita: `HP@` = 3360; il gioco
+porta i nomi a ~6100, cioe' **~2,7 KB di nomi**, e lascia **~1,9 KB di margine**
+nella pagina 0 (meno i ~234 byte di `NEEDS ZAP`, se si usa `lib/ZAP.f` invece
+dello Screen interpretativo). La pagina 1 in quell'immagine contiene RAM mai
+inizializzata: libera, come previsto.
+
+**Da rimisurare sul sorgente attuale** (Stadio 4 aggiunge `MAZE-CHECK` e i word
+dei labirinti) come primo passo dello Stadio 5:
+`INCLUDE demo/chomp-chomp.f` poi `HP@ U.` in `emu/repl.py`. Un margine di un paio
+di KB basta per questo gioco; per la versione Next (piu' codice, piu' nomi) va
+ricontrollato, e se si esaurisse il ripiego e' riempire la pagina 1 **dall'alto**
+(slot dal 15 in giu') lasciando la parte bassa ai nomi, con la guardia spostata
+sull'inizio dell'ultimo slot usato.
+
+### 10.9 Test
+
+Headless (`emu/repl.py`), in `test/CHOMP-MAZE-TESTS.f`, eseguiti **dal prompt**
+per lo stesso motivo di 10.6:
+
+- dopo `LOAD-MAZES`, per ogni slot e ogni riga, il contenuto coincide byte per
+  byte con `k r maze-line` passato a `raw-row!` (lo slot 0 con `maze-base`);
+- `mazes-ready` = `n-mazes`;
+- **`set-maze-run` non legge blocchi**: annotare `PREV @` e `USE @`, eseguire
+  `set-maze-run` per tutti i livelli, verificare che non siano cambiati;
+- `maze-run` prodotto dalla pagina e' identico a quello del percorso a blocchi di
+  oggi: i test esistenti (righe 93-94 e 116-123) continuano a valere, preceduti da
+  `LOAD-MAZES`;
+- con `mazes-ready` = 0 ogni livello produce `maze-base`;
+- trappola MMU7: dopo `LOAD-MAZES`, `k maze-slot` rilegge i dati giusti per ogni
+  slot (un ordine `BLOCK`/`FAR` sbagliato si vede qui).
+
+CSpect (lo avvia l'autore):
+
+1. `INCLUDE`, `LOAD-MAZES`, `GAME`: rotazione dei quattro labirinti identica allo
+   Stadio 4;
+2. `EDIT` di un labirinto, `LOAD-MAZES`, `n TEST-LEVEL`: la modifica si vede senza
+   ricompilare;
+3. `ZAP GAME`, poi lo standalone lanciato **senza** `!Blocks-64.bin` accanto (o con
+   il file rinominato): superato lo schema 0 si arriva al labirinto 1 caricato
+   dalla pagina. E' la prova che chiude il conflitto di 10.1;
+4. rigenerare i `.bin` in `demo/chomp-chomp/` (con i nomi del piano ZAP, se nel
+   frattempo e' passato alla directory per deliverable).
+
+### 10.10 Ricadute su altri piani
+
+- **`ZAP-BASIC-LOADER-PLAN.md`**: nessuna modifica necessaria. Ne esce pero' una
+  regola generale per il tutorial 059: *i dati applicativi fuori da `HP` vanno
+  nella pagina heap 1 (banco 16); oltre, nulla viene salvato*. Il conteggio
+  dinamico dei banchi di ZAP 9.1, basato su `HP@`, resta corretto proprio perche'
+  la pagina 1 sta comunque nel banco 16.
+- **`CHOMP-CHOMP-NEXT-PLAN.md`**, Stage 5 (tilemap): il formato della pagina non
+  dipende dalla presentazione -- cambia il glifo, non il tracciato -- quindi la
+  versione Next eredita `LOAD-MAZES` e la pagina cosi' come sono. Attenzione al
+  margine di 10.8: la versione Next aggiunge codice, e quindi nomi.
