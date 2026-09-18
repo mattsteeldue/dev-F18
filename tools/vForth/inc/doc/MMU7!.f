@@ -1,7 +1,7 @@
 \
-\ reg!.f
+\ mmu7!.f
 \
-.( REG! )
+.( MMU7! )
 \
 
 BASE @

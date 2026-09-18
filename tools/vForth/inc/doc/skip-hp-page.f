@@ -2,9 +2,9 @@
 \ skip-hp-page.f
 \
 \ never completely fill a page, leave alone some byte to avoid page spillover
-\ this constant is 80 byte 
+\ reserves 257 bytes ($101) at the top of each 8K page
 
-HEX 1F80 CONSTANT PAGE-WATERMARK
+HEX 1EFF CONSTANT PAGE-WATERMARK
 
 \
 \ check if  n  more bytes are available in the current 8K-page in Heap
