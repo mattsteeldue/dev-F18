@@ -6742,7 +6742,7 @@ RENAME   +!             +!
 RENAME   2dup           2DUP  
 RENAME   2swap          2SWAP 
 RENAME   2drop          2DROP 
-\ RENAME   2over          2OVER 
+RENAME   2over          2OVER 
 \ RENAME   roll           ROLL  
 RENAME   pick           PICK  
 RENAME   -rot           -ROT   
