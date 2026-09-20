@@ -4,3 +4,7 @@ __pycache__/
 doc/manual/*.*
 doc/manual/pilot/*.*
 doc/manual/pilot/media*/*/*.*
+
+# Post per community (restano solo in locale)
+products/DISCORD*
+products/FACEBOOK*
