@@ -1,0 +1,101 @@
+Paragraph 2.2.3 "Editing with Visual Studio Code" -- draft text for the
+vForth manual (.odt). To be pasted by hand after 2.2.2 "Tutorial" and
+before 2.3 "Case-insensitive and Case-sensitive option". The heading
+number may need adjusting to the final numbering.
+Lead-in words at the start of some paragraphs (Installation., Settings.,
+...) follow the style of 2.2.1 and 2.2.2 and are meant to be set in bold.
+Text in the indented blocks is to be set in the manual's fixed-width
+style, as the NEEDS example in 2.2.2.
+The extension file is tools/vforth-0.1.0.vsix; a quick-start guide sits
+next to it (tools/vforth-0.1.0.README.md). Version number to be updated
+when a new .vsix is released.
+Drafted 2026-09-19.
+
+======================================================================
+
+2.2.3 Editing with Visual Studio Code
+
+vForth source files are plain text and can be written with any editor. For
+Visual Studio Code an extension is available, distributed as the file
+vforth-0.1.0.vsix in the tools/ directory. It is not part of vForth
+itself and it does not run on the ZX Spectrum Next: it works on the vForth
+directory tree on your PC, and, if you use the CSpect emulator, on its SD
+card image.
+
+Installation. VS Code 1.75 or later is required. Open the Extensions view,
+choose "Install from VSIX..." in the "..." menu and select the file; or,
+from a terminal in the tools/ directory:
+
+    code --install-extension vforth-0.1.0.vsix
+
+then reload the window. A newer .vsix is installed the same way, it does
+not update by itself.
+
+Language support. Open the vForth directory (the one holding src/F18e.f,
+inc/, lib/ and help/) with File > Open Folder; the extension recognises it
+and treats every .f file as vForth source. It provides:
+
+  - syntax colouring, which tells core words, library words (those
+    defined in inc/ and lib/) and words defined in the file itself apart;
+  - diagnostics: a library word used before the NEEDS that loads it is
+    flagged together with the NEEDS line to add; a NEEDS or INCLUDE that
+    cannot be resolved and any non-ASCII character outside comments are
+    flagged too;
+  - hovering a word shows its help/ page, the file where it is defined
+    and the NEEDS that loads it, the same page that HELP would show;
+  - go to definition, which on the argument of NEEDS or INCLUDE opens the
+    file, and an outline of the definitions of the current file.
+
+The check follows the real order of loading, including the files loaded
+by the loaded files, so it reflects what NEEDS would find on the machine.
+
+Settings. Language support needs no setting when the vForth directory is
+the one opened. The tools that act on the SD card image need the
+following, found in Settings under "vForth: SD image":
+
+    vforth.root            the vForth directory; empty means auto-detect
+    vforth.sdImage         the CSpect SD card image file (.img)
+    vforth.hdfmonkeyPath   full path of hdfmonkey, or just hdfmonkey if
+                           it is on PATH
+    vforth.sdDestPrefix    the directory of the SD image where the vForth
+                           tree is mirrored, e.g. /tools/vforth
+
+The image must be the .img file itself, not !Blocks-64.bin nor any file
+inside it. The tools use hdfmonkey, a small program that reads and writes
+the FAT filesystem of the image directly; it is available at
+https://github.com/simonowen/hdfmonkey.
+
+Pushing a file. The command "vForth: Push file to SD image", from the
+command palette (Ctrl+Shift+P), copies the file being edited into the SD
+card image, in the position given by its path relative to the vForth
+directory, preceded by vforth.sdDestPrefix. Because hdfmonkey does not
+need to lock the image, this works while CSpect is running, and a running
+vForth sees the new file at once: it is enough to type NEEDS or INCLUDE
+again. No REMOUNT is required. Nothing is pushed when a file is saved, and
+a file under a directory that is not normally deployed to the SD card
+(dev, doc, dot, emu, forum, project, prompts, tools, version) is pushed
+only after confirmation.
+
+Editing a Screen. The command "vForth: Open Screen #" asks for a Screen
+number and opens it, taken from !Blocks-64.bin in the SD card image, as a
+text document of 16 lines of 64 columns. A ruler at column 64 and a
+border under line 16 mark its limits. Ctrl+S checks that every line is at
+most 64 characters, that all characters are 7-bit ASCII and that there is
+no NUL; only then the 1024 bytes are written back and the rest of the
+block file is left untouched. Otherwise the line and column of the fault
+are reported and nothing is written.
+
+Editing a Block. The command "vForth: Open Block # (hex)" opens a single
+Block (512 bytes) as raw bytes in the Microsoft "Hex Editor" extension,
+which VS Code offers to install the first time. It is meant for Blocks
+that do not contain source text, such as graphics, PERSISTENCE snapshots
+or the message table. The size must remain exactly 512 bytes.
+
+Moving between Screens and Blocks. With a Screen or a Block open,
+Ctrl+Shift+F8 opens the next one and Ctrl+Shift+F7 the previous one,
+replacing the current tab.
+
+Each open or save of a Screen or a Block reads or writes the whole block
+file through hdfmonkey, which takes a fraction of a second. If a Block is
+written from inside CSpect during that short time, the change could be
+lost.
