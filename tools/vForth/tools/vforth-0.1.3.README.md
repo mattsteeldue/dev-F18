@@ -78,6 +78,8 @@ image tools, not for language support:
 | `vforth.sdImage` | `""` | `C:\Zx\CSpect\cspect-next-2gb.img` | The CSpect SD card image (`.img`). Required by the SD image tools. |
 | `vforth.hdfmonkeyPath` | `"hdfmonkey"` | `C:\Zx\CSpect\hdfmonkey.exe` | Path to the `hdfmonkey` executable. |
 | `vforth.sdDestPrefix` | `""` | `/tools/vforth` | Where the vForth root is mirrored inside the image; prepended to a file's path relative to `vforth.root`. |
+| `vforth.cspectPath` | `""` | `C:\Zx\CSpect\CSpect.exe` | The `CSpect.exe` itself (not a shortcut or `.bat`). Required by *Run file in CSpect*. |
+| `vforth.cspectArgs` | `"-esc -w4 -zxnext -nextrom"` | (default) | CSpect command-line switches; `-mmc=<vforth.sdImage>` is added if missing. |
 | `vforth.sdExcludeTopDirs` | `["dev","doc","dot","emu","forum","project","prompts","tools","version"]` | (default) | Top-level directories not normally deployed to the SD card; pushing from one asks for confirmation. |
 
 The author's setup, as it appears in `settings.json`:
@@ -86,7 +88,9 @@ The author's setup, as it appears in `settings.json`:
 "vforth.root": "C:\\Zx\\Forth\\F18\\tools\\vForth\\",
 "vforth.sdImage": "C:\\Zx\\CSpect\\cspect-next-2gb.img",
 "vforth.hdfmonkeyPath": "C:\\Zx\\CSpect\\hdfmonkey.exe",
-"vforth.sdDestPrefix": "/tools/vforth"
+"vforth.sdDestPrefix": "/tools/vforth",
+"vforth.cspectPath": "C:\\Zx\\CSpect\\CSpect.exe",
+"vforth.cspectArgs": "-esc -w4 -zxnext -nextrom"
 ```
 
 Notes:
