@@ -68,19 +68,26 @@ The project has three codebases in order of priority:
 1. **vForth18_DOES** -- the master. All changes originate here.
 2. **vForth18_DOT** -- near-identical twin. The vast majority of source is shared with
    vForth18_DOES; only startup/closedown routines and MMU7 8K page allocation differ.
-3. **F18e.f** -- a historical artifact. Its primary value is **readability**: a Forth
-   programmer can study it to understand how the core is implemented, in idiomatic Forth.
-   The `.asm` files are the authoritative source; bootstrap recompilation from F18e.f is
-   possible but not essential and is no longer part of the regular workflow.
+3. **F18e.f** -- the human-readable Forth form of the core. Its primary value is
+   **readability**: a Forth programmer can study it to understand how the core is
+   implemented, in idiomatic Forth. The `.asm` files remain the authoritative source, but
+   F18e.f is **not a dead archive**: the VS Code extension refers to it continuously, so a
+   dirty or misaligned source is immediately visible to its users. It must therefore stay
+   (a) compilable, (b) aligned with the assembled core and (c) tidy (no typos, no obsolete
+   notes). The check is **`/check-f18e`**: compile `src/F18e.f` once on CSpect and compare
+   the result with `forth18e.bin` + `ram8.bin` through a relocation map (details in
+   `.claude/skills/check-f18e/SKILL.md`; tool `util/cmp-f18e.py`). The old method --
+   compiling twice and comparing binaries -- is retired: there is no longer room for two
+   copies of ASSEMBLER.
 
-| | vForth18_DOES (master) | vForth18_DOT (twin) | F18e.f (historical) |
+| | vForth18_DOES (master) | vForth18_DOT (twin) | F18e.f (readable core) |
 |---|---|---|---|
-| Role | Master -- changes originate here | Near-identical; differs only in startup/closedown and MMU7 page allocation | Human-readable Forth form of the core -- reference only, not maintained in sync |
+| Role | Master -- changes originate here | Near-identical; differs only in startup/closedown and MMU7 page allocation | Human-readable Forth form of the core -- read continuously by the VS Code extension; kept aligned and verified |
 | VS Code project | `project/vForth18_DOES/` | `project/vForth18_DOT/` | -- |
 | Launcher | `Forth18_loader.bas` + `forth18e.bin` + `ram8.bin` | ZX Spectrum Next dot-command (`.vforth`) | -- |
 | Sync path (nextsync) | `tools/vForth/` | `dot/` | -- |
-| Alignment cadence | -- | Immediate (on each core change) | Maintained by hand! |
-| Bootstrap-verifiable | Yes | No | Possible but not required |
+| Alignment cadence | -- | Immediate (on each core change) | By hand, on each core change -- then re-verify with `/check-f18e` |
+| Bootstrap-verifiable | Yes | No | Yes -- `/check-f18e` (single compilation on CSpect) |
 
 ## Building and Testing (quick reference)
 
@@ -95,6 +102,15 @@ The project has three codebases in order of priority:
 - **Forth test suite**: runs inside vForth (emulator or CSpect) via
   `INCLUDE TEST/CORE-TESTS.f` etc. -- structure and `{...}T` notation in
   `test/CLAUDE.md`.
+- **F18e.f against the core**: `/check-f18e` (see "The Three Codebases"). Run it after any
+  change to `src/F18e.f` that is not comment-only, after any core change, and before a
+  release. Claude does not launch CSpect: the author compiles with
+  `INCLUDE SRC/F18E.F` and saves the result with `SAVE "forth18_.bin" CODE <HERE+3>,7754`,
+  then Claude runs `util/cmp-f18e.py` on that file. Editing rules for `src/F18e.f`: 7-bit
+  ASCII, no TAB, lines of 80 bytes or fewer, and for a tidy-up pass (typos, obsolete
+  comments, spacing) the code tokens must stay identical -- a comment-only diff cannot
+  change the binary, so compare code with comments and blanks stripped before asking
+  for the CSpect run. Never mass-strip trailing spaces (see "Editing note").
 
 ## Architecture
 
@@ -379,7 +395,7 @@ test/         -- Test suite (CORE-TESTS.f, FLOATING-TESTS.f, ...)
 demo/         -- Example programs and games
 tutorial/     -- Guided tutorials
 doc/          -- PDF reference manual
-util/         -- Perl scripts (blocks2txt.pl, putscr.pl)
+util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py)
 version/      -- Historical build snapshots (never modify, see build number convention)
 prompts/      -- Plans, analyses, and design docs produced while discussing
 ```
