@@ -40,6 +40,10 @@ call "%~dp0new-build-copy.bat"     c:\Zx\forth\F18\tools\vForth          c:\Zx\G
 copy                               c:\zx\forth\F18\tools\vForth\dot\*    c:\Zx\GitHub\vforth-next\dot\
 
 
+: Estensione VS Code: la piu' recente vforth-X.Y.Z.vsix + README in util\ (repo pubblico)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0copy-vsix.ps1" c:\Zx\forth\F18\tools\vForth\tools c:\Zx\GitHub\vforth-next\util
+
+
 : _____________________________________________________
 
 echo   _____________________________________________________
