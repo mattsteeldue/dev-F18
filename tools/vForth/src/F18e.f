@@ -28,7 +28,7 @@
 \ SOFTWARE.
 \ ______________________________________________________________________ 
 \
-\ https://sites.google.com/view/vforth/vforth17-next
+\ https://sites.google.com/view/vforth/vForth17-next
 \ https://www.oocities.org/matteo_vitturi/english/index.htm
 \  
 \ This is the complete compiler for v.Forth for SINCLAIR ZX Spectrum Next.
@@ -54,17 +54,17 @@
 \ DE - Return Stack Pointer: it must be preserved during ROM/OS calls
 \ HL - Working (High word when used for 32-bit manipulations)
 \
-\ AF'- Sometime used for backup purpose
-\ BC'- Sometime used in tricky definitions
-\ DE'- Sometime used in tricky definitions
-\ HL'- Sometime used in tricky definitions
+\ AF'- Sometimes used for backup purpose
+\ BC'- Sometimes used in tricky definitions
+\ DE'- Sometimes used in tricky definitions
+\ HL'- Sometimes used in tricky definitions
 \
 \ SP - Calc Stack Pointer
 \ IX - Inner interpreter next-address pointer. This is 2T-state faster than JP
 \      it must be preserved during ROM/OS calls
 \ IY - (ZX System: must be preserved to use standard Interrupts )
 \
-\ MMU7 configuragion should be preserved across ROM/OS calls in some cases.
+\ MMU7 configuration should be preserved across ROM/OS calls in some cases.
 \
 \ From this version vForth is a "direct-thread" instead of an "indirect-thread" 
 \ Forth system. It brings a +25% speed improvement. 
@@ -89,10 +89,12 @@ NEEDS TO
 CASEON      \ we must be in Case-sensitive option to compile this file.
 0 WARNING ! \ avoid verbose messaging
 
-\ The following word makes dynamic the location of "Origin", so that we can
-\ compile this Forth *twice* to rebuild it completely in itself.
-\ At second run, it forces DP to re-start at a lower-address such as the 
-\ following. (N.B. an open microdrive channel requires 627 bytes)
+\ The following word makes dynamic the location of "Origin".
+\ This source is normally compiled once by a running vForth whose Origin is
+\ below $8000: DP is left untouched, so the new system is built at HERE,
+\ above the running one. If the running system sits at $8000 or above, DP
+\ is forced back to a lower address such as the following.
+\ (N.B. an open microdrive channel requires 627 bytes)
 HEX
 
 : SET-DP-TO-ORG
@@ -150,7 +152,6 @@ DECIMAL
      0  VALUE     emitc^        \ entry-point for EMITC
      0  VALUE     upper^        \ entry-point for UPPER
      0  VALUE     mmu7@^        \ entry-point for mmu7@
-\    0  VALUE     mmu7sav^      \ removed: MMU7 page now saved on the hardware stack
      0  VALUE     clsnol0^      \ CLS_No_Layer_0: the rst $10 in (EMITC)
      0  VALUE     clsl0^        \ CLS_Layer_0: the MMU7 restore in (EMITC)
      0  VALUE     tofar^        \ entry-point for >far
@@ -170,7 +171,7 @@ DECIMAL
 \    0  VALUE     (do)~         \ CFA of (DO)
 \    0  VALUE     (?do)~        \ CFA of (?DO)
      0  VALUE     msg1^         \ patch of ERROR
-     0  VALUE     msg2^         \ patch of CODE/MCOD (CREATE)
+     0  VALUE     msg2^         \ patch of CODE (CREATE)
      0  VALUE     enter^        \ resolved within : definition.
      0  VALUE     error^        \ patch of ?ERROR with ERROR
      0  VALUE     asm^          \ patch of ;CODE with ASSEMBLER
@@ -217,7 +218,7 @@ DECIMAL
 \
   HERE HEX U. 
   HP@      U.
-  KEY  DROP
+\ KEY  DROP
 
 \ force origin to an even address?
 \ HERE 1 AND ALLOT
@@ -226,7 +227,7 @@ SET-DP-TO-ORG
 
   HERE HEX U. 
   HP@      U.
-  KEY  DROP
+\ KEY  DROP
 \ ______________________________________________________________________
 \
 
@@ -315,7 +316,6 @@ HEX 030 +ORIGIN TO rp^
  
 \ from this point we can use LDHL,RP and LDRP,HL Assembler macros
 \ instead of their equivalent long sequences.
-
 
 
         ASSEMBLER
@@ -501,7 +501,6 @@ CODE (leave) ( -- )
 
         LDN     A'|  4  N,   \ UNLOOP index & limit from Return Stack      
         ADDDE,A
-
 
 
         JR      branch^  HERE 1 + - D,
@@ -725,7 +724,7 @@ CODE upper ( c1 -- c2 )
 \ mmu7 status routine
 \ It returns in reg A the current value of fitted page at MMU7
 \ only registers ABC are modified:
-\ Care must be payed to use EXX before this CALL because it must
+\ Care must be paid to use EXX before this CALL because it must
 \ be called having alternate registers active, to preserve BC and DE.
     ASSEMBLER
     HERE TO mmu7@^
@@ -924,11 +923,11 @@ CODE (find) ( addr voc -- ff | cfa b tf  )
 \   n2   the first delimiter after the text 
 \   n3   the first character non enclosed.
 \ This procedure does not go beyond a 'nul' ASCII (0x00) that represents
-\ an uncoditional delimiter. 
+\ an unconditional delimiter. 
 \ Examples:
-\   i:	c  c  x  x  x  c  x	 -- 2  5  6
-\  ii:	c  c  x  x  x  'nul' -- 2  5  5
-\ iii:	c  c  'nul'          -- 2  3  2
+\   i:  c  c  x  x  x  c  x  -- 2  5  6
+\  ii:  c  c  x  x  x  'nul' -- 2  5  5
+\ iii:  c  c  'nul'          -- 2  3  2
 CODE enclose    ( a c -- a  n1 n2 n3 )
 HEX         
         EXX 
@@ -1085,9 +1084,7 @@ CODE (compare) ( a1 a2 n -- b )
 \ from MMU7: the current page is saved before the ROM call and put
 \ back right after, otherwise any word that walks the heap while it
 \ prints (e.g. WORDS after 13 SELECT) reads garbage.
-\ Let's use the hardware stack instead of the following buffer.
-\   HERE TO mmu7sav^
-\   0 C,                        \ saved MMU7 page during ROM/OS call
+\ The saved page lives on the hardware stack, no buffer is needed.
 CODE (emitc)     ( c -- )
         POP     HL|
     HERE TO emitc^
@@ -1145,7 +1142,6 @@ CODE (cls) ( -- )
         C;
 
 
-\ \ 6396h
 \ .( CR )
 \ \ sends a CR via EMITC.
 \ CODE cr  ( -- )
@@ -1200,7 +1196,7 @@ CODE (?emit) ( c1 -- c2 )
 \           POP     BC| \ restore program-counter
             JPHL        \ jump to decoder-routine
                         \ routine must end with Psh1
-                        \ that is the chraracter decoded
+                        \ that is the character decoded
                         \ or zero to signal a false-flag
         HERE DISP, \ THEN,   
 \       POP     BC|     \ restore program-counter
@@ -1352,7 +1348,7 @@ CODE 1frame
 \             JRF    NZ'| HOLDPLACE \ IF,
 \ \               LDN     A'| HEX 88 N,         \ lower-half-block character
 \                 LDA()   HEX 029 org^ +   AA,
-\                 BIT      3| (IY+ HEX 30 )|    \ FLAGS2 (5C3A+30)                
+\                 BIT      3| (IY+ HEX 30 )|    \ FLAGS2 (5C3A+30)
 \                 JRF     Z'| HOLDPLACE \ IF,
 \ \                   LDN     A'| 5F N,         \ upper-half-block character 
 \                     LDA()   HEX 02A org^ +   AA,
@@ -1467,7 +1463,6 @@ CODE key ( -- c )
 \         C;
 
 
-
 .( ?TERMINAL )
 \ Tests the terminal-break. Leaves tf if [SHIFT-SPACE/BREAK] is pressed, or ff.
 CODE ?terminal ( -- 0 | -1 ) ( true if BREAK pressed )
@@ -1487,7 +1482,6 @@ CODE ?terminal ( -- 0 | -1 ) ( true if BREAK pressed )
         C;
 
 
-\ \ 7734h >>>
 \ .( INKEY )
 \ \ calls ROM inkey$ routine, returns c or "zero".
 \ CODE inkey ( -- c )
@@ -2382,7 +2376,6 @@ CODE dnegate ( d1 -- d2 )
         C;
 
 
-
 .( OVER )
 \ copy the second value of stack and put on top.
 CODE over ( n m -- n m n )
@@ -2534,7 +2527,6 @@ CODE pick ( n -- v )
 \         C;
 
 
-\ \ 6E8Bh >>>
 \ .( 2OVER )
 CODE 2over ( d1 d2 -- d1 d2 d1 )
         EXX 
@@ -2591,7 +2583,6 @@ CODE 2dup  ( d -- d d )
         C;
 
 
-\ \ 6EA9h >>>
 \ \ 2ROT
 \ \      d3  |d2  |d1  |
 \ \      h l |h l |h l |
@@ -2654,7 +2645,7 @@ CODE +! ( n a -- )
 
 
 .( TOGGLE )
-\ Complements the byte at addrress a with the model n.
+\ Complements the byte at address a with the model n.
 CODE toggle ( a n -- )
 
         POP     HL|
@@ -2786,7 +2777,6 @@ CODE p@ ( p -- b )
         EXX
         Next
         C;
-
 
 
 \ new
@@ -3132,7 +3122,6 @@ CODE s>d   ( n -- d )
         C;
 
 
-
 .( - )
 \ subtraction
 CODE - ( n1 n2 -- n3 )
@@ -3197,7 +3186,6 @@ CODE <  ( n1 n2 -- f )
 \       Next
 \       C;
         
-
 
 .( > )
 \ true (-1) if n1 is greater than n2
@@ -3860,7 +3848,6 @@ CODE bounds  ( a n -- a+n a )
     ;
 
 
-\ \ 6CC3h
 \ .( EXPECT )
 \ : expect ( a n -- )
 \     accept drop
@@ -3916,7 +3903,7 @@ CODE fill ( a n c -- )
 
 
 .( HOLD )
-\ Used between <# and #> to insert a character c in numerico formatting.
+\ Used between <# and #> to insert a character c in numeric formatting.
 : hold ( c -- )
 \    [ decimal -1 ] Literal
     -1
@@ -3936,7 +3923,7 @@ CODE fill ( a n c -- )
 
 
 .( WORD ) \ ___ forward ___ because of BLOCK 
-\ reads characters from input streams until it encouners a c delimiter.
+\ reads characters from input streams until it encounters a c delimiter.
 \ Stores that packet so it starts from HERE
 \ WORD leaves a counter as first byte and ends the packet with two spaces.
 \ Other occurrences of c are ignored.
@@ -3989,7 +3976,7 @@ CODE fill ( a n c -- )
 
 \ new
 .( ," )
-\ read text from input stream until a " in encontered and 
+\ read text from input stream until a " in encountered and 
 \ compiles a string as a "counted string" appending a trailing 0x00
 : ," ( -- )
     [ CHAR " ] Literal word
@@ -4049,10 +4036,9 @@ CODE fill ( a n c -- )
 \ \  LDE <->  EDC  # 0DE -> eCD
 \ \  0   <->  B    # 0
 \ 
-\ \ 6E11h
 \ \ >W    ( d -- )
 \ \ takes a double-number from stack and put to floating-pointer stack 
-\ \ When A is zero, then the float repressent a whole positive number 
+\ \ When A is zero, then the float represent a whole positive number 
 \ CODE >w
 \         EXX
 \         POP     HL|     
@@ -4077,7 +4063,6 @@ CODE fill ( a n c -- )
 \         C;
 \ 
 \ 
-\ \ 6E33h
 \ \ W>    ( -- d )
 \ \ takes a double-number from stack and put to floating-pointer stack 
 \ CODE w>
@@ -4102,7 +4087,6 @@ CODE fill ( a n c -- )
 \         C;
 \ 
 \ 
-\ \ 6E51h
 \ \ FOP    ( n -- )
 \ \ Floating-Point-Operation
 \ CODE fop
@@ -4369,7 +4353,7 @@ CHAR . C,  CHAR . C,  CHAR . C,  CHAR . C,
 .( CREATE )
 : create ( -- cccc )
          ( -- n )
-    mcod smudge 
+    code smudge 
     [ hex CD ] Literal c,
     [ ' variable >BODY \ 0       
         CELL+          \ constant
@@ -4551,7 +4535,6 @@ CHAR . C,  CHAR . C,  CHAR . C,  CHAR . C,
             Then
         Else
             here 
-\           1+                  \ removed apr 2026
             number 
             dpl @ 1+ 
             If 
@@ -4649,7 +4632,7 @@ immediate
 
 
 .( QUIT )
-\ Erase the return-stack, stop any compilation and give controlo to 
+\ Erase the return-stack, stop any compilation and give control to 
 \ the console. No message is issued.
 : quit  ( -- )
     source-id @ f_close drop  
@@ -4673,7 +4656,6 @@ immediate
 \   -2 ALLOT \ we can save two bytes because the infinite loop
 
 
-\ \ 7e61 >>>
 \ \ .CPU
 \ : .cpu
 \     .( Z80 )
@@ -4800,7 +4782,6 @@ here warm^ ! \ patch
         Next
 
 
-
 .( BASIC )
 \ immediately quits to Spectrum BASIC 
 \ see BYE 
@@ -4909,7 +4890,7 @@ CODE basic ( n -- )
 : m/mod ( d n1 -- r q )
     sm/rem
     \ if you want floored division use fm/mod instead of sm/rem
-    \ if you want simmetric division use sm/rem instead of fm/mod
+    \ if you want symmetric division use sm/rem instead of fm/mod
     ;
 
 
@@ -4963,7 +4944,7 @@ CODE basic ( n -- )
 .( */ )
 \ (n1 * n2) / n3. The intermediate passage through a double number
 \ avoids loss of precision
-: */  ( n1 n2 n3 --	n4 )
+: */  ( n1 n2 n3 -- n4 )
     */mod nip
     ;
 
@@ -5033,13 +5014,12 @@ CODE basic ( n -- )
     ;
     
     ' message msg1^  !   \ patch error
-    ' message msg2^  !   \ patch code / mcod
+    ' message msg2^  !   \ patch code
 
     
 \ ______________________________________________________________________ 
 
 
-\ \ 7824h
 .( DEVICE )
 \ used to save current device stream number (video or printer)
 2 variable device        device !
@@ -5233,7 +5213,7 @@ decimal #SEC constant #sec
 
 
 .( +BUF )
-\ advences to next buffer, cyclical rotating along them
+\ advances to next buffer, cyclical rotating along them
 : +buf  ( a1 -- a2 f )
     [ decimal 516 ] Literal +
     dup limit @ =
@@ -5761,7 +5741,6 @@ decimal
     ' . .^ ! \ patch
 
 
-
 .( ? )
 : ?
     @ .
@@ -5858,29 +5837,11 @@ decimal
 : splash
     cls
     [ decimal 2 ] Literal far count type
-\    [compile] (.")
-\    [ decimal 113 here ,"  v-Forth 1.7 NextZXOS version" -1 allot ]
-\    [ decimal  13 here ,"  Heap Vocabulary - build 2026-06-14" -1 allot ]
-\    [ decimal  13 here ,"  MIT License "
-\    [ decimal 127 here ," 1990-2026 Matteo Vitturi" -1 allot ]
-\    [ decimal  13 c, c! c! c! c! ] 
     ;
 
 \   ' splash splash^ ! \ patch 
 
 
-\ XI/O
-\ : xi/o
-\     0 channel !
-\     0 mmap !
-\     [ decimal 4 ] Literal mdr
-\     ;
-\ 
-\     ' xi/o  xi/o^  ! \ patch 
-\     ' xi/o  xi/o2^ ! \ patch 
-
-
-\ \ 7ee8
 \ \ PRINTER
 \ : printer 
 \     [ decimal 3 ] Literal 
@@ -5925,7 +5886,7 @@ decimal
 
 
 \ .( LOAD- )
-\ \ Provided that a stream n is OPEN# via the standart BASIC 
+\ \ Provided that a stream n is OPEN# via the standard BASIC 
 \ \ it accepts text from stream #n to the normal INTERPRET 
 \ \ up to now, text-file must end with QUIT 
 \ : load- ( n -- )
@@ -5951,7 +5912,7 @@ decimal
 \ \ if n is positive, it loads screen #n (as usual)
 \ \ if n is negative, it connects stream #n to the normal INTERPRET 
 \ \ this second way is useful if you want to load any kind of file
-\ \ provied that it is OPEN# the usual BASIC way.
+\ \ provided that it is OPEN# the usual BASIC way.
 \ : load ( n -- )
 \     dup 0< 
 \     If
@@ -5964,7 +5925,7 @@ decimal
 
 .( AUTOEXEC )
 \ this word is called the first time the Forth system boot to
-\ load Screen# 1. Once called it patches itself to prevent furhter runs.
+\ load Screen# 1. Once called it patches itself to prevent further runs.
 : autoexec
     [ decimal 10 0 +origin 32768 u< 1 and + ] Literal  \ this give 10 or 11 
     [ ' noop         ] Literal  
@@ -6198,7 +6159,6 @@ decimal
 \ ______________________________________________________________________ 
 
 
-
 \ final patch ;code 
 \ we don't want this if we keep assembler in lower memory...
 ' noop asm^ !
@@ -6251,13 +6211,9 @@ RENAME   autoexec       AUTOEXEC
 \ RENAME   load+          LOAD+
 \ RENAME   load-          LOAD-
 \ RENAME   accept-        ACCEPT-
-\ RENAME   rsload         RSLOAD
-\ RENAME   rquery         RQUERY
-\ RENAME   rexpect        REXPECT
 
 RENAME   video          VIDEO
 \ RENAME   printer        PRINTER        
-\ RENAME   xi/o           XI/O
 RENAME   splash         SPLASH
 RENAME   (cls)          (CLS)
 RENAME   cls            CLS
@@ -6686,11 +6642,7 @@ CASEOFF
 \ D398-D3E0         #        User variables area (40 entries, 80 bytes)
 \ D3E8      FIRST   First buffer.
 \ E000      LIMIT   There are 7 buffers (516 * 7 = 3612 bytes)
-\ FFFF      P_RAMT  Phisical ram-top
+\ FFFF      P_RAMT  Physical ram-top
 \ 
 
 QUIT
-
-
-\ 6366h 813Bh  --> 1DD5h == 7637
-\ 9A93h B868h  --> 1DD5h == 7637
