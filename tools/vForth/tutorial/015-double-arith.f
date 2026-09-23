@@ -143,7 +143,7 @@ CR
 RESET-TOTAL
 
 .( Try: 1000 ADD-TO-TOTAL  2000 ADD-TO-TOTAL  .TOTAL ) CR
-.( (should print 3000)                                ) CR
+." (should print 3000)                               " CR
 
 
 \ ===========================================================================

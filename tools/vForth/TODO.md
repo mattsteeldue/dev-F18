@@ -33,7 +33,9 @@ TESTING" section at the bottom of the file: the headless emulator does not
 model the zxnDMA controller, so `DEMO` needs a manual CSpect (or
 real-hardware) check against the written checklist.
 To close this: promote `dev/DMA.f` to `lib/DMA.f`, then run the CSpect
-verification checklist already in the tutorial file.
+verification checklist already in the tutorial file. Then replace the
+"Under development ... INCLUDE dev/DMA.f" tail of the 12 `help/dma-*.txt`
+files with "Available after NEEDS DMA".
 
 
 # Several lib/ modules have little to no per-word help/ coverage
@@ -84,3 +86,34 @@ hardware-accelerated primitives introduced across the 030-059 band
 (hardware sprites -- tutorial 053, tilemap -- tutorial 058) in place of
 the original software model.
 
+
+# ASK-Y/N as a reusable NEEDS word
+**2026-09-23**
+Possible evolution, deliberately not implemented: the boot path is not worth
+the risk for now. `ASK-Y/N` lives only inside `lib/AUTOEXEC.f`, behind
+`MARKER FORGET-THIS-TASK-3`, and forgets itself before `QUIT`; so
+`help/ask-y%n.txt` documents a word the user can never call.
+Idea: a new `inc/ask-y%n.f` returning a flag instead of quitting, Y default:
+
+    : ASK-Y/N  ( -- f )  \ true unless N/n
+        ." (Y/n) "  CURS KEY DUP EMIT  UPPER [CHAR] N - 0= 0= ;
+
+and in `lib/AUTOEXEC.f` a small local word that still performs the `QUIT`
+(no conditional interpretation available):
+
+    MARKER FORGET-THIS-TASK-3
+    NEEDS ASK-Y/N
+    : ?UTILITIES  ." Autoexec asks: Do you wish to load utilities ? "
+        ASK-Y/N  FORGET-THIS-TASK-3  0= IF ." ok " QUIT THEN ;
+    CR ?UTILITIES
+
+`lib/AUTOEXEC-DOT.f` needs no change (it only does `11 LOAD`, which includes
+the same `lib/autoexec.f`).
+Benefits: `help/ask-y%n.txt` becomes a regular "Available after NEEDS" entry;
+a reusable prompt (tutorials 016 `YES?` and 035 `YES-OR-NO` each roll their
+own). Costs: one more file open on every boot, on the most delicate path;
+two files to maintain instead of one. No dictionary cost, since `NEEDS`
+follows the MARKER and the word is forgotten with it.
+Semantics to settle: autoexec treats any key but N as yes, the tutorials loop
+until Y or N. Verify on the headless emulator (`emu/repl.py` smoke test goes
+through ASK-Y/N answering `n`) and on CSpect for both DOES and DOT.

@@ -1,6 +1,6 @@
 \
 \ code.f
 \
-\ this source file renames a temporary definition from MCOD to COOE if needed
+\ this source file renames the temporary lowercase definition code to CODE
 \
-RENAME MCOD CODE
+RENAME code CODE

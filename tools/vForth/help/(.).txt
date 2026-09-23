@@ -1,3 +1,0 @@
-    (+LOOP)    n  --  
-
-Primitive definition compiled by +LOOP
