@@ -63,3 +63,25 @@ The example in tutorial 024:  3.7 F>D D. display 37 instead of 3
 Removed from tutorial/024-floating-point.f until fixed.    
 UPDATE: False positive, probably I missed typing FLOATING before testing.
 **Status: Done** 2026-06-02
+
+
+# Missing tutorial: fixed-point Q8.8/12.4 arithmetic
+**2026-08-22**
+Screen 590-595 in `!Blocks-64.bin` implement fixed-point Q8.8/12.4
+arithmetic (`*/` with a 32-bit intermediate, `SPLIT`), but no tutorial/
+promotes this material -- it exists only as screens. Write the dedicated
+tutorial. Numbering: `030-059` is the ZX Next hardware band and is now
+full (tilemap landed at 058, `063-blocks-as-assets.f` is the last slot
+used); decide whether this lands past 063 (advanced-topics band, per
+`tutorial/CLAUDE.md` numbering rules) or gets inserted earlier.
+**Status: Done** 2026-08-22 -- tutorial/064-scaled-integer-math.f.
+
+
+# Promote demo/brot.f and demo/Fedora.f to tutorial/
+**2026-08-22**
+`demo/brot.f` (Layer2/Mandelbrot) and `demo/Fedora.f` (vectorial/trig
+graphics) have not been promoted to `tutorial/`, unlike their sibling
+`demo/parser.dot.f` which became tutorial 057. Write the corresponding
+tutorials following the standard tutorial/CLAUDE.md structure.
+**Status: Done** 2026-08-27 -- brot.f became tutorial 064, Fedora.f
+tutorial 065 (065-fedora-silhouette.f).

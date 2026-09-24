@@ -95,7 +95,7 @@ forth> 3 4 +  .
 forth> 10 3 - .
 7
 forth> 22 7 /MOD . .
-1 3
+3 1
 forth> status
 PC=$5449  BC=$0002  DE=$D398  HL=$0007  SP=$D2F8
 IX=$639A  A=$00

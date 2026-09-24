@@ -27,7 +27,10 @@ Two distinct documents are involved -- do not confuse them:
 - Interaction with the author: Italian.
 - All source code, comments, and documentation: English only.
 - Character encoding: 7-bit ASCII strictly.
-  Allowed bytes: 0x20-0x7E, tab (0x09), LF (0x0A), CR (0x0D), 0x7F.
+  Allowed bytes: 0x20-0x7E, LF (0x0A), CR (0x0D), 0x7F.  TAB (0x09) is
+  forbidden, as in the root CLAUDE.md: it disrupts the Forth tokeniser.
+  Line endings are LF: do not mix in CRLF lines (tutorial 039 had 25 of
+  them until 2026-09-24).
   No UTF-8, no BOM, no smart quotes, no em-dash (use -).
 - Line width: maximum 80 columns.
 
@@ -457,7 +460,7 @@ Status as of 2026-07-05:
 - **056-layer2-palette.f (new, 2026-07-10)**: first tutorial to cover Next
   palette registers $40/$41/$43/$44 and Global Transparency $14, scoped to
   Layer 2 only (ULA/Sprites/Tilemap palettes share the mechanism but are out
-  of scope). Written from `doc/zx-next-dev-guide-r3.txt` sec.3.4/3.6.4 (no
+  of scope). Written from `doc/zx-next-dev-guide-r3.md` sec.3.4/3.6.4 (no
   vForth manual section exists yet for palettes). Two gotchas worth keeping
   in mind if this area is touched again: (1) auto-increment on `$40` only
   advances after a *write* to `$41`/`$44`, never after a read, and the index
@@ -472,8 +475,9 @@ Status as of 2026-07-05:
   verification** -- never run outside this session.
 
 - **064-scaled-integer-math.f (new, 2026-08-22)**: `DEMO` **confirmed on
-  CSpect** (2026-08-22); reference screenshot
-  `tutorial/064-scaled-integer-math.png`. `ZOOM-DEMO` **awaiting CSpect
+  CSpect** (2026-08-22); reference screenshots
+  `tutorial/064-brot.png` (`DEMO`) and `tutorial/064-brot-bulb.png`
+  (`ZOOM-DEMO`'s north bulb). `ZOOM-DEMO` **awaiting CSpect
   verification** after being retargeted: it first aimed at the seahorse
   valley (`-75 10 60 WINDOW`), which with `MAX-ITER 15` returns "inside"
   for 95% of the pixels -- a correctly computed, entirely black screen.
@@ -664,3 +668,19 @@ same grep found no bug elsewhere.
   (direct post-hoc patch) and `tester`'s in-place call to `main`. Inline
   comments matching `parser.dot.f`'s style were added purely for
   documentation consistency; no logic changed.
+
+**A fourth variant: the call target is outside the saved range (tutorial
+057, found 2026-09-23).** Every mechanism above translates an address
+correctly -- but the translation is only meaningful if the target is
+among the bytes actually saved, `ORG @ HERE OVER -`. Tutorial 057 compiled
+its leaf routine `PRINT` first and set `HERE ORG !` only later, at the top
+of `.HELLO`: `' PRINT REL-AA,` then computed `PRINT - ORG + $2000`, an
+address BELOW `$2000` (in the ROM), and the saved file did not contain
+`PRINT` at all. Same invisibility as the plain-`AA,` bug: `TESTER` calls
+`PRINT` in place and works. Fix (now in the tutorial): set `ORG` in a
+first CODE word, `DOT-START`, compiled BEFORE `PRINT`, holding a `jp 0 AA,`
+placeholder patched after `.HELLO` is compiled (mechanism 3) -- NextZXOS
+enters a dot command at its first byte, so those bytes must jump to the
+real entry point. Audit rule, in addition to the grep above: `HERE ORG !`
+must precede EVERY routine the dot command calls, and the first bytes at
+`ORG` must be the entry point or a jump to it.

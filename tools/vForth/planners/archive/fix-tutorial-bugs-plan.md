@@ -154,3 +154,36 @@ real files: back up `!Blocks-64.bin` before running tutorials that UPDATE
 blocks (028, 055, 063) and check `git diff --quiet -- '!Blocks-64.bin'`.
 Remember `.(` and `[CHAR]` are state-smart in vForth (not bugs inside
 definitions); LOCALS outputs after `--` are pushed automatically.
+
+## Status 2026-09-24 -- plan carried out
+
+Every item of sections 1-5 has been applied (not committed), except 053
+(below). Beyond the plan:
+- 040 sec.7 REG-ROUNDTRIP wrote $55/$AA into $06 (Peripheral 2: PS/2
+  mouse/keyboard, DivMMC, F8/F3 keys): moved to $7F (user storage).
+  Machine ID: $0A on a real Next, $08 on emulators.
+- lib/copper.f COP-WAIT `$FF AND` -> `$1FF AND` (lines 256-311).
+- lib/bmp-load.f height check #39 -> #38 (message text "Not a BMP file").
+- 026 WITH-CLEANUP now really restores a saved DEPTH (NEEDS DEPTH).
+- 057: new CODE DOT-START (sets ORG, `jp` placeholder patched after
+  .HELLO); tutorial/CLAUDE.md sec.17 documents the new bug variant.
+- 044 MOUSE-DRAW: pen flag from down/up events, -32 offset, COORD-CHECK,
+  exit with `LAYER12 1 .PAPER`.
+
+053 "S0 reads 0": NOT a tutorial bug. Probes after every section show
+S0 = 54008 until the end of the file and after it. What breaks is the
+first command typed after the INCLUDE, which loses its first character
+(`SP@ U.` became `P@ U.` and printed 255; `S0 @ U.` printed 0): the
+section 12 session runs TEST -> PAUSE -> 1FRAME, 240 HALTs, and the
+headless emulator delivers queued keys on HALT. Emulator/driver artifact
+of queueing input ahead of time; not reproducible by a user typing.
+Confirmed: with the TEST line commented out, the command after the
+INCLUDE survives intact (S0 = 54008).
+
+Verified in the headless emulator (2026-09-24): 013 `42 DESCRIBE` ->
+"number 42", stack clean; 026 `4 TRY-SQRT .` -> 2, `-4 TRY-SQRT .` ->
+error + 0, `10 2 WITH-CLEANUP .` -> 5, `10 0 WITH-CLEANUP .` -> 0, stack
+clean; 007 `5 .DOWN` -> 5 4 3 2 1; 057 loads, `GREETING 1+ TESTER`
+prints Hello, World!, byte at ORG = $C3 and its operand = relocated
+.HELLO ($2039). Graphics/sprites/mouse/copper/palette/UART changes
+still need CSpect (section 6).

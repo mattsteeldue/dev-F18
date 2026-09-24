@@ -397,13 +397,16 @@ tutorial/     -- Guided tutorials
 doc/          -- PDF reference manual
 util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py)
 version/      -- Historical build snapshots (never modify, see build number convention)
-prompts/      -- Plans, analyses, and design docs produced while discussing
+planners/     -- Plans, analyses, and design docs produced while discussing
+  archive/    -- Plans already carried out
+prompts/      -- Older notes and third-party analyses (new plans go in planners/)
 ```
 
-> **Plans go in `prompts/`, never the project root.** Any plan, analysis, or
+> **Plans go in `planners/`, never the project root.** Any plan, analysis, or
 > design document we produce by discussing (e.g. `LAYER24-PLAN.md`,
-> `PAINT-PLAN.md`) must be saved under `prompts/`, not at the repo root, which
-> is to be kept clean. Write new plans there by default.
+> `PAINT-PLAN.md`) must be saved under `planners/`, not at the repo root, which
+> is to be kept clean. Write new plans there by default; completed ones move
+> to `planners/archive/`.
 
 ## Character Encoding
 
@@ -616,5 +619,5 @@ unexpected behaviour on CSpect: the image is shifted 256 px to the right
 correctly, and LAYER22 works on the same emulator, so this is suspected to be
 a CSpect emulation artifact -- but it has NOT yet been verified on real
 hardware. Until then, treat LAYER24 as experimental. Details and 2026-06-28
-findings in `prompts/LAYER24-PLAN.md`.
+findings in `planners/LAYER24-PLAN.md`.
 
