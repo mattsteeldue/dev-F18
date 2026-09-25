@@ -217,7 +217,7 @@ class VForthEmulator:
         """
         ORIGIN = 0x6366
         self.cpu.PC = ORIGIN
-        self.cpu.SP = 0xD2F8   # transient; ColdRoutine reloads from S0_origin
+        self.cpu.SP = 0xD0F4   # transient; ColdRoutine reloads from S0_origin
         self.cpu.F = 0         # carry clear -> cold start path
         # IY must point to the ZX system-variable base $5C3A (the OS keeps it
         # there for the 50Hz interrupt handler). KEY reads FLAGS via (iy+1).

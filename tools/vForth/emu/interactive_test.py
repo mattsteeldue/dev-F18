@@ -115,7 +115,7 @@ Commands:
                 print(f"Data stack (SP=${sp:04X}):")
                 for i in range(16):
                     addr = sp + i*2
-                    if addr >= 0xD2F8:
+                    if addr >= 0xD0F4:
                         break
                     val = emu.memory[addr] | (emu.memory[addr+1] << 8)
                     print(f"  [{i}] ${addr:04X} = ${val:04X}")

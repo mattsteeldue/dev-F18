@@ -18,7 +18,7 @@ this repository.
 computer. It includes a complete Forth compiler (self-bootstrapping), Z80/Z80N assembly
 support, and multiple library modules for graphics, sound, file I/O, and hardware control.
 
-**Current version**: 1.8 (build 2026-09-20)  
+**Current version**: 1.8 (build 2026-09-25)  
 **License**: MIT  
 **Author**: Matteo Vitturi
 
