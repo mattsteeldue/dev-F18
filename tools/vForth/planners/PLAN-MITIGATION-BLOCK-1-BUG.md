@@ -214,7 +214,7 @@ e' pinnato: ne restano sempre almeno 6.
 | `CLAUDE.md:124` | "6 buffers of 512 bytes each" -> 7 |
 | `CLAUDE.md:545-562` | la sezione "Block-buffer starvation": da bug aperto a bug risolto, con il budget non piu' applicabile |
 | `doc/reverse.md` par. 2.4 e 13.3 | idem |
-| `doc/ONBOARDING.md:1254` | "competes for the same 6 buffers" |
+| `doc/ONBOARDING-2026-09-04.md:1254` | "competes for the same 6 buffers" |
 | `test/CHOMP-MAZE-TESTS.f:20-45` | il commento diventa archeologia; vedi par. 9.1 per il test |
 | `help/#buff.txt` | non cita il numero: **nessuna modifica** |
 

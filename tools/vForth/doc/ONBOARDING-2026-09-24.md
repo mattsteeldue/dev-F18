@@ -10,7 +10,7 @@ previous edition of this report.
 (`tutorial/CLAUDE.md` section 1: *"All source code, comments, and documentation:
 English only"*), while author interaction happens in Italian.
 
-**Predecessor:** `doc/REVERSE-2026-09-11.md` (the same report at commit
+**Predecessor:** `doc/ONBOARDING-2026-09-11.md` (formerly `doc/REVERSE-2026-09-11.md`) (the same report at commit
 `7ef2c90`, build 2026-08-20). This edition re-derives every measurement from
 scratch at the current commit; section 0 lists what actually changed, so a
 reader who knows the old edition can start there.
@@ -42,7 +42,8 @@ Unlike the previous edition, **the runtime was executed.** Concretely:
   banner captured verbatim (see section 4.2). Exit code 0.
 - `printf '1 2 + .\n1234 DUP * .\nWORDS\n.quit\n' | python emu/repl.py` --
   arithmetic verified (`3`, and `15428` = 1234*1234 truncated to 16 bits), and
-  a **reproducible crash in `emu/repl.py` on `WORDS`** found (section 13.4, F5).
+  a **reproducible crash in `emu/repl.py` on `WORDS`** found (section 13.4, F5;
+  **resolved 2026-09-25**).
 - The same `WORDS` run with `PYTHONIOENCODING=utf-8` -- succeeded, dictionary
   listing captured.
 - Mechanical counts and audits over `inc/`, `lib/`, `help/`, `test/`,
@@ -60,8 +61,8 @@ binaries and `list/main.lst`, not from a fresh assembly. Nothing outside
 
 | Document | Date / commit | Status |
 |---|---|---|
-| `doc/ONBOARDING.md` (1764 lines) | 2026-09-04, `af403da` | Independent earlier pass. Still broadly accurate; its file counts and its `version/pkzip25.exe` note were partially refreshed by the author in `b53ae97`. Its stated git root (`/home/matteo/project/dev-F18`) matches neither this host nor `CLAUDE.md`. |
-| `doc/REVERSE-2026-09-11.md` (1746 lines) | 2026-09-11, `7ef2c90` | Direct predecessor of this file. Superseded; keep as the record of the 2026-08-20 build. |
+| `doc/ONBOARDING-2026-09-04.md` (1764 lines; formerly `doc/ONBOARDING.md`) | 2026-09-04, `af403da` | Independent earlier pass. Still broadly accurate; its file counts and its `version/pkzip25.exe` note were partially refreshed by the author in `b53ae97`. Its stated git root (`/home/matteo/project/dev-F18`) matches neither this host nor `CLAUDE.md`. |
+| `doc/ONBOARDING-2026-09-11.md` (1746 lines; formerly `doc/REVERSE-2026-09-11.md`) | 2026-09-11, `7ef2c90` | Direct predecessor of this file. Superseded; keep as the record of the 2026-08-20 build. |
 | **this file** | 2026-09-24, `02fffc4` | Current. |
 
 All three agree on the architecture. The divergences between this edition and
@@ -141,10 +142,12 @@ brackets carry the detail.
 13. **The dot-command is deployed in two places and both are stale**, at two
     different dates, while a third, current copy sits in the build output
     [8.4 mismatch #3, 10.2].
-14. **`emu/repl.py` crashes on any output containing a byte >= `$80`** when
-    stdout is cp1252 -- `WORDS` triggers it every time. `PYTHONIOENCODING=utf-8`
-    fixes it; that workaround is written down only inside
-    `planners/fix-tutorial-bugs-plan.md`, not in `emu/README.md` or `CLAUDE.md`
+14. ~~**`emu/repl.py` crashes on any output containing a byte >= `$80`** when
+    stdout is cp1252 -- `WORDS` triggers it every time.~~ **Resolved
+    2026-09-25:** codes >= `$80` are now rendered by `emu/zxchars.py`
+    (block graphics `$80-$8F` as quadrant glyphs or an ASCII approximation,
+    `$90` and above as `<$NN>`), both in `repl.py` and in the default
+    `emulator.py` `handle_emit`; `PYTHONIOENCODING=utf-8` is no longer needed
     [13.4 F5, 9.4].
 
 Unchanged and re-verified: the 339-definition core, the boot addresses, the
@@ -480,7 +483,7 @@ present on disk are deliberately untracked. **Confidence: High**
 | `tools/` | The VS Code extension `.vsix` (4 versions) + READMEs, `lint_tutorial.py` | Ships the editor integration. Note the confusing nesting: `tools/vForth/tools/`. | High |
 | `dev/` | `DMA.f`, `IM2-HW.f` (tracked) | Staging area for modules not yet promoted to `lib/`. `dev/DMA.f` is what blocks tutorial 054. | Low but **actionable** |
 | `demo/` | 23 `.f` + `chomp-chomp/`, `chomp-chomp-next/`, BMP assets | Example programs and games; also the proving ground for new libraries. | Medium |
-| `doc/` | Reference conversions (`NextZXOS_and_esxDOS_APIs.md`, `zx-next-dev-guide-r3.md`, `tilemap.md`, `AY-3-8910.md`, ...), the `.odt`/`.pdf` manuals (three builds kept), `ONBOARDING.md`, `REVERSE*.md`, `previous/`, `txt/`, `manual/` | The manual is **hand-maintained and must never be edited automatically**. | High |
+| `doc/` | Reference conversions (`NextZXOS_and_esxDOS_APIs.md`, `zx-next-dev-guide-r3.md`, `tilemap.md`, `AY-3-8910.md`, ...), the `.odt`/`.pdf` manuals (three builds kept), `ONBOARDING-YYYY-MM-DD.md` (the dated editions of this report), `previous/`, `txt/`, `manual/` | The manual is **hand-maintained and must never be edited automatically**. | High |
 | `planners/` | 9 plans + `archive/` (7 closed ones) | Design record for work in flight. **Not documented in `CLAUDE.md`.** | Medium (design rationale) |
 | `products/` | 14 deliverable texts: manual paragraphs awaiting paste into the `.odt`, community posts, transcripts | Output destined for somewhere else. **Not documented.** | Medium |
 | `situation/` | 5 status and gap-analysis snapshots | Point-in-time state. **Not documented.** | Low-Medium |
@@ -1037,11 +1040,13 @@ in the repository. **Confidence: High** (verified by search).
 `$env:` read in the PowerShell scripts other than `$env:TEMP` for scratch space
 in the release gate.
 
-The one environment variable that **matters operationally** is
-**`PYTHONIOENCODING=utf-8`**, without which `emu/repl.py` dies on any Forth
-output containing a byte >= `$80` (13.4 F5). It is mentioned only inside
-`planners/fix-tutorial-bugs-plan.md`. **Confidence: High** (reproduced both
-ways in this session).
+The one environment variable that **mattered operationally** was
+**`PYTHONIOENCODING=utf-8`**, without which `emu/repl.py` died on any Forth
+output containing a byte >= `$80` (13.4 F5). **Resolved 2026-09-25:** the
+emulator now renders those codes itself (`emu/zxchars.py`), so the variable is
+optional -- set it only to see the real block-graphics glyphs. **Confidence:
+High** (reproduced both ways in this session; fix verified with `WORDS` on a
+cp1252 console).
 
 ## 8.3 Secrets
 
@@ -1112,7 +1117,7 @@ Effective precedence, most specific first:
 |---|---|
 | Windows | The sync, mount and release tooling is PowerShell/`.bat` only. The assembler build and the emulator are portable; **everything after the build is not.** |
 | SjASMPlus | Expected at `c:/Zx/sjasmplus/sjasmplus.exe`. Version not pinned. |
-| Python 3 | Standard library only. Set `PYTHONIOENCODING=utf-8`. If bare `python` resolves to the Windows Store stub, use an explicit interpreter path. |
+| Python 3 | Standard library only. `PYTHONIOENCODING=utf-8` is optional since 2026-09-25 (13.4 F5). If bare `python` resolves to the Windows Store stub, use an explicit interpreter path. |
 | Perl | For `util/blocks2txt.pl`. |
 | CSpect + a Next SD image | `C:\Zx\CSpect\cspect-next-2gb.img`. Needed for `/check-f18e` and for anything visual. |
 | imdisk | To mount that image as `W:` for the whole-tree sync. |
@@ -1172,7 +1177,7 @@ Copy only if the MD5 differs. **If tests fail, do not deploy.**
 ## 9.4 Test
 
 ```bash
-# 0. Always, on Windows:
+# 0. Optional since 2026-09-25 (13.4 F5) -- only to see block-graphics glyphs:
 export PYTHONIOENCODING=utf-8
 
 # 1. Headless smoke test -- must print the current build date in the banner
@@ -1646,12 +1651,12 @@ stray-untracked-`inc/`-files hazard.
 | D6 | **`check-f18e/SKILL.md` says not to commit `forth18_.bin` or the logs; they are committed.** Also `out.txt` and `dump_main.bin`, both 0 bytes, and `out.txt` is simultaneously in `$SyncExcludeFiles`. | `git ls-files`; the skill's Note section | High |
 | D7 | **`CLAUDE.md` and the `bump-build` description say five canonical build-date locations; the skill's table lists nine** (8.4 mismatch #4). | `.claude/skills/bump-build/SKILL.md:31-41` vs. its own `description:` and `CLAUDE.md:24-38` | High |
 | D8 | **Two different Python interpreter paths are documented, and neither exists on this host.** `CLAUDE.md` says `C:\Users\matteo\anaconda3\python.exe`; `check-f18e/SKILL.md` and the tutorial plan say `...\pythoncore-3.14-64\python.exe`. Bare `python` here is pythoncore 3.14.7 and works. | `CLAUDE.md` Building and Testing; `check-f18e/SKILL.md` section 2 | High |
-| D9 | **`PYTHONIOENCODING=utf-8` is an operational requirement documented in one plan only.** Without it `emu/repl.py` aborts on `WORDS` (F5 below). Neither `emu/README.md` nor `CLAUDE.md` mentions it. | `planners/fix-tutorial-bugs-plan.md` "How to verify"; reproduced in this session | High |
+| D9 | ~~**`PYTHONIOENCODING=utf-8` is an operational requirement documented in one plan only.** Without it `emu/repl.py` aborts on `WORDS` (F5 below). Neither `emu/README.md` nor `CLAUDE.md` mentions it.~~ **Resolved 2026-09-25** together with F5: no longer a requirement; `emu/README.md` now documents the rendering of codes >= `$80`. | `planners/fix-tutorial-bugs-plan.md` "How to verify"; reproduced in this session | High |
 | D10 | **`CLAUDE.md` says the variants differ in "MMU7 8K page allocation"**, which reads as different equates. The `system.asm` equates are byte-identical; the real difference is the DOT prologue's runtime save/restore of MMU2..MMU7 plus speed and layer. Directionally true, misleadingly phrased. | `diff` of both `system.asm`; `vForth18_DOT/source/L2.asm:264-279` | High |
 | D11 | **`help/CLAUDE.md` does not document the "Available after NEEDS" line**, although 173 help files carry it, `TODO.md` treats it as the required form for `help/dma-*.txt`, and the extension reports inconsistencies in it. | `help/CLAUDE.md`; `tools/vforth-0.1.3.README.md` "Build and checks" | High |
 | D12 | **`CLAUDE.md`'s directory listing still names `project/DIRECT/`, `DIRECT_RP/` and `INDIRECT/`, which are not on disk.** Only `vForth16_MDR_MGT`, `vForth18_DOES` and `vForth18_DOT` exist. | `ls project/`; `CLAUDE.md` Directory Structure | High |
 | D13 | **`tutorial/CLAUDE.md` section 1 allows TAB while the root `CLAUDE.md` forbids it.** | Named as an open item in `planners/fix-tutorial-bugs-plan.md` section 5 | High (the plan's own finding) |
-| F5 | **`emu/repl.py` crashes on Forth output containing a byte >= `$80`.** Reproduced: `WORDS` at the `vforth>` prompt raises `UnicodeEncodeError: 'charmap' codec can't encode character '\x80'` at `emu/repl.py:107` (`sys.stdout.write(text)`), taking the whole REPL down mid-session. With `PYTHONIOENCODING=utf-8` the same command prints the full dictionary. The fix belongs in `repl.py` (wrap stdout with `errors='replace'` or reconfigure the encoding), not in every caller's environment. | Two runs in this session, one failing and one passing | High |
+| F5 | **`emu/repl.py` crashes on Forth output containing a byte >= `$80`.** Reproduced: `WORDS` at the `vforth>` prompt raises `UnicodeEncodeError: 'charmap' codec can't encode character '\x80'` at `emu/repl.py:107` (`sys.stdout.write(text)`), taking the whole REPL down mid-session. With `PYTHONIOENCODING=utf-8` the same command prints the full dictionary. The fix belongs in `repl.py` (wrap stdout with `errors='replace'` or reconfigure the encoding), not in every caller's environment. **RESOLVED 2026-09-25:** the byte is the null word's name (`NUL_WORD`, `L1.asm:1660`, `$00|END_BIT` = `$80`). New `emu/zxchars.py` (`zx_char()`) renders the Spectrum set: `$80-$8F` block graphics as Unicode quadrant glyphs when the stream can encode them, else as ASCII (`'` `.` `:` `#`); `$90`+ (UDG, tokens) as `<$NN>`. Used by `repl.py` `_drain()` and by the default `emulator.py` `handle_emit`, which had the same defect. `WORDS` now exits 0 on cp1252. | Two runs in this session, one failing and one passing | High |
 
 ## 13.5 Dead and redundant code
 
@@ -1740,7 +1745,7 @@ IY=ROM) is absolute.
 1. Edit `project/vForth18_DOES/source/`.
 2. Mirror into `project/vForth18_DOT/source/`.
 3. `/build DOES`; check exit code and output sizes (9999 / 8192).
-4. Smoke test: `PYTHONIOENCODING=utf-8 printf '.quit\n' | python emu/repl.py | grep build`.
+4. Smoke test: `printf '.quit\n' | python emu/repl.py | grep build`.
 5. Run the `emu/test_*.py` scripts.
 6. `/build DOT`; concatenate; **verify the banner in the concatenated binary**.
 7. Deploy: the DOES pair to `tools/vForth/`, the DOT binary to **both**
@@ -1838,8 +1843,9 @@ on `HALT`**, not on a fixed instruction interval, because the key-wait loops
 `$E000` window and the NextReg read-back ports `$243B`/`$253B` are modelled.
 
 **Common mistakes.**
-- Forgetting `PYTHONIOENCODING=utf-8`, then losing a session to a
-  `UnicodeEncodeError` the moment anything prints a byte >= `$80` (D-F5).
+- ~~Forgetting `PYTHONIOENCODING=utf-8`, then losing a session to a
+  `UnicodeEncodeError` the moment anything prints a byte >= `$80` (D-F5).~~
+  Resolved 2026-09-25: the emulator renders those codes itself.
 - Expecting a graphics/sound/DMA test to mean anything headlessly.
 - Testing the DOT variant with `emu/repl.py` -- it loads DOES binaries only.
 - Forgetting `TESTING-DONE` after a suite, then puzzling over a polluted
@@ -1896,8 +1902,8 @@ the skill does not.
    `C:\Zx\Forth\F18` or reconcile `util/sd-sync.config.ps1`, `util/mountw.ps1`,
    `util/pdftotext.bat`, `version/new-build.bat` and `.claude/settings.json`.
    Nothing after the build works until this is done.
-2. `export PYTHONIOENCODING=utf-8` in your shell profile. Do it now, not after
-   your first `WORDS` (D-F5).
+2. ~~`export PYTHONIOENCODING=utf-8` in your shell profile.~~ No longer
+   needed since 2026-09-25 (D-F5 resolved).
 3. Read, in this order: `CLAUDE.md` (all of it -- the single densest document in
    the repository), then `inc/CLAUDE.md`, `lib/CLAUDE.md`, `test/CLAUDE.md`,
    `help/CLAUDE.md`, `project/CLAUDE.md`, `tutorial/CLAUDE.md`.
@@ -1968,8 +1974,8 @@ the split dictionary.
   1. **Implement the BLOCK 1 pin** (13.3.2). Fully specified, two files per
      variant plus `src/F18e.f`, and it removes the system's worst failure mode.
      Verify with `test/CHOMP-MAZE-TESTS.f`, which is the test that found the bug.
-  2. **Fix `emu/repl.py`'s stdout encoding** (D-F5). Five minutes, and it stops
-     every newcomer losing a session.
+  2. ~~**Fix `emu/repl.py`'s stdout encoding** (D-F5).~~ Done 2026-09-25
+     (`emu/zxchars.py`).
   3. **Re-deploy both `dot/vforth` copies** (8.4 #3) and add an MD5 check to
      `/check-sync` so it cannot silently rot again.
   4. **Promote `dev/DMA.f` to `lib/DMA.f`** so tutorial 054 becomes loadable,
@@ -2034,9 +2040,10 @@ Yes. `T{ ... }T` is silent on success and prints only on failure.
 
 **9. My REPL died with `UnicodeEncodeError: 'charmap' codec can't encode
 character '\x80'`. Did I break the emulator?**
-No -- `emu/repl.py:107` writes Forth output straight to a cp1252 stdout, and any
-byte >= `$80` (which `WORDS` produces) kills it. Set
-`PYTHONIOENCODING=utf-8`. The proper fix is in `repl.py`.
+No -- up to 2026-09-24 `emu/repl.py:107` wrote Forth output straight to a
+cp1252 stdout, and any byte >= `$80` (which `WORDS` produces) killed it.
+Fixed 2026-09-25 (13.4 F5): update your checkout; `PYTHONIOENCODING=utf-8`
+was the old workaround.
 
 **10. My file loads and then the machine shows a vertical grid / crashes. Why?**
 Almost certainly a space immediately before the file's final newline. The last
@@ -2187,7 +2194,7 @@ can re-check them in a minute each.
 ## Appendix A -- Quick command reference
 
 ```bash
-export PYTHONIOENCODING=utf-8        # do this first, always
+export PYTHONIOENCODING=utf-8        # optional since 2026-09-25 (F5)
 
 # Build (portable form)
 & "c:/Zx/sjasmplus/sjasmplus.exe" --sld=project/vForth18_DOES/list/main.sld.txt \
@@ -2242,7 +2249,7 @@ Skills: `/bump-build`, `/release-rebuild`, `/sync-cspect`,
 |---|---|---|
 | Boot, end to end | **Passed**, banner `build 2026-09-20`, exit 0 | `printf '.quit\n' \| python emu/repl.py` |
 | Runtime arithmetic | `1 2 + .` -> `3`; `1234 DUP * .` -> `15428` (correct 16-bit truncation) | REPL run |
-| `WORDS` | **Crashes** `repl.py:107` with `UnicodeEncodeError` on cp1252; **passes** with `PYTHONIOENCODING=utf-8` | Two REPL runs |
+| `WORDS` | **Crashes** `repl.py:107` with `UnicodeEncodeError` on cp1252; **passes** with `PYTHONIOENCODING=utf-8`. **Passes on cp1252 too after the 2026-09-25 fix** (13.4 F5) | Two REPL runs; re-run 2026-09-25 |
 | Free space at boot | Dictionary **20740** bytes, heap **62175** bytes | Banner |
 | Environment reported by the core | Core Version 15.15.255, NextZXOS 3.7C, CPU 28.0 MHz | Banner |
 | Core word definitions | **339** (L0 83, next-opt0 9, L1 146, L2 29, next-opt1 10, L3 62); **335** with a literal name | Definition-macro count; corroborated by `forth18-cmp.log` ("339 nel riferimento") |

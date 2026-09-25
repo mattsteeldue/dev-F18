@@ -29,7 +29,11 @@ dot-command), the deliverable gets a new build number = the current date.
 It appears in two encodings -- `YYYY-MM-DD` in the SPLASH banner strings
 (DOES and DOT `L0.asm`), in `src/F18e.f`'s header, in this file's "Current
 version" line and in the first 512-byte block of `!Blocks-64.bin`;
-`YYYYMMDD` in the `main.asm` header comments. The **`/bump-build` skill**
+`YYYYMMDD` in the `main.asm` header comments (DOES and DOT) and in the first
+REM of the two tokenised BASIC loaders `Forth18.bas` / `Forth18_loader.bas`
+(patched in place: file length and +3DOS header checksum must stay valid) --
+**nine** files in all, the table in the skill being the reference list. The
+**`/bump-build` skill**
 (`.claude/skills/bump-build/SKILL.md`) updates every canonical location and
 rebuilds both variants; historical copies under `version/`,
 `project/*/source/version/`, `util/` and `doc/` must never be touched.
@@ -67,7 +71,10 @@ The project has three codebases in order of priority:
 
 1. **vForth18_DOES** -- the master. All changes originate here.
 2. **vForth18_DOT** -- near-identical twin. The vast majority of source is shared with
-   vForth18_DOES; only startup/closedown routines and MMU7 8K page allocation differ.
+   vForth18_DOES; only startup/closedown routines and MMU7 8K page handling differ.
+   The `system.asm` equates are byte-identical in both: the difference is at run
+   time, the DOT prologue saving and restoring MMU2..MMU7 (`Saved_MMU`), CPU
+   speed and layer (`project/vForth18_DOT/source/L2.asm`).
 3. **F18e.f** -- the human-readable Forth form of the core. Its primary value is
    **readability**: a Forth programmer can study it to understand how the core is
    implemented, in idiomatic Forth. The `.asm` files remain the authoritative source, but
@@ -82,7 +89,7 @@ The project has three codebases in order of priority:
 
 | | vForth18_DOES (master) | vForth18_DOT (twin) | F18e.f (readable core) |
 |---|---|---|---|
-| Role | Master -- changes originate here | Near-identical; differs only in startup/closedown and MMU7 page allocation | Human-readable Forth form of the core -- read continuously by the VS Code extension; kept aligned and verified |
+| Role | Master -- changes originate here | Near-identical; differs only in startup/closedown and the run-time save/restore of MMU2..MMU7 | Human-readable Forth form of the core -- read continuously by the VS Code extension; kept aligned and verified |
 | VS Code project | `project/vForth18_DOES/` | `project/vForth18_DOT/` | -- |
 | Launcher | `Forth18_loader.bas` + `forth18e.bin` + `ram8.bin` | ZX Spectrum Next dot-command (`.vforth`) | -- |
 | Sync path (nextsync) | `tools/vForth/` | `dot/` | -- |
@@ -98,7 +105,12 @@ The project has three codebases in order of priority:
   `ok` prompt; `printf '.quit\n' | python emu/repl.py` is the smoke test (the
   SPLASH banner must show the current build date). Docs in `emu/README.md`;
   Python regression scripts are `emu/test_*.py`. If bare `python` resolves to the
-  WindowsApps stub, use the explicit `C:\Users\matteo\anaconda3\python.exe`.
+  WindowsApps stub, use the explicit
+  `C:\Users\matteo\AppData\Local\Python\pythoncore-3.14-64\python.exe` (the same
+  path the skills use; `anaconda3` is still installed but stuck at 3.9).
+  Characters >= `$80` (block graphics, UDG, tokens) are rendered by
+  `emu/zxchars.py`; `PYTHONIOENCODING=utf-8` is no longer needed (before
+  2026-09-25 a cp1252 console crashed on `WORDS`).
 - **Forth test suite**: runs inside vForth (emulator or CSpect) via
   `INCLUDE TEST/CORE-TESTS.f` etc. -- structure and `{...}T` notation in
   `test/CLAUDE.md`.
@@ -294,13 +306,19 @@ cold start. The flow, with the `vForth18_DOES` code addresses (from `list/main.l
 
 ```
 entry $6366  -> ColdRoutine self-init -> COLD
-COLD  $7616  -> init block buffers (EMPTY-BUFFERS, NMODE, FIRST/PREV/USE...) -> falls into WARM
-WARM  $760D  -> BLK-INIT  then  ABORT
-BLK-INIT $78D2 -> close any open block handle (BLK-FH), then F_OPEN the block file
-ABORT $75EA  -> init data/return stacks (S0/SP!, R0/RP!), then call AUTOEXEC (first time only)
-AUTOEXEC $8003 -> 11 LOAD  (Screen 11, user-configurable)
-SPLASH $7FDF -> banner (called by the default Screen 11 / lib/autoexec.f)
+COLD  $7622  -> init block buffers (EMPTY-BUFFERS, NMODE, FIRST/PREV/USE...) -> falls into WARM
+WARM  $7619  -> BLK-INIT  then  ABORT
+BLK-INIT $78DE -> close any open block handle (BLK-FH), then F_OPEN the block file
+ABORT $75F6  -> init data/return stacks (S0/SP!, R0/RP!), then call AUTOEXEC (first time only)
+AUTOEXEC $800F -> 11 LOAD  (Screen 11, user-configurable)
+SPLASH $7FEB -> banner (called by the default Screen 11 / lib/autoexec.f)
 ```
+
+The addresses are the CFAs (the label after the 2-byte mirror pointer, i.e.
+the `Colon_Def` line address + 2) for **build 2026-09-20**. They drift with
+every core change: this table went 12 bytes stale unnoticed for several
+builds. Treat `list/main.lst` (or the `F` records of `list/main.sld.txt`) as
+the only address authority and re-read them before setting a breakpoint.
 
 Key points:
 
@@ -382,9 +400,7 @@ project/
   vForth18_DOT/   -- Dot-command variant (v1.8): parallel to vForth18_DOES
     source/     -- same structure as vForth18_DOES
     output/     -- dot-command binary
-  DIRECT/       -- Historical v1.5
-  DIRECT_RP/    -- Variant
-  INDIRECT/     -- Indirect-threaded (legacy)
+  vForth16_MDR_MGT/ -- Historical v1.6 MDR/MGT variant (`/build MDR`)
 dot/          -- Dot-command binaries at repo root (vforth, term0)
 emu/          -- Headless Z80/Z80N + vForth emulator in Python (see emu/README.md)
 lib/          -- Library modules loaded via NEEDS (GRAPHICS.f, MOUSE.f, AY.f, ...)
@@ -399,8 +415,18 @@ util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e
 version/      -- Historical build snapshots (never modify, see build number convention)
 planners/     -- Plans, analyses, and design docs produced while discussing
   archive/    -- Plans already carried out
+products/     -- Deliverable texts bound elsewhere: manual paragraphs awaiting
+                 paste into the .odt, community posts, transcripts
+situation/    -- Point-in-time status snapshots and gap analyses
+dev/          -- Modules not yet promoted to lib/ (DMA.f, IM2-HW.f)
 prompts/      -- Older notes and third-party analyses (new plans go in planners/)
 ```
+
+`planners/`, `products/` and `situation/` are PC-side material like
+`prompts/`, yet the three sync exclusion lists (`syncignore.txt` at the git
+root, `$SyncExcludeTopDirs` in `util/sd-sync.config.ps1`, the extension's
+`vforth.sdExcludeTopDirs`) exclude `prompts` and `dev` but not them, so they
+currently reach the SD image.
 
 > **Plans go in `planners/`, never the project root.** Any plan, analysis, or
 > design document we produce by discussing (e.g. `LAYER24-PLAN.md`,
@@ -472,12 +498,13 @@ Source of truth: `NDOM_PTR`/`NCDM_PTR` in `project/vForth18_DOES/source/L3.asm`
 omitted `\` (illegal in FAT/Windows filenames as a path separator).
 
 **Known collision: `:` and `\` both map to `_`.** A file named `inc/_.f`,
-`lib/_.f` or `help/_.txt` is therefore ambiguous between the two words. As
-of this writing neither word has an `inc/doc/` or `help/` file of its own,
-so the collision is latent, not live. If one is ever added, give it a
-distinct filename (e.g. `colon.f`/`colon.txt` for `:`, `bslash.f`/
-`bslash.txt` for `\`) and keep `_.f`/`_.txt` as a combined entry covering
-both, since `NEEDS`/`HELP` will always resolve either word to that name.
+`lib/_.f` or `help/_.txt` is therefore ambiguous between the two words.
+Since 2026-08-26 the collision is **live in `help/`** and resolved as
+prescribed: `help/colon.txt` (`:`) and `help/bslash.txt` (`\`) hold the
+full entries, and `help/_.txt` is a combined entry covering both, since
+`HELP` always resolves either word to that name. Neither word has an
+`inc/doc/` file yet; if one is added, follow the same pattern (`colon.f` /
+`bslash.f` plus a combined `_.f`).
 
 An audit of every defined name in the core (`project/vForth18_DOES/source/`),
 `inc/` and `lib/` found no other collision under this mapping -- `:`/`\` is

@@ -18,6 +18,7 @@ This emulator implements the complete vForth runtime in Python with:
 |------|---------|
 | `emulator.py` | Main emulator class (VForthEmulator, Z80CPU) |
 | `z80_instructions.py` | 150+ Z80/Z80N instruction implementations |
+| `zxchars.py` | ZX character set -> printable text (block graphics, UDG/tokens) |
 | `interactive_test.py` | Interactive Forth REPL for manual testing |
 | `test_emulator.py` | Basic startup test (1,000 instructions) |
 | `test_extended.py` | Stress test (100,000 instructions) |
@@ -51,6 +52,18 @@ Commands available:
 - `stack` — Show data stack contents
 - `help` — Show available commands
 - `quit` — Exit
+
+### Output of codes >= $80
+
+The Spectrum character set is near-standard 7-bit ASCII (`$7F` is the
+copyright sign, shown as `(c)`); codes >= `$80` are graphics. `zxchars.py`
+renders them for the console: `$80-$8F` block graphics as Unicode quadrant
+glyphs when the console can encode them, otherwise as an ASCII approximation
+(`'` top, `.` bottom, `:` mixed, `#` full); `$90` and above (UDGs, tokens) as
+`<$NN>`. Until 2026-09-25 they went out as raw `chr(b)` and a cp1252 console
+crashed with `UnicodeEncodeError` -- e.g. on `WORDS`, which lists the null
+word (name byte `$00|END_BIT` = `$80`). `PYTHONIOENCODING=utf-8` is no longer
+required; set it only to see the real quadrant glyphs.
 
 ### Run Tests
 
