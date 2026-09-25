@@ -10,7 +10,8 @@ previous edition of this report.
 (`tutorial/CLAUDE.md` section 1: *"All source code, comments, and documentation:
 English only"*), while author interaction happens in Italian.
 
-**Predecessor:** `doc/ONBOARDING-2026-09-11.md` (formerly `doc/REVERSE-2026-09-11.md`) (the same report at commit
+**Predecessor:** `doc/ONBOARDING-2026-09-11.md` (formerly
+`doc/REVERSE-2026-09-11.md`; the same report at commit
 `7ef2c90`, build 2026-08-20). This edition re-derives every measurement from
 scratch at the current commit; section 0 lists what actually changed, so a
 reader who knows the old edition can start there.
@@ -502,6 +503,9 @@ present on disk are deliberately untracked. **Confidence: High**
 > This edition is therefore written straight to `tools/vForth/doc/REVERSE.md`,
 > with the predecessor kept beside it as `doc/REVERSE-2026-09-11.md`.
 > **Confidence: High.**
+> *Renamed 2026-09-25:* the three editions are now
+> `doc/ONBOARDING-2026-09-04.md`, `doc/ONBOARDING-2026-09-11.md` and this
+> file, `doc/ONBOARDING-2026-09-24.md` (date = date of analysis).
 
 ---
 
