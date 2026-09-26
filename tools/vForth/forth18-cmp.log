@@ -1,10 +1,10 @@
 Candidato : forth18_.bin
-Origine   : $9825  (riferimento $6366)  spostamento codice T = +$34BF
-Lunghezza : 7754 byte confrontati su 7754 del riferimento
+Origine   : $983D  (riferimento $6366)  spostamento codice T = +$34D7
+Lunghezza : 7778 byte confrontati su 7778 del riferimento
 Parole    : 339 nel riferimento
 Scarto finale dell heap (LATEST/HP): $1C53
 
-== Area ORIGIN/USER (+0000..+003A): uguali 41, rilocati 14, diversi 4
+== Area ORIGIN/USER (+0000..+003A): uguali 42, rilocati 14, diversi 3
 
 == Progressione dello scarto sull heap (mirror nuovo - mirror rif.)
    Un salto = heap consumato in piu' nel sorgente tra la parola precedente e
@@ -14,17 +14,16 @@ Scarto finale dell heap (LATEST/HP): $1C53
    LSHIFT         dopo 2/             scarto $1C53   (+258 byte)
 
 == Riepilogo
-   byte uguali        : 3235
-   byte rilocati      : 4514   (indirizzi codice +T, puntatori heap +scarto)
-   differenze attese  : 5 byte
+   byte uguali        : 3240
+   byte rilocati      : 4534   (indirizzi codice +T, puntatori heap +scarto)
+   differenze attese  : 4 byte
    byte NON spiegati  : 0 in 0 parole/aree
    parole senza differenze: 338 su 339
 
 == Differenze attese
-   +0008 ($636E) rif=01 nuovo=F8   ORIGIN+008 saved Basic SP: dipende dall ambiente di compilazione
-   +0009 ($636F) rif=01 nuovo=D2   ORIGIN+008 saved Basic SP: dipende dall ambiente di compilazione
-   +0030 ($6396) rif=88 nuovo=98   ORIGIN+030 Return Stack Pointer: dipende dall ambiente (R0)
-   +0031 ($6397) rif=D1 nuovo=D3   ORIGIN+030 Return Stack Pointer: dipende dall ambiente (R0)
-   +1CAE ($8014) rif=0B nuovo=0A   AUTOEXEC: 10 0 +origin 32768 u< 1 and + vale 11 sotto $8000, 10 sopra
+   +0008 ($636E) rif=01 nuovo=F4   ORIGIN+008 saved Basic SP: dipende dall ambiente di compilazione
+   +0009 ($636F) rif=01 nuovo=D0   ORIGIN+008 saved Basic SP: dipende dall ambiente di compilazione
+   +0030 ($6396) rif=88 nuovo=94   ORIGIN+030 Return Stack Pointer: dipende dall ambiente (R0)
+   +1CC6 ($802C) rif=0B nuovo=0A   AUTOEXEC: 10 0 +origin 32768 u< 1 and + vale 11 sotto $8000, 10 sopra
 
 ESITO: COERENTE

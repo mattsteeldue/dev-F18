@@ -53,7 +53,7 @@ SP_Saved:       dw      $0000               // Saved SP during NextOS call
 USER_Pointer:   dw      USER_system
 
 // +030
-RP_Pointer:     dw      $d188 // R0_system
+RP_Pointer:     dw      $d188 // save slot of ldhlrp/ldrphl, written before read: $d188 is a stale R0 of an older layout
 
 // +32
 IX_Echo:        dw      $0000               // Echo IX after NextOS call

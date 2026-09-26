@@ -429,7 +429,7 @@
   53+ 202E 94 D1        USER_Pointer:   dw      USER_system
   54+ 2030
   55+ 2030              // +030
-  56+ 2030 88 D1        RP_Pointer:     dw      $d188 // R0_system
+  56+ 2030 88 D1        RP_Pointer:     dw      $d188 // save slot of ldhlrp/ldrphl, written before read: $d188 is a stale R0 of an older layout
   57+ 2032
   58+ 2032              // +32
   59+ 2032 00 00        IX_Echo:        dw      $0000               // Echo IX after NextOS call

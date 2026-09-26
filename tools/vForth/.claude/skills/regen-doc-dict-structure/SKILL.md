@@ -1,6 +1,6 @@
 ---
 name: regen-doc-dict-structure
-description: Rigenera il testo dei paragrafi dinamici del manuale .odt (par. 4.6 "Dictionary memory structure" e par. 3.8 "Debugger Utility") che mostrano indirizzi hex, dump e transcript SEE legati al build corrente, interrogando l'emulatore sui binari correnti; ogni blocco di output e' etichettato col paragrafo di appartenenza. Usare dopo un rebuild del core, quando il manuale va riallineato, o quando l'utente chiede /regen-doc-dict-structure. NON modifica mai i file .odt/.pdf.
+description: Rigenera il testo dei paragrafi dinamici del manuale .odt (par. 4.6 "Dictionary memory structure" e par. 3.8 "Debugger Utility") che mostrano indirizzi hex, dump e transcript SEE legati al build corrente, interrogando l'emulatore sui binari correnti; ogni blocco di output e' etichettato col paragrafo di appartenenza e confrontato (in sola lettura) col testo gia' presente nel .odt, dicendo quali blocchi sono INVARIATI e quali DA AGGIORNARE. Usare dopo un rebuild del core, quando il manuale va riallineato, o quando l'utente chiede /regen-doc-dict-structure. NON modifica mai i file .odt/.pdf.
 ---
 
 # regen-doc-dict-structure: rigenera i paragrafi dinamici del manuale
@@ -69,21 +69,38 @@ resta MANUALE.
      manuale citava SWAP, ma la parola adiacente puo' cambiare tra build
      (es. oggi e' TUCK; SWAP e' la NFA che si vede nel DUMP).
 
-3. Confronto con la versione attuale del manuale (solo lettura!):
+3. Confronto con il manuale: lo fa lo script stesso, in coda all'output
+   (sezione "Comparison with the manual"). Legge in sola lettura il
+   `content.xml` del `.odt` piu' recente in `doc/` (o quello passato con
+   `--odt PATH`; `--no-compare` lo salta) e per ciascuno dei 9 blocchi
+   (4.6: frase introduttiva, tabelle SWAP/DUP, transcript SWAP/DUP;
+   3.8: SEE TYPE/NIP/IF, nota dopo SEE NIP) dice:
+   - `INVARIATO`: il manuale contiene gia' quel testo, nulla da incollare;
+   - `DA AGGIORNARE`: con le righe `!` non trovate nel manuale, cioe'
+     quelle cambiate.
 
-   ```
-   cd /tmp && unzip -o -q <repo>/doc/vForth1.8-core-en-<ultima>.odt content.xml
-   python3 -c "import re;print(re.sub(r'<[^>]+>','\n',open('content.xml').read()))" > doc.txt
-   grep -n "Dictionary memory structure" doc.txt
-   ```
+   Il confronto e' per sequenza di token (separatori: spazi e `|`), quindi
+   ignora a-capo, celle di tabella e spaziature del `.odt`, e normalizza gli
+   apici/trattini tipografici. Nel par. 3.8 si confronta solo l'output di
+   SEE, perche' il manuale mette della prosa tra il comando e l'output.
+   Nel dubbio segnala `DA AGGIORNARE`, mai un falso `INVARIATO`. Se
+   l'`.odt` e' aperto in LibreOffice (lock) il confronto viene saltato con
+   un avviso.
 
-   Mostrare all'utente un riassunto delle differenze (tipicamente: vecchi
-   xt/mirror -> nuovi, vecchia data build -> nuova).
+   Il confronto col manuale -- non con la build precedente -- e' voluto:
+   oltre a evitare falsi positivi (una modifica che allunga una sola parola
+   sposta solo le successive, ma una parola ferma puo' comunque cambiare
+   transcript se chiama una parola spostata), scopre anche gli errori del
+   manuale rimasto indietro di piu' build (verificato 2026-09-26: sul
+   manuale 20260920 segnala 6 blocchi, tra cui i DUMP del 4.6 gia'
+   sbagliati prima; sul 20260925 aggiornato dall'autore, 9 su 9 invariati).
 
-4. Consegnare il testo generato all'utente, indicando che va incollato a
-   mano nella sezione "Dictionary memory structure" del .odt (mantenendo la
+4. Consegnare all'utente **solo i blocchi `DA AGGIORNARE`**, indicando il
+   paragrafo e che vanno incollati a mano nel .odt (mantenendo la
    formattazione monospace/tabella del documento), e che il .pdf va poi
-   riesportato da LibreOffice.
+   riesportato. Se tutto e' `INVARIATO`, dirlo: non c'e' nulla da fare.
+   Se il testo va salvato in `products/`, seguire la regola di `CLAUDE.md`
+   ("Reference manual"): prosa un paragrafo per riga, CRLF.
 
 ## Note
 

@@ -2,7 +2,15 @@
 
 > Stato: **APPLICATO** nel build 2026-09-25 (commit 912767d; test compatto
 > `2* 2-` aggiunto il 2026-09-26, stesso build non ancora rilasciato).
-> Documentazione nel repo e manuale ancora da allineare.
+> Allineati (2026-09-26): core DOES+DOT, `src/F18e.f`, `emu/emulator.py`,
+> `CLAUDE.md` (anche la nota `1 BLOCK 1 0 R/W`), commento di
+> `test/CHOMP-MAZE-TESTS.f`, commento `RP_Pointer` in `L0.asm:56`
+> (DOES+DOT, solo commento: binario invariato). La nota prevista per
+> `/bump-build` (par. 7 punto 3) e' superata: la data del BLOCK 1 non si
+> edita piu' dalla macchina, ma via `/bump-build` o dall'estensione VS Code
+> (`doc/RELEASE-BUILD.md` par. 4).
+> **Resta solo il manuale** (a mano dall'autore, bozza in
+> `products/manual-build-20260925-block1-pin.txt`). Poi archiviare.
 > Proposta dell'autore: **portare il pool a 7 buffer e specializzare il
 > BLOCK 1**, rendendolo non riciclabile dalle richieste relative ad altri
 > blocchi.

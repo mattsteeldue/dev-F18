@@ -9,5 +9,18 @@
       "c:\\zx\\forth\\f18\\tools\\vforth",
       "C:\\Users\\matteo\\.claude\\projects\\C--zx-forth-f18\\memory"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && echo '== git log (ultimi 10, possono venire da altre postazioni) ==' && git log --oneline -10 && echo '== git status ==' && git status --short 2>/dev/null || true",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
   }
 }

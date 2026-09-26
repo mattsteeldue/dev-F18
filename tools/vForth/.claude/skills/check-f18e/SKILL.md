@@ -18,6 +18,26 @@ Il riferimento deve essere aggiornato: `/build DOES` (o `/bump-build`) deve
 essere stato eseguito DOPO l'ultima modifica ai sorgenti `.asm`, cosi'
 `project/vForth18_DOES/output/forth18e.bin` e `ram8.bin` corrispondono al core.
 
+## 0. Gate: la SD di CSpect deve avere il sorgente e il core correnti
+
+CSpect legge dall'immagine SD, non dal PC: se l'immagine non e' allineata
+l'utente compila un `F18e.f` vecchio (o su un core vecchio) e il confronto
+esce falsato. **Prima** di chiedere la compilazione, con CSpect e MAME chiusi,
+confrontare per MD5 PC e SD di questi tre file:
+
+| PC (`tools/vForth/`) | SD (`W:\tools\vForth\`) |
+|---|---|
+| `src/F18e.f` | `src\F18e.f` |
+| `forth18e.bin` | `forth18e.bin` |
+| `ram8.bin` | `ram8.bin` |
+
+(W: si monta e smonta con `util\mountw.ps1`, ripristinando lo stato trovato.)
+Se anche uno solo differisce -- o nel dubbio -- lanciare **`/sync-cspect`**,
+che verifica tutto l'albero e smonta W: alla fine. Solo con l'esito "allineato"
+si passa al punto 1. Se `F18e.f` su SD ha timestamp 1980 (editato dentro
+CSpect) il sync lo protegge e non lo sovrascrive: fermarsi e chiedere
+all'autore quale versione vale.
+
 ## 1. Compilare F18e.f su CSpect (lo fa l'utente)
 
 Claude NON avvia CSpect (il sandbox blocca la GUI). Chiedere all'utente di:

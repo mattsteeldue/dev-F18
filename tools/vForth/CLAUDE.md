@@ -65,6 +65,16 @@ Run it in report mode freely; it is read-only and exits 1 when residue is
 found, which is how `/release-rebuild` gates on it (step 1c). Everything
 else about the manual still goes through the author by hand.
 
+**Text meant to be pasted by hand into the manual** (the `.txt` files in
+`products/`, and any similar hand-off) is written with **one paragraph per
+line**: a single long line ended by one CRLF (`0x0D 0x0A`), never hard-wrapped
+at 80 columns. The author opens these files in UltraEdit with soft wrap on, and
+frequent line breaks make copying into the `.odt` awkward. Paragraphs are
+separated by one empty line. Preformatted material keeps its own line
+breaks: SEE/DUMP transcripts, code, tables, lists (one item per line). The
+7-bit ASCII rule still applies. The 80-column limit is for sources (`.f`,
+`.asm`), not for these texts.
+
 ## The Three Codebases and Their Roles
 
 The project has three codebases in order of priority:
@@ -149,8 +159,9 @@ BC'/DE'/HL' -- more W's used in complex definition: it's customary using EXX to 
 - **BASIC RAMTOP** `$61FF` (at $6200 there is the IM-2 interrupt verctor table)
 - **Origin**: `$6366` (binary/tape mode) or `$8080` (DeZog debug mode)
 - **Heap Dictionary**: lives at `$E000-$FFFF` (MMU7 page); name-space and code-space split
-- **S0/TIB/R0/USER**: below `$E000` (computed from `LIMIT_system = $E000`, 6 buffers of
-  512 bytes each + 4 bytes each to keep track of BLOCK number and flags)
+- **S0/TIB/R0/USER**: below `$E000` (computed from `LIMIT_system = $E000`, 7 buffers of
+  512 bytes each + 4 bytes each to keep track of BLOCK number and flags; since
+  build 2026-09-25 `FIRST` = `$D1E4`, `S0` = `$D0F4`)
 - **Blocks/Screens**: 2 Blocks forms a Screen 512 bytes each, blocks are persistently stored in `!Blocks.txt` on SD card
 
 ### Banks (16K) vs Pages (8K) -- BASIC vs vForth
@@ -434,6 +445,26 @@ currently reach the SD image.
 > is to be kept clean. Write new plans there by default; completed ones move
 > to `planners/archive/`.
 
+### Working from several workstations
+
+The author works on this repo from at least three PCs. Claude's auto-memory
+(`~/.claude/projects/<path>/memory/`) is **local to each PC and never
+synchronised**; git is the only shared state. Hence:
+
+- **The repo wins over memory.** Before calling a plan "still to do", check
+  `git log` and the plan file itself: it may have been carried out on another
+  PC. A memory entry that contradicts the repo is stale -- fix the memory.
+- **Durable knowledge goes into the repo** (this file, a subdirectory
+  `CLAUDE.md`, the plan file), not only into memory, or the other PCs never
+  see it.
+- **Every plan in `planners/` opens with a status line**, kept current at the
+  end of each session: `> Stato: APERTO` / `IN CORSO (ripresa da ...)` /
+  `APPLICATO <date> (commit ...), resta: ...` / `FATTO`. A plan with nothing
+  left moves to `planners/archive/`.
+- The author pulls with GitHub Desktop when sitting down; a `SessionStart`
+  hook (`.claude/settings.json`) shows the recent commits and the working-tree
+  status at the start of every session.
+
 ## Character Encoding
 
 All source files (`.f`, `.txt`, `.asm`) and all generated help files must use **7-bit
@@ -591,25 +622,27 @@ byte must not be `0x20`. Trailing `0x0A`s are fine (the file may end with severa
 blank lines); trailing spaces on *interior* lines are harmless. Only the final two
 bytes matter.
 
-**Block-buffer starvation: an INCLUDEd file can lose its own source line.**
+**Block-buffer starvation -- FIXED in build 2026-09-25.**
 `F_INCLUDE` reads each line into the **BLOCK 1 buffer** and sets `BLK` to 1, so
-the line being interpreted lives in the block buffer pool -- and that pool is
-**six buffers handed out round-robin** (`FIRST`/`PREV`/`USE`). A file that reads
-six other distinct blocks while interpreting therefore recycles the buffer
-holding its own current line: `WORD` re-reads BLOCK 1 from disk, gets the block
-file's metadata instead of the source line, and the interpreter walks off into
-it. **What it looks like is a random word "is undefined"** -- a *different* word
-on each run, because it depends on whatever the recycled buffer happened to
-hold. Nothing points at the real cause, and the file is usually blameless.
+the line being interpreted lives in the block buffer pool, handed out
+round-robin (`FIRST`/`PREV`/`USE`). Up to build 2026-09-24 the pool held six
+buffers and any of them could be recycled: a file that read six other distinct
+blocks while interpreting lost its own current line -- `WORD` re-read BLOCK 1
+from disk, got the block file's metadata, and **a random word came out "is
+undefined"**, a different one on each run. Found 2026-08-24 via
+`test/CHOMP-MAZE-TESTS.f` (whose header comment still tells that story).
 
-Budget accordingly: an INCLUDEd source can afford roughly **four or five
-distinct blocks**, and re-reading an already-resident block costs nothing.
-Anything heavier belongs in a word that is *compiled* by the file and *executed
-from the `ok` prompt*, where input comes from TIB, `BLK` is 0, and no source
-line is at risk. Found 2026-08-24 via `test/CHOMP-MAZE-TESTS.f`, whose
-`MAZE-CHECK` reads three blocks per maze: checking three disk mazes touched nine
-distinct blocks and died on the sixth read, exactly when the round-robin came
-back round to BLOCK 1.
+Since build 2026-09-25 the pool has **seven buffers** and `BUFFER` **never
+evicts BLOCK 1** (`r@ @ 2* 2-` test, `L3.asm`), so user code still has six
+buffers and an INCLUDEd file may read any number of blocks; `FLUSH` inside an
+INCLUDE is safe too. Regression test: `test/BLOCK1-PIN-TESTS.f`. What remains
+(plan `planners/PLAN-MITIGATION-BLOCK-1-BUG.md` par. 7):
+
+- `EMPTY-BUFFERS` still erases the whole pool, BLOCK 1 included -- never call
+  it from an INCLUDEd file.
+- Nested INCLUDE/EVALUATE levels still share the one BLOCK 1 line buffer.
+- BLOCK 1 is never written back by rotation or `FLUSH`. After hand-editing
+  its bytes (e.g. the build date), persist them with `1 BLOCK 1 0 R/W`.
 
 **Editing note (trailing spaces):** there is **no need to strip trailing spaces**
 from source files -- only the final two bytes are constrained by the rule above.

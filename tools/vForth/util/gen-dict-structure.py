@@ -20,15 +20,26 @@ be pasted by hand into the .odt (which must NEVER be edited
 automatically). Every block of output is labelled with the manual
 paragraph it belongs to.
 
+At the end each block is compared with the text already in the manual
+(the newest doc/vForth1.8-core-en-*.odt, or --odt PATH), read-only from
+its content.xml: INVARIATO means nothing to paste, DA AGGIORNARE lists
+the lines not found in the manual. The comparison works on whitespace-
+and "|"-separated tokens, so line breaks, table cells and spacing of the
+.odt do not matter; when in doubt it reports DA AGGIORNARE, never a
+false INVARIATO.
+
 Usage (from tools/vForth, takes ~2 minutes for the boot):
 
-    python3 util/gen-dict-structure.py
+    python3 util/gen-dict-structure.py [--odt PATH | --no-compare]
 """
 import os
 import re
 import sys
 import contextlib
+import glob
+import html
 import io
+import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "emu"))
@@ -155,7 +166,76 @@ def layout_block(d, name, drv, prev_label):
     return "\n".join(lines), nlen
 
 
+# --- comparison with the text already in the manual (read-only) --------
+
+# typographic characters LibreOffice/Word may have put in the .odt
+TYPO = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201c": '"',
+                      "\u201d": '"', "\u2013": "-", "\u2014": "-",
+                      "\u00a0": " ", "\u00ad": None, "\u200b": None})
+
+
+def tokens(text):
+    return [t for t in re.split(r"[\s|]+", text.translate(TYPO)) if t]
+
+
+def odt_tokens(path):
+    """Plain-text tokens of the .odt body. Spaces, tabs, line breaks and
+    paragraph/cell ends become separators; every other tag (spans,
+    bookmarks) is dropped without one, so words split across styles stay
+    whole."""
+    x = zipfile.ZipFile(path).read("content.xml").decode("utf-8")
+    x = re.sub(r"<text:s(?: [^>]*)?/>|<text:tab/>|<text:line-break/>"
+               r"|</text:p>|</text:h>|</table:table-cell>", " ", x)
+    return tokens(html.unescape(re.sub(r"<[^>]+>", "", x)))
+
+
+def contains(hay, needle):
+    if not needle:
+        return True
+    n, first = len(needle), needle[0]
+    return any(hay[i:i + n] == needle
+               for i, t in enumerate(hay) if t == first)
+
+
+def default_odt():
+    found = sorted(glob.glob("doc/vForth1.8-core-en-*.odt"))
+    return found[-1] if found else None
+
+
+def compare_with_manual(blocks, odt):
+    print()
+    print("=" * 72)
+    print("Comparison with the manual: %s" % odt)
+    print("=" * 72)
+    try:
+        hay = odt_tokens(odt)
+    except (OSError, KeyError, zipfile.BadZipFile) as e:
+        print("  not readable (%s): open in LibreOffice? Check by hand." % e)
+        return
+    todo = 0
+    for label, text in blocks:
+        if contains(hay, tokens(text)):
+            print("  INVARIATO     %s" % label)
+            continue
+        todo += 1
+        print("  DA AGGIORNARE %s" % label)
+        missing = [ln.strip() for ln in text.splitlines()
+                   if tokens(ln) and not contains(hay, tokens(ln))]
+        for ln in missing:
+            print("      ! %s" % ln)
+        if not missing:
+            print("      (every line is in the manual, but not in this order:"
+                  " check by hand)")
+    print()
+    print("  %d block(s) to update, %d unchanged."
+          % (todo, len(blocks) - todo))
+
+
 def main():
+    args = sys.argv[1:]
+    odt = None
+    if "--no-compare" not in args:
+        odt = args[args.index("--odt") + 1] if "--odt" in args else default_odt()
     date = build_date()
     print("Booting the emulator with the current binaries (~2 min) ...",
           file=sys.stderr)
@@ -240,22 +320,28 @@ def main():
     print("-" * 72)
     print("[par. 4.6 -- Dictionary memory structure]")
     print("-" * 72)
+    blocks = []                 # (label, text) compared with the manual
+
+    def emit(label, text, compare=None):
+        print(text)
+        blocks.append((label, text if compare is None else compare))
+
     print()
-    print("For example the two contiguous definitions %s and %s appears in"
-          % (WORD_A, WORD_B))
-    print("memory as follow (as per build %s, since it's perfectly possible"
-          % date)
-    print("that a different build shows different addresses).")
+    emit("par. 4.6 intro sentence",
+         "For example the two contiguous definitions %s and %s appears in\n"
+         "memory as follow (as per build %s, since it's perfectly possible\n"
+         "that a different build shows different addresses)."
+         % (WORD_A, WORD_B, date))
     print()
-    print(block_a)
+    emit("par. 4.6 table %s" % WORD_A, block_a)
     print()
-    print(block_b)
+    emit("par. 4.6 table %s" % WORD_B, block_b)
     print()
     print("You can verify yourself all of that by typing some commands.")
     print()
-    print(ver_a)
+    emit("par. 4.6 transcript %s" % WORD_A, ver_a)
     print()
-    print(ver_b)
+    emit("par. 4.6 transcript %s" % WORD_B, ver_b)
     print()
     print("-" * 72)
     print("[par. 3.8 -- Debugger Utility]")
@@ -264,7 +350,11 @@ def main():
         print()
         print("[par. 3.8 -- transcript: SEE %s]" % w)
         print()
-        print(transcript("SEE " + w, pad_lfa=False, raw=dbg[w]))
+        t = transcript("SEE " + w, pad_lfa=False, raw=dbg[w])
+        # the manual puts prose between the command and its output
+        # ("the system will show ..."): compare the output only
+        output = t.split(chr(10), 1)[1]
+        emit("par. 3.8 SEE %s" % w, t, compare=output)
     print()
     print("[par. 3.8 -- data for the prose note after SEE NIP]")
     print()
@@ -273,14 +363,17 @@ def main():
           % (hx(next_cfa_hp), pairs(drv.mem(next_cfa, 8)), next_name,
              hx(next_xt), after_name))
     print()
-    print("The bytes that follow  - %s - are the beginning of the subsequent"
-          % pairs(trail))
-    print("definition compiled in dictionary (%s in this case): %s is %s's"
-          % (next_name, pairs(trail[:2]), next_name))
-    print("Mirror, i.e. the heap-pointer $%s to its CFA. Try $%s FAR 8 DUMP to"
-          % (hx(next_cfa_hp), hx(next_cfa_hp)))
-    print("inspect the HEAP: you'll see %s's xt $%s followed by %s's NFA."
-          % (next_name, hx(next_xt), after_name))
+    emit("par. 3.8 note after SEE NIP",
+         "The bytes that follow  - %s - are the beginning of the subsequent\n"
+         "definition compiled in dictionary (%s in this case): %s is %s's\n"
+         "Mirror, i.e. the heap-pointer $%s to its CFA. Try $%s FAR 8 DUMP to\n"
+         "inspect the HEAP: you'll see %s's xt $%s followed by %s's NFA."
+         % (pairs(trail), next_name, pairs(trail[:2]), next_name,
+            hx(next_cfa_hp), hx(next_cfa_hp), next_name, hx(next_xt),
+            after_name))
+
+    if odt:
+        compare_with_manual(blocks, odt)
 
 
 if __name__ == "__main__":
