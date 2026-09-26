@@ -1,6 +1,8 @@
 # Piano: mitigazione strutturale del bug "block-buffer starvation"
 
-> Stato: **PROPOSTO** (2026-09-12). Nessuna riga ancora modificata.
+> Stato: **APPLICATO** nel build 2026-09-25 (commit 912767d; test compatto
+> `2* 2-` aggiunto il 2026-09-26, stesso build non ancora rilasciato).
+> Documentazione nel repo e manuale ancora da allineare.
 > Proposta dell'autore: **portare il pool a 7 buffer e specializzare il
 > BLOCK 1**, rendendolo non riciclabile dalle richieste relative ad altri
 > blocchi.
@@ -165,15 +167,14 @@ Buffer_Begin:                                   //      begin
                 dw      USED, STORE             //      used !
                 // BLOCK 1 e' il buffer di riga di INCLUDE/EVALUATE:
                 // il suo contenuto non e' rileggibile da disco. Mai riciclarlo.
+                // 2* butta via il bit 15 (flag UPDATE): zero dopo 2- sse blocco 1
                 dw      R_OP, FETCH             //      r @
-                dw      LIT, $7FFF, AND_OP      //      7FFF and
-                dw      ONE_SUBTRACT, ZEQUAL    //      1- 0=     ( e' il blocco 1? )
-                dw      DUP                     //      dup
+                dw      TWO_MUL, TWO_MINUS      //      2* 2-     ( 0 = blocco 1 )
+                dw      DUP, ZEQUAL             //      dup 0=
                 dw      ZBRANCH                 //      if
                 dw      Buffer_Keep - $
                 dw          R_TO, DROP          //          r> drop  ( scarta )
 Buffer_Keep:                                    //      endif
-                dw      ZEQUAL                  //      0=
                 dw      ZBRANCH                 // until
                 dw      Buffer_Retry - $
                 dw      R_OP, FETCH, ZLESS      // r @ 0<    <-- da qui invariato
@@ -188,14 +189,21 @@ Forma Forth equivalente per `src/F18e.f:5443`:
         used @ dup >r
         Begin +buf Until
         used !
-        r@ @ [ hex 7FFF ] Literal and  1- 0=
-        dup If  r> drop  Then          \ scarta il candidato e riprova
-        0=
+        r@ @ 2* 2- dup                 \ 2* perde il flag UPDATE (bit 15)
+        0= If  r> drop  Then           \ blocco 1: scarta il candidato, riprova
     Until
     r@ @ 0<
     If  r@ cell+  r@ @ [ hex 7FFF ] Literal and  0 r/w  Then
     r@ !  r@ prev !  r>  cell+ ;
 ```
+
+**Test del blocco 1 in forma compatta** (suggerimento dell'autore,
+2026-09-26): `2*` scarta il bit 15 (flag UPDATE) e, essendo il numero di
+blocco al massimo `$7FFF`, non va in overflow; quindi `x 2* 2-` e' zero se e
+solo se `x AND $7FFF` = 1. Il `dup` prima di `0=` lascia gia' il valore giusto
+per `Until` (non zero = "non e' il blocco 1" = esci), eliminando il `0=` finale.
+Rispetto a `LIT $7FFF AND 1- 0= DUP ... 0=` sono 3 celle in meno: **6 byte
+risparmiati** per variante.
 
 **Nessun rischio di stallo.** Quando e' `1 BLOCK` stesso a chiedere un buffer,
 nessun buffer dichiara 1 (e' proprio per questo che siamo li'), quindi lo skip

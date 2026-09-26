@@ -5254,9 +5254,9 @@ decimal #SEC constant #sec
         used !
         \ BLOCK 1 is the line buffer of INCLUDE/EVALUATE: its content
         \ cannot be re-read from disk, so it is never recycled.
-        r@ @ [ hex 7FFF ] Literal and  1- 0=
-        dup If  r> drop  Then
-        0=
+        \ 2* drops the UPDATE bit: 2- gives zero only for block 1.
+        r@ @ 2* 2- dup
+        0= If  r> drop  Then
     Until
     r@ @ 0< 
     If  

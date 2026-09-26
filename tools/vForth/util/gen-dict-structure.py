@@ -3,13 +3,13 @@
 gen-dict-structure.py -- regenerate the dynamic text of the manual
 (vForth1.8-core-en .odt) sections that contain build-specific addresses:
 
-  par. 3.20 "Dictionary memory structure": for the two contiguous
+  par. 4.6 "Dictionary memory structure": for the two contiguous
   definitions SWAP and DUP,
     1. the "Heap memory / Main memory" layout tables (NFA/LFA/CFA,
        mirror, xt)
     2. the "You can verify yourself" transcript (SEE + DUMP output)
 
-  par. 3.6.1 "Debugger Utility": the three SEE example transcripts
+  par. 3.8 "Debugger Utility": the three SEE example transcripts
   (TYPE: colon-definition, NIP: CODE word, IF: IMMEDIATE), plus the
   data for the prose note about the bytes following NIP's jp (ix).
 
@@ -34,8 +34,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "emu"))
 os.chdir(ROOT)
 
-WORD_A, WORD_B = "SWAP", "DUP"          # par. 3.20
-DEBUGGER_WORDS = ["TYPE", "NIP", "IF"]  # par. 3.6.1
+WORD_A, WORD_B = "SWAP", "DUP"          # par. 4.6
+DEBUGGER_WORDS = ["TYPE", "NIP", "IF"]  # par. 3.8
 
 # minimal Z80 disassembler, enough for the tiny xt bodies shown in the doc
 ONE_BYTE = {
@@ -191,8 +191,8 @@ def main():
             lines = [ln for ln in lines
                      if not re.fullmatch(r"\s*[0-9A-F]{1,3}\s*", ln)]
             # - zero-pad the 16-bit heap-pointer in the Lfa: line; the
-            #   manual does this in par. 3.20 but keeps SEE's raw output
-            #   in par. 3.6.1
+            #   manual does this in par. 4.6 but keeps SEE's raw output
+            #   in par. 3.8
             if pad_lfa:
                 lines = [re.sub(r"^(\s*Lfa: [0-9A-F]{4} )([0-9A-F]{1,3})\b",
                                 lambda m: m.group(1) + m.group(2).zfill(4),
@@ -206,7 +206,7 @@ def main():
     ver_b = "\n".join([transcript("SEE " + WORD_B)] +
                       [transcript(c) for c in dump_cmds_b])
 
-    # --- par. 3.6.1 Debugger Utility: SEE example transcripts -----------
+    # --- par. 3.8 Debugger Utility: SEE example transcripts -----------
     # The manual shows these in DECIMAL (e.g. the literal 12 in TYPE's
     # body); SEE prints addresses in hex regardless of BASE.
     drv.send("DECIMAL")
@@ -224,6 +224,12 @@ def main():
     next_cfa_hp = trail[0] | (trail[1] << 8)
     next_nfa = dnip["lfa"] + 4          # heap entries are contiguous
     next_name = heap_name(drv, next_nfa)
+    # what "$<mirror> FAR 8 DUMP" shows: the next word's xt (its CFA
+    # slot), then the NFA of the word after it
+    next_cfa = 0xE000 + next_cfa_hp
+    next_xt_bytes = drv.mem(next_cfa, 2)
+    next_xt = next_xt_bytes[0] | (next_xt_bytes[1] << 8)
+    after_name = heap_name(drv, next_cfa + 2)
 
     print("=" * 72)
     print("Manual dynamic parts regenerated from build %s." % date)
@@ -232,7 +238,7 @@ def main():
     print("=" * 72)
     print()
     print("-" * 72)
-    print("[par. 3.20 -- Dictionary memory structure]")
+    print("[par. 4.6 -- Dictionary memory structure]")
     print("-" * 72)
     print()
     print("For example the two contiguous definitions %s and %s appears in"
@@ -252,21 +258,29 @@ def main():
     print(ver_b)
     print()
     print("-" * 72)
-    print("[par. 3.6.1 -- Debugger Utility]")
+    print("[par. 3.8 -- Debugger Utility]")
     print("-" * 72)
     for w in DEBUGGER_WORDS:
         print()
-        print("[par. 3.6.1 -- transcript: SEE %s]" % w)
+        print("[par. 3.8 -- transcript: SEE %s]" % w)
         print()
         print(transcript("SEE " + w, pad_lfa=False, raw=dbg[w]))
     print()
-    print("[par. 3.6.1 -- data for the prose note after SEE NIP]")
+    print("[par. 3.8 -- data for the prose note after SEE NIP]")
     print()
     print("  bytes following NIP's jp (ix): %s" % pairs(trail))
-    print("  i.e. the Mirror of the subsequent definition %s" % next_name)
-    print("  (heap-pointer %s to its CFA slot); its NFA is at" % hx(next_cfa_hp))
-    print("  heap-pointer $%s -- the inspect command for the manual is:" % hx(hp_of(next_nfa)))
-    print("      $%s FAR 8 DUMP" % hx(hp_of(next_nfa)))
+    print("  $%s FAR 8 DUMP shows: %s (%s's xt $%s) + %s's NFA"
+          % (hx(next_cfa_hp), pairs(drv.mem(next_cfa, 8)), next_name,
+             hx(next_xt), after_name))
+    print()
+    print("The bytes that follow  - %s - are the beginning of the subsequent"
+          % pairs(trail))
+    print("definition compiled in dictionary (%s in this case): %s is %s's"
+          % (next_name, pairs(trail[:2]), next_name))
+    print("Mirror, i.e. the heap-pointer $%s to its CFA. Try $%s FAR 8 DUMP to"
+          % (hx(next_cfa_hp), hx(next_cfa_hp)))
+    print("inspect the HEAP: you'll see %s's xt $%s followed by %s's NFA."
+          % (next_name, hx(next_xt), after_name))
 
 
 if __name__ == "__main__":

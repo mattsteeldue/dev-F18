@@ -1,11 +1,11 @@
-Further addition to paragraph 3.20 "Dictionary memory structure" -- draft
+Further addition to paragraph 4.6 "Dictionary memory structure" -- draft
 text for the vForth manual (.odt).
 
-Placement: paste as a NEW subsection at the very END of 3.20, after the
+Placement: paste as a NEW subsection at the very END of 4.6, after the
 "You can verify yourself" SEE/DUMP transcript and after the MMU7
 cross-reference paragraph already drafted in
-prompts/manual-par-3.20-mmu7-crossref.txt (paste this one after that one),
-and BEFORE section "4 Error messages" begins. Do NOT touch the
+products/manual-par-4.6-mmu7-crossref.txt (paste this one after that one),
+and BEFORE section "5 Error messages" begins. Do NOT touch the
 build-specific tables/transcript above it -- those are regenerated
 automatically by util/gen-dict-structure.py and must stay exactly as that
 script produces them. This subsection is static hand-written prose the
@@ -20,11 +20,13 @@ overstate the robustness of the current heap-pointer scheme. Companion
 material: lib/CLAUDE.md ("MMU7 is a general RAM-paging gateway") and the
 auto-memory entries words-select-mmu7-bug / words-nfa-heap-pointer-
 robustness (project-internal, not part of the manual).
-Drafted 2026-07-12.
+Drafted 2026-07-12. Extended 2026-09-26 with the capacity limit the
+threshold imposes (last three paragraphs, measured on build 2026-09-25 in
+the headless emulator).
 
 ======================================================================
 
-3.20.1 Known limitation: the NFA representation ambiguity
+4.6.1 Known limitation: the NFA representation ambiguity
 
 Every word documented above with a `( nfa -- ... )` or `( cfa -- ... )`
 stack effect is silently ambiguous about what it actually holds: a raw
@@ -114,3 +116,37 @@ still a matter of programmer discipline at each call site (-FIND,
 not something the system enforces. This paragraph records the tradeoff
 for transparency; it does not promise which direction, if any, will be
 taken.
+
+The same threshold also sets a practical limit on the heap, in both
+variants. Heap-pointers span $0000-$FFFF (bits 15-13 select one of the
+eight 8K pages), so any heap-pointer at or above $6300 is taken for a
+physical address. Data allocated at run time is not affected: HEAP, H"
+and the rest return a heap-pointer that the program resolves with FAR
+explicitly, and FAR works across the whole 64K. Dictionary names are
+affected: a new definition lays its name down at the current value of
+HP, and once HP has passed $62FF that name can no longer be resolved --
+the definition being compiled is lost, and from then on the dictionary
+search no longer finds any word. Names and data share the same HP, so
+the limit is not on how much heap can be used, but on the order in which
+it is used: no new definition (no colon-definition, CREATE, VARIABLE,
+NEEDS or INCLUDE) after HP has gone past $62FF.
+
+In practice the dictionary alone cannot get there: the code space between
+HERE and SP@ runs out long before. On build 2026-09-25 the core itself
+uses 7778 bytes of dictionary and 3358 bytes of heap (0.43 heap bytes per
+dictionary byte), and a typical set of libraries (SEE, DUMP, HEAP, VALUE,
+CASE, LOCALS) adds 2179 bytes of dictionary and 791 bytes of heap (0.36).
+Filling all the ~20200 free bytes of dictionary at that rate brings HP to
+about $2E00, some 13 Kbytes below the threshold; reaching $6300 would take
+more than one heap byte for every dictionary byte, almost three times the
+measured rate. Only extreme programs come close: many long-named words
+with tiny bodies (a CONSTANT with a 20-character name costs about 25
+bytes of heap and 7 of dictionary), or a great deal of text kept in heap
+by H", S" or ABORT".
+
+The realistic way to cross the threshold is therefore run-time data: a
+program that fills the heap with tables, buffers or file contents, and
+only afterwards goes on defining words or loading more source. The rule
+is the usual one for anyone working in Forth -- know what the system is
+doing underneath and keep your eyes open: load and compile all the code
+first, then allocate data in heap. Check HP@ U. when in doubt.

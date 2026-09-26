@@ -12,7 +12,7 @@ RIEPILOGO DIFFERENZE rispetto alla versione precedente:
   Heap-pointer NFA/LFA/CFA di SWAP (0307/030C/030E) e DUP (0310/0314/0316): INVARIATI
 
 ==============================================================
-[par. 3.20 -- Dictionary memory structure]
+[par. 4.6 -- Dictionary memory structure]
 ==============================================================
 
 For example the two contiguous definitions SWAP and DUP appears in
@@ -65,7 +65,7 @@ You can verify yourself all of that by typing some commands.
         68EE  16 03 E1 E5  E5 DD E9 1E    aee]i
 
 ==============================================================
-[par. 3.6.1 -- Debugger Utility]
+[par. 3.8 -- Debugger Utility]
 ==============================================================
 
 --- Transcript SEE TYPE ---

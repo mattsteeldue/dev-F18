@@ -1,6 +1,6 @@
 ---
 name: regen-doc-dict-structure
-description: Rigenera il testo dei paragrafi dinamici del manuale .odt (par. 3.20 "Dictionary memory structure" e par. 3.6.1 "Debugger Utility") che mostrano indirizzi hex, dump e transcript SEE legati al build corrente, interrogando l'emulatore sui binari correnti; ogni blocco di output e' etichettato col paragrafo di appartenenza. Usare dopo un rebuild del core, quando il manuale va riallineato, o quando l'utente chiede /regen-doc-dict-structure. NON modifica mai i file .odt/.pdf.
+description: Rigenera il testo dei paragrafi dinamici del manuale .odt (par. 4.6 "Dictionary memory structure" e par. 3.8 "Debugger Utility") che mostrano indirizzi hex, dump e transcript SEE legati al build corrente, interrogando l'emulatore sui binari correnti; ogni blocco di output e' etichettato col paragrafo di appartenenza. Usare dopo un rebuild del core, quando il manuale va riallineato, o quando l'utente chiede /regen-doc-dict-structure. NON modifica mai i file .odt/.pdf.
 ---
 
 # regen-doc-dict-structure: rigenera i paragrafi dinamici del manuale
@@ -8,23 +8,26 @@ description: Rigenera il testo dei paragrafi dinamici del manuale .odt (par. 3.2
 Il manuale `doc/vForth1.8-core-en-YYYYMMDD.odt` (e il .pdf che ne deriva)
 contiene brani pieni di indirizzi hex legati al build corrente, in DUE
 paragrafi; l'output dello script etichetta ogni blocco col paragrafo di
-appartenenza (`[par. 3.20 ...]` / `[par. 3.6.1 ...]`):
+appartenenza (`[par. 4.6 ...]` / `[par. 3.8 ...]`):
 
-**par. 3.20 "Dictionary memory structure"**
+**par. 4.6 "Dictionary memory structure"**
 1. l'esempio di memoria delle definizioni contigue `SWAP` e `DUP`
    (tabelle "Heap memory:" NFA/LFA/CFA e "Main memory:" Mirror/xt);
 2. il transcript "You can verify yourself..." con l'output reale di
    `SEE SWAP`, `SEE DUP` e dei relativi `DUMP`.
 
-**par. 3.6.1 "Debugger Utility"** (in misura minore)
+**par. 3.8 "Debugger Utility"** (in misura minore)
 3. i tre transcript d'esempio `SEE TYPE` (colon-definition), `SEE NIP`
    (CODE word) e `SEE IF` (IMMEDIATE), catturati in DECIMAL come nello
    stile di quel paragrafo (letterali come `12` e `-8`; gli indirizzi
    stampati da SEE restano hex a prescindere dalla BASE);
 4. i dati per la nota in prosa dopo `SEE NIP`: i byte che seguono il
    `jp (ix)` (Mirror della definizione successiva), il NOME REALE di
-   quella definizione e il comando `$hhhh FAR 8 DUMP` per ispezionarne
-   la NFA in heap.
+   quella definizione, e la frase pronta da incollare (forma scelta
+   dall'autore il 2026-09-26): il Mirror e' l'heap-pointer al CFA della
+   parola successiva, quindi `$<mirror> FAR 8 DUMP` mostra il suo xt
+   seguito dalla NFA della parola dopo ancora (oggi: TUCK, xt $68E0,
+   poi la NFA di SWAP). Il Mirror NON punta alla NFA.
 
 A ogni rebuild del core gli xt e i mirror cambiano (gli heap-pointer di
 solito no, se le parole non si spostano) e la correzione a mano e' error
@@ -60,11 +63,11 @@ resta MANUALE.
      cui si rigenera;
    - la data di build mostrata nella frase introduttiva deve coincidere con
      quella dello SPLASH corrente;
-   - par. 3.6.1: i letterali della decompilazione devono essere decimali
+   - par. 3.8: i letterali della decompilazione devono essere decimali
      (`12`, `-8`); nella nota su NIP controllare che il nome della
      definizione successiva sia quello reale -- la prosa storica del
      manuale citava SWAP, ma la parola adiacente puo' cambiare tra build
-     (es. oggi e' TUCK).
+     (es. oggi e' TUCK; SWAP e' la NFA che si vede nel DUMP).
 
 3. Confronto con la versione attuale del manuale (solo lettura!):
 
@@ -84,6 +87,12 @@ resta MANUALE.
 
 ## Note
 
+- Numerazione dei paragrafi del manuale (aggiornata dall'autore il
+  2026-09-26; le edizioni precedenti usavano 3.20 e 3.6.1):
+  par. 4.6 "Dictionary memory structure", par. 3.8 "Debugger Utility",
+  par. 2.4 "Block / Screen system" (numero dei buffer: da rivedere a mano
+  quando cambia `BUFFERS` in `system.asm`). I draft vecchi in
+  `products/` possono citare ancora i numeri precedenti.
 - Lo script dipende da `emu/repl.py` e dai moduli in `emu/`; il transcript
   e' output REALE del core (compresa la colonna ASCII dei DUMP), quindi e'
   fedele a cio' che l'utente vedrebbe sull'hardware -- con due sole

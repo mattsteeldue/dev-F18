@@ -1,8 +1,8 @@
-Paragraph 3.21 "Direct Memory Access (DMA)" -- draft text for the vForth
-manual (.odt). To be pasted by hand after 3.20 "Dictionary memory
-structure" (or wherever the DMA library ends up in the final numbering --
-adjust the heading number to fit).
-Word-entry format follows 3.12 Beeper / 3.13 AY: WORD  ( before -- after )
+Paragraph 3.16 "Direct Memory Access (DMA)" -- draft text for the vForth
+manual (.odt). To be pasted by hand after 3.15 "Keyboard input", at the
+end of chapter 3 "Utilities" (or wherever the DMA library ends up in the
+final numbering -- adjust the heading number to fit).
+Word-entry format follows 3.13 Beeper / 3.14 AY: WORD  ( before -- after )
 line, then a description paragraph, in the same style as the rest of the
 manual.
 STATUS CAVEAT (read before pasting): lib/DMA.f was load-tested in the
@@ -15,7 +15,7 @@ Drafted 2026-07-11.
 
 ======================================================================
 
-3.21 Direct Memory Access (DMA)
+3.16 Direct Memory Access (DMA)
 
 The following definitions are available after you type NEEDS DMA. To
 forget this library from the dictionary you can type NO-DMA (a MARKER
@@ -33,7 +33,7 @@ reserved for a future extension.
 While a continuous-mode transfer is in progress the CPU is blocked until
 it completes, and level-triggered maskable interrupts cannot fire during
 that time -- keep this in mind if DMA is used together with the ULA frame
-interrupt or a CTC channel (see 3.5 Interrupt Service Routine and, for
+interrupt or a CTC channel (see 3.7 Interrupt Service Routine and, for
 the newer hardware-vectored form, the Hardware Interrupt Mode 2 section).
 $E000-$FFFF is not off-limits by address: it is the MMU7 window, the
 single gateway through which any code -- the compiler, this library, or
@@ -47,7 +47,7 @@ the dictionary again (it runs from already-resolved xt/cfa), so MMU7 is
 free for other jobs -- paging the LAYER2 framebuffer, decoding a Heap
 string via FAR (as the TUTORIAL library does, keeping filenames in Heap
 and only an array of heap-pointers in the dictionary), or, most visibly,
-LED (3.3), which pages through as many of the available 8K slots as the
+LED (3.1.2), which pages through as many of the available 8K slots as the
 file being edited needs, using MMU7 as a window onto up to about 2MB of
 RAM. A DMA transfer may legitimately target $E000-$FFFF, but only once
 you know -- and control -- which of these uses currently owns the page
@@ -118,5 +118,5 @@ sequencing verified byte by byte) but actual data movement on CSpect or
 real hardware has not yet been confirmed -- treat it as provisional until
 that verification is done.
 
-See also: 3.5 Interrupt Service Routine, 3.3 DIR and LED, the Heap
-Memory Facility, Hardware Interrupt Mode 2
+See also: 3.7 Interrupt Service Routine, 3.5 Filesystem (DIR), 3.1.2 LED,
+the Heap Memory Facility, Hardware Interrupt Mode 2

@@ -90,16 +90,15 @@ Buffer_Begin:
                 dw      USED, STORE             //      used !
                 // BLOCK 1 is the line buffer of INCLUDE/EVALUATE: its content
                 // cannot be re-read from disk, so it is never recycled.
+                // 2* drops the UPDATE bit: 2- gives zero only for block 1.
                 dw      R_OP, FETCH             //      r @
-                dw      LIT, $7FFF, AND_OP      //      7FFF and
-                dw      ONE_SUBTRACT, ZEQUAL    //      1- 0=   ( block 1? )
-                dw      DUP                     //      dup
+                dw      TWO_MUL, TWO_MINUS      //      2* 2-   ( 0 = block 1 )
+                dw      DUP, ZEQUAL             //      dup 0=
                                                 //      if
                 dw      ZBRANCH
                 dw      Buffer_Keep - $
                 dw          R_TO, DROP          //          r> drop
 Buffer_Keep:                                    //      endif
-                dw      ZEQUAL                  //      0=
                                                 // until
                 dw      ZBRANCH
                 dw      Buffer_Retry - $

@@ -310,12 +310,12 @@ COLD  $7622  -> init block buffers (EMPTY-BUFFERS, NMODE, FIRST/PREV/USE...) -> 
 WARM  $7619  -> BLK-INIT  then  ABORT
 BLK-INIT $78DE -> close any open block handle (BLK-FH), then F_OPEN the block file
 ABORT $75F6  -> init data/return stacks (S0/SP!, R0/RP!), then call AUTOEXEC (first time only)
-AUTOEXEC $800F -> 11 LOAD  (Screen 11, user-configurable)
-SPLASH $7FEB -> banner (called by the default Screen 11 / lib/autoexec.f)
+AUTOEXEC $8027 -> 11 LOAD  (Screen 11, user-configurable)
+SPLASH $8003 -> banner (called by the default Screen 11 / lib/autoexec.f)
 ```
 
 The addresses are the CFAs (the label after the 2-byte mirror pointer, i.e.
-the `Colon_Def` line address + 2) for **build 2026-09-20**. They drift with
+the `Colon_Def` line address + 2) for **build 2026-09-25**. They drift with
 every core change: this table went 12 bytes stale unnoticed for several
 builds. Treat `list/main.lst` (or the `F` records of `list/main.sld.txt`) as
 the only address authority and re-read them before setting a breakpoint.
@@ -323,7 +323,7 @@ the only address authority and re-read them before setting a breakpoint.
 Key points:
 
 1. **BLK-INIT** opens the persistent block file `!Blocks-64.bin` (16 MB; name string in
-   `BLK-FNAME` at $785F) via `F_OPEN`. If the open **fails**, vForth still returns to the
+   `BLK-FNAME` at $7868) via `F_OPEN`. If the open **fails**, vForth still returns to the
    `Ok` prompt but is left in an **inconsistent state** -- the boot must be allowed to
    continue to `ABORT` regardless.
 
