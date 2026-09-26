@@ -47,10 +47,17 @@ Claude NON avvia CSpect (il sandbox blocca la GUI). Chiedere all'utente di:
    `HERE` e `HP@` prima di partire (es. `9822 1BC3`): l'**origine** compilata
    e' `HERE + 3` (i 3 byte di `JP $0038` del vettore d'interrupt), qui `$9825`;
 3. tornare a BASIC e salvare, ad esempio:
-   `SAVE "forth18_.bin" CODE 38949,7754`  (38949 = `$9825`, 7754 = lunghezza
-   reale del core). Usare una lunghezza maggiore e' innocuo: lo strumento
-   confronta solo fino alla lunghezza del riferimento; una minore da'
-   "COPERTURA PARZIALE".
+   `SAVE "forth18_.bin" CODE 38949,7692`  (38949 = `$9825`, 7692 = lunghezza
+   reale del core al build 2026-09-26). La lunghezza NON e' fissa (il
+   7754 citato fino al 2026-09-26 era rimasto da un build piu' vecchio):
+   **le ultime istruzioni di `F18e.f` stampano entrambi i numeri** a fine
+   compilazione, in decimale -- `give PROC Forth( <origine> )` e
+   `give SAVE f$ CODE A, <lunghezza>` (`FENCE @` meno l'origine). Sono i
+   valori da usare; come controllo, la lunghezza deve valere `DP_origin`
+   di `project/vForth18_DOES/list/main.lst` meno `$6366` (build
+   2026-09-26: `$8172 - $6366` = 7692). Usare una lunghezza
+   maggiore e' innocuo: lo strumento confronta solo fino alla lunghezza del
+   riferimento; una minore da' "COPERTURA PARZIALE".
 
 **Il `SAVE` e' l'unico passaggio manuale dell'utente ed e' facilissimo da
 sbagliare** (38948 al posto di 38949 e' gia' successo, 2026-09-20): l'indirizzo
@@ -61,7 +68,7 @@ Quindi Claude, quando chiede il salvataggio:
   (esadecimale, es. `9822`), calcola LUI `HERE + 3` e lo converte in decimale
   (es. `$9825` = 38949); non lascia all'utente il calcolo;
 - consegna la riga BASIC completa da copiare, `SAVE "forth18_.bin" CODE
-  <decimale>,7754`, e ricorda di ricontrollare l'indirizzo cifra per cifra;
+  <decimale>,<lunghezza>`, e ricorda di ricontrollare l'indirizzo cifra per cifra;
 - dopo il confronto, se lo strumento stampa `ATTENZIONE: ... sfasati`, lo dice
   all'utente con parole esplicite ("l'indirizzo del SAVE aveva un errore di
   battitura di N byte") e gli riporta la riga corretta che lo strumento
@@ -99,7 +106,8 @@ spiegate, 2 errore d'uso.
   dell'heap per quella parola; i valori a 16 bit possono valere
   `riferimento + scarto`. Lo scarto NON e' costante: parte da `$1B51`
   (l'assemblatore compilato prima occupa l'heap) e fa uno scalino di
-  +258 byte a `LSHIFT`: e' il salto alla seconda pagina 8K dell'heap,
+  +258 byte (a `;` dal build 2026-09-26, prima a `LSHIFT`: dipende da quanto
+  heap occupa il core): e' il salto alla seconda pagina 8K dell'heap,
   `page-watermark = $1EFF` (`skip-hp-page`) lascia 257 byte di "grazia" e HP
   passa da `$1F00` a `$2002`. Uno scalino cosi' e' atteso; un salto diverso
   segnala definizioni ausiliarie aggiunte o tolte nel sorgente.

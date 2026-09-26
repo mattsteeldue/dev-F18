@@ -1,152 +1,21 @@
-Further addition to paragraph 4.6 "Dictionary memory structure" -- draft
-text for the vForth manual (.odt).
+Replacement for paragraph 4.6.1 of the vForth manual (.odt) -- draft text, build 2026-09-26.
 
-Placement: paste as a NEW subsection at the very END of 4.6, after the
-"You can verify yourself" SEE/DUMP transcript and after the MMU7
-cross-reference paragraph already drafted in
-products/manual-par-4.6-mmu7-crossref.txt (paste this one after that one),
-and BEFORE section "5 Error messages" begins. Do NOT touch the
-build-specific tables/transcript above it -- those are regenerated
-automatically by util/gen-dict-structure.py and must stay exactly as that
-script produces them. This subsection is static hand-written prose the
-script never touches.
+Placement: at the very END of 4.6, after the "You can verify yourself" SEE/DUMP transcript and after the MMU7 cross-reference paragraph (products/manual-par-4.6-mmu7-crossref.txt), BEFORE section "5 Error messages". It REPLACES the earlier draft of this file, "4.6.1 Known limitation: the NFA representation ambiguity" (2026-07-12, extended 2026-09-26 morning): that limitation no longer exists since build 2026-09-26. Do not touch the build-specific tables and transcript above it, which come from util/gen-dict-structure.py.
 
-Purpose: full intellectual-honesty record of a design discussion held
-2026-07-12 about a known, currently-latent representation ambiguity in
-`nfa`, including a concrete instance of it (the WORDS bug), a redesign
-worked out but not yet applied, a sharper instance found while auditing
-the dot-command variant, and a rejected fix -- so the manual does not
-overstate the robustness of the current heap-pointer scheme. Companion
-material: lib/CLAUDE.md ("MMU7 is a general RAM-paging gateway") and the
-auto-memory entries words-select-mmu7-bug / words-nfa-heap-pointer-
-robustness (project-internal, not part of the manual).
-Drafted 2026-07-12. Extended 2026-09-26 with the capacity limit the
-threshold imposes (last three paragraphs, measured on build 2026-09-25 in
-the headless emulator).
+Glossary: ?HEAP_PTR, ?>HEAP and ?IN_MMU7 have been removed from the core in build 2026-09-26; if the manual lists them anywhere else (word index, chapter 5 dictionary), those entries go too.
+
+Background: planners/PLAN-NFA-AMBIGUITY.md.
 
 ======================================================================
 
-4.6.1 Known limitation: the NFA representation ambiguity
+4.6.1 Heap-pointers and resolved addresses
 
-Every word documented above with a `( nfa -- ... )` or `( cfa -- ... )`
-stack effect is silently ambiguous about what it actually holds: a raw
-heap-pointer (`ha`, still to be resolved with FAR) or an already-resolved
-physical address ($E000-$FFFF). Nothing in the stack comment, or in the
-value itself, states which; the two representations share the same 16-bit
-cell type. `?HEAP_PTR` / `?>HEAP` patch this with a numeric heuristic --
-a value below a fixed threshold is assumed to be a heap-pointer and is
-resolved with FAR on the spot -- rather than with an explicit tag.
+Since names live in the heap, two kinds of 16-bit value describe a dictionary entry. A heap-pointer (ha) uses bits 15-13 to select one of the eight 8K heap pages and bits 12-0 as the offset from $E000; a resolved address lies in the MMU7 window $E000-$FFFF and is meaningful only while the right page is fitted there. FAR turns the first into the second, fitting the page as a side effect. Both share the same cell type, so the system tells them apart by position, never by value.
 
-The threshold used throughout the core is $6300. In the launcher build
-(vForth18_DOES / forth18e.bin), this works comfortably: compiled code
-begins at ORIGIN $6366, and the heap-pointer values actually produced by
-the shipped core stay far below the threshold -- the last non-zero byte
-of ram8.bin sits at offset $0D1F (heap address $ED1F), i.e. every core
-`ha` is under $0E00. Code addresses and heap-pointers occupy disjoint,
-widely separated ranges, so the heuristic never has to work hard.
+The rule is simple. Every cell stored inside the dictionary structure holds a heap-pointer: the link field (LFA), the vocabulary cell reached through CONTEXT @ and CURRENT @, the mirror cell just before each CFA, HP itself and the cells saved by MARKER. Every nfa passed on the stack is a resolved address: what LATEST, NFA and <NAME return, and what ID. and PFA expect. Following a link therefore always takes an explicit FAR: ' DUP >BODY LFA @ FAR ID. prints SWAP, the word defined just before DUP.
 
-This gap between "the heuristic happens to hold" and "the representation
-is actually well-defined" produced a real bug once already. WORDS reads
-the dictionary chain by resolving one entry's heap-pointer with FAR, then
-reusing that resolved physical address both to print the name (ID.,
-which performs output) and, after printing, to fetch the next entry's
-link. If output goes to a file stream, `rst $10` routes through +3DOS,
-which restores OS default banking on exit and unmaps the heap page from
-MMU7 -- so any code that dereferences a physical address on either side
-of an EMIT is trusting that nothing in between changed the page. This
-was fixed (2026-06-12) at the emission primitive: `(EMITC)` now saves the
-current MMU7 page before `rst $10` and restores it right after, so any
-word walking the heap while it prints is protected -- but the fix lives
-in a shared low-level primitive, not in WORDS itself, which still holds
-a physical address across its own printing purely on the strength of
-that shared guarantee. A redesign of WORDS that never lets a resolved
-address survive across anything that can EMIT -- fetching the next link
-immediately after FAR and before any output, and deferring all output
-(the optional CR and the name itself) until no physical address is still
-needed -- was worked out on 2026-07-12 but is not yet applied to any
-source file.
+A resolved nfa is only as good as the page currently in MMU7: anything that remaps it in the meantime (another FAR, HEAP, an explicit MMU7!, a call into NextZXOS) leaves it pointing somewhere else. Keep it on the stack for as short a time as possible. Printing is safe: since build 2026-06-12 (EMITC) preserves the MMU7 page across its ROM call.
 
-Auditing the dot-command variant (vForth18_DOT) during the same
-discussion sharpened the concern considerably. Its ORIGIN is $2000, not
-$6366: compiled code occupies $2000 through roughly $3FA2 (the
-Here_Dictionary marker), entirely below the $6300 threshold, which was
-carried over unchanged when the dot-command build was forked from the
-launcher build. In that variant the threshold has no discriminating
-power at all: any genuine physical code address, tested against it,
-would always be misclassified as a heap-pointer. Measured on the shipped
-binaries, the actual heap-pointer values stay identical in size to the
-launcher build (vforth.2's last non-zero byte is at offset $0D1B, heap
-address $ED1B) -- so there is no live collision with today's core, and
-in fact no currently-live bug: the two call sites that use ?HEAP_PTR
-(ID., by way of the defensive ?>HEAP guard, and <NAME, which tests the
-"mirror" cell's content) both only ever test values that are already
-known by construction to be heap-pointer-shaped or already-resolved
-$E000+ addresses -- never a raw dot-command code address. Safety today
-is therefore a matter of convention at every call site, not a property
-of the representation, and it is markedly thinner in the dot-command
-build than in the launcher build. Notably, <NAME's own source comment
-already recorded the intended range as "a number between 0000 and 3FFF"
--- narrower than the $6300 actually compiled -- and even that narrower,
-intended bound would not fully separate the two spaces in the
-dot-command build, since its whole code footprint already sits inside
-0000-3FFF by construction.
+Up to build 2026-09-25 the core did not follow this rule strictly: ID., PFA and <NAME accepted either form and guessed which one they had received with a numeric threshold. ?HEAP_PTR took any non-zero value below $6300 for a heap-pointer, ?>HEAP applied FAR accordingly, and the machine code of (FIND) carried its own copy of the test, below $6000. The guess dates back to the move from version 1.6, which kept names in the dictionary, to version 1.7, the first to keep them in the heap: during that transition the same core had to read both layouts, and the threshold simply meant "just below the dictionary origin". Once every header lived in the heap the guess no longer had anything to tell apart, but it still capped the heap: a definition whose name was laid down with HP at $6000 or above made the whole dictionary unsearchable. Since build 2026-09-26 the threshold is gone, together with ?HEAP_PTR, ?>HEAP and ?IN_MMU7, and names can use the whole heap.
 
-A tagged-bit fix was considered and rejected. The idea was to reserve
-bit 0 of `ha` as a discriminating flag, on the assumption that
-heap-pointers are always even. This does not hold: dictionary entries in
-heap are stored back-to-back with no padding (length-and-flags byte,
-name bytes, LFA, CFA), so a name of even length pushes the next entry's
-NFA to an odd heap offset routinely -- heap-pointers are frequently odd
-in practice. A genuine physical address is equally free to be odd or
-even. The bit would not cleanly separate the two value-spaces even if
-heap-pointers were forced into alignment, which would itself require
-padding the heap layout -- a real structural change, not a free bit.
-
-No low-cost, complete fix is known. The two directions considered were:
-a genuine tagged/typed representation (correct, but changes the
-heap-pointer encoding itself and everything that consumes it, including
-any previously saved data that embeds the old format); or enforcing, as
-a strict convention, that anything named `nfa`/`cfa`/`lfa` in a stack
-comment is always a heap-pointer, resolved locally with FAR immediately
-before each dereference and never carried across an operation that can
-EMIT -- the direction the reworked WORDS design takes. The second is
-cheaper and can be applied incrementally, one word at a time, but it is
-still a matter of programmer discipline at each call site (-FIND,
-(FIND), <NAME, CODE/MCOD, FORGET, and any future word touching `nfa`),
-not something the system enforces. This paragraph records the tradeoff
-for transparency; it does not promise which direction, if any, will be
-taken.
-
-The same threshold also sets a practical limit on the heap, in both
-variants. Heap-pointers span $0000-$FFFF (bits 15-13 select one of the
-eight 8K pages), so any heap-pointer at or above $6300 is taken for a
-physical address. Data allocated at run time is not affected: HEAP, H"
-and the rest return a heap-pointer that the program resolves with FAR
-explicitly, and FAR works across the whole 64K. Dictionary names are
-affected: a new definition lays its name down at the current value of
-HP, and once HP has passed $62FF that name can no longer be resolved --
-the definition being compiled is lost, and from then on the dictionary
-search no longer finds any word. Names and data share the same HP, so
-the limit is not on how much heap can be used, but on the order in which
-it is used: no new definition (no colon-definition, CREATE, VARIABLE,
-NEEDS or INCLUDE) after HP has gone past $62FF.
-
-In practice the dictionary alone cannot get there: the code space between
-HERE and SP@ runs out long before. On build 2026-09-25 the core itself
-uses 7778 bytes of dictionary and 3358 bytes of heap (0.43 heap bytes per
-dictionary byte), and a typical set of libraries (SEE, DUMP, HEAP, VALUE,
-CASE, LOCALS) adds 2179 bytes of dictionary and 791 bytes of heap (0.36).
-Filling all the ~20200 free bytes of dictionary at that rate brings HP to
-about $2E00, some 13 Kbytes below the threshold; reaching $6300 would take
-more than one heap byte for every dictionary byte, almost three times the
-measured rate. Only extreme programs come close: many long-named words
-with tiny bodies (a CONSTANT with a 20-character name costs about 25
-bytes of heap and 7 of dictionary), or a great deal of text kept in heap
-by H", S" or ABORT".
-
-The realistic way to cross the threshold is therefore run-time data: a
-program that fills the heap with tables, buffers or file contents, and
-only afterwards goes on defining words or loading more source. The rule
-is the usual one for anyone working in Forth -- know what the system is
-doing underneath and keep your eyes open: load and compile all the code
-first, then allocate data in heap. Check HP@ U. when in doubt.
+Code written for earlier builds that passed a link straight to ID. or PFA (for example LFA @ ID.) must now resolve it first with FAR. The library has been adjusted accordingly (SEE, HIDE-WORD, .VOCAB), and :NONAME now compiles the mirror cell, so <NAME works on an anonymous xt as well.

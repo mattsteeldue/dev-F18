@@ -18,7 +18,7 @@ this repository.
 computer. It includes a complete Forth compiler (self-bootstrapping), Z80/Z80N assembly
 support, and multiple library modules for graphics, sound, file I/O, and hardware control.
 
-**Current version**: 1.8 (build 2026-09-25)  
+**Current version**: 1.8 (build 2026-09-26)  
 **License**: MIT  
 **Author**: Matteo Vitturi
 
@@ -127,7 +127,9 @@ The project has three codebases in order of priority:
 - **F18e.f against the core**: `/check-f18e` (see "The Three Codebases"). Run it after any
   change to `src/F18e.f` that is not comment-only, after any core change, and before a
   release. Claude does not launch CSpect: the author compiles with
-  `INCLUDE SRC/F18E.F` and saves the result with `SAVE "forth18_.bin" CODE <HERE+3>,7754`,
+  `INCLUDE SRC/F18E.F` and saves the result with `SAVE "forth18_.bin" CODE <HERE+3>,<len>`
+  (both numbers are printed, in decimal, by the last lines of `F18e.f`: `give PROC
+  Forth( <HERE+3> )` and `give SAVE f$ CODE A, <len>`; 7692 at build 2026-09-26),
   then Claude runs `util/cmp-f18e.py` on that file. Editing rules for `src/F18e.f`: 7-bit
   ASCII, no TAB, lines of 80 bytes or fewer, and for a tidy-up pass (typos, obsolete
   comments, spacing) the code tokens must stay identical -- a comment-only diff cannot
@@ -317,16 +319,16 @@ cold start. The flow, with the `vForth18_DOES` code addresses (from `list/main.l
 
 ```
 entry $6366  -> ColdRoutine self-init -> COLD
-COLD  $7622  -> init block buffers (EMPTY-BUFFERS, NMODE, FIRST/PREV/USE...) -> falls into WARM
-WARM  $7619  -> BLK-INIT  then  ABORT
-BLK-INIT $78DE -> close any open block handle (BLK-FH), then F_OPEN the block file
-ABORT $75F6  -> init data/return stacks (S0/SP!, R0/RP!), then call AUTOEXEC (first time only)
-AUTOEXEC $8027 -> 11 LOAD  (Screen 11, user-configurable)
-SPLASH $8003 -> banner (called by the default Screen 11 / lib/autoexec.f)
+COLD  $75CA  -> init block buffers (EMPTY-BUFFERS, NMODE, FIRST/PREV/USE...) -> falls into WARM
+WARM  $75C1  -> BLK-INIT  then  ABORT
+BLK-INIT $7886 -> close any open block handle (BLK-FH), then F_OPEN the block file
+ABORT $759E  -> init data/return stacks (S0/SP!, R0/RP!), then call AUTOEXEC (first time only)
+AUTOEXEC $7FD1 -> 11 LOAD  (Screen 11, user-configurable)
+SPLASH $7FAD -> banner (called by the default Screen 11 / lib/autoexec.f)
 ```
 
 The addresses are the CFAs (the label after the 2-byte mirror pointer, i.e.
-the `Colon_Def` line address + 2) for **build 2026-09-25**. They drift with
+the `Colon_Def` line address + 2) for **build 2026-09-26**. They drift with
 every core change: this table went 12 bytes stale unnoticed for several
 builds. Treat `list/main.lst` (or the `F` records of `list/main.sld.txt`) as
 the only address authority and re-read them before setting a breakpoint.
@@ -334,7 +336,7 @@ the only address authority and re-read them before setting a breakpoint.
 Key points:
 
 1. **BLK-INIT** opens the persistent block file `!Blocks-64.bin` (16 MB; name string in
-   `BLK-FNAME` at $7868) via `F_OPEN`. If the open **fails**, vForth still returns to the
+   `BLK-FNAME` at $7810) via `F_OPEN`. If the open **fails**, vForth still returns to the
    `Ok` prompt but is left in an **inconsistent state** -- the boot must be allowed to
    continue to `ABORT` regardless.
 

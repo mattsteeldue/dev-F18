@@ -1,0 +1,96 @@
+Manual dynamic parts regenerated from build 2026-09-26.
+Paste by hand into the .odt; every block is labelled with the
+manual paragraph it belongs to.
+========================================================================
+
+------------------------------------------------------------------------
+[par. 4.6 -- Dictionary memory structure]
+------------------------------------------------------------------------
+
+For example the two contiguous definitions SWAP and DUP appears in
+memory as follow (as per build 2026-09-26, since it's perfectly possible
+that a different build shows different addresses).
+
+Heap memory:
+NFA    0307      | 84 | 53 57 41 D0 |             | len |  'S' 'W' 'A' 'P' |
+LFA    030C      | FE 02 |                    | 02FE |  heap-pointer to previous NFA definition
+CFA    030E      | E4 68 |                    | 68E4 |  xt memory-address of this definition
+
+Main memory:
+Mirror 68E2      | 0E 03 |          | 030E | backward-heap-pointer to SWAP's CFA
+ xt    68E4      | E1 | E3 | E5 | DD E9 |
+                 | pop hl | ex (sp),hl | push hl | jp (ix) |
+
+Heap memory:
+NFA    0310      | 83 | 44 55 D0 |             | len |  'D' 'U' 'P' |
+LFA    0314      | 07 03 |                    | 0307 |  heap-pointer to previous NFA definition SWAP
+CFA    0316      | EB 68 |                    | 68EB |  xt memory-address of this definition
+
+Main memory:
+Mirror 68E9      | 16 03 |          | 0316 | backward-heap-pointer to DUP's CFA
+ xt    68EB      | E1 | E5 | E5 | DD E9 |
+                 | pop hl | push hl | push hl | jp (ix) |
+
+You can verify yourself all of that by typing some commands.
+
+        SEE SWAP
+        Nfa: E307 84 
+        Lfa: E30C 02FE TUCK 
+        Cfa: 68E4 E5E3 
+        68E4  E1 E3 E5 DD  E9 16 03 E1  ace]i  a
+        68EC  E5 E5 DD E9  1E 03 F1 E1  ee]i  qa
+        $E307 9 DUMP
+        E307  84 53 57 41  D0 FE 02 E4   SWAP~ d
+        E30F  68 83 44 55  D0 07 03 EB  h DUP  k
+        $68E2 2 DUMP
+        68E2  0E 03 E1 E3  E5 DD E9 16    ace]i
+
+        SEE DUP
+        Nfa: E310 83 
+        Lfa: E314 0307 SWAP 
+        Cfa: 68EB E5E5 
+        68EB  E1 E5 E5 DD  E9 1E 03 F1  aee]i  q
+        68F3  E1 E3 F5 E5  DD E9 27 03  acue]i'
+        $E310 8 DUMP
+        E310  83 44 55 D0  07 03 EB 68   DUP  kh
+        $68E9 2 DUMP
+        68E9  16 03 E1 E5  E5 DD E9 1E    aee]i
+
+------------------------------------------------------------------------
+[par. 3.8 -- Debugger Utility]
+------------------------------------------------------------------------
+
+[par. 3.8 -- transcript: SEE TYPE]
+
+        SEE TYPE
+        Nfa: E7D2 84 
+        Lfa: E7D7 7C9 CURS 
+        Cfa: 6F6B 69F2 
+        BOUNDS (?DO) 12 I C@ EMIT (LOOP) -8 EXIT
+
+[par. 3.8 -- transcript: SEE NIP]
+
+        SEE NIP
+        Nfa: E2F6 83 
+        Lfa: E2FA 2ED DROP 
+        Cfa: 68D5 DDE3 
+        68D5  E1 E3 DD E9  05 03 E1 F1  ac]i  aq
+        68DD  E5 F5 E5 DD  E9 0E 03 E1  eue]i  a
+
+[par. 3.8 -- transcript: SEE IF]
+
+        SEE IF
+        Nfa: EC6B C2 
+        Lfa: EC6E C62 BACK 
+        Cfa: 800E 69F2 
+        COMPILE 0BRANCH HERE 0 , 2 EXIT
+
+[par. 3.8 -- data for the prose note after SEE NIP]
+
+  bytes following NIP's jp (ix): 05 03 E1 F1
+  $0305 FAR 8 DUMP shows: DB 68 84 53 57 41 D0 FE (TUCK's xt $68DB) + SWAP's NFA
+
+The bytes that follow  - 05 03 E1 F1 - are the beginning of the subsequent
+definition compiled in dictionary (TUCK in this case): 05 03 is TUCK's
+Mirror, i.e. the heap-pointer $0305 to its CFA. Try $0305 FAR 8 DUMP to
+inspect the HEAP: you'll see TUCK's xt $68DB followed by SWAP's NFA.
