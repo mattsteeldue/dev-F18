@@ -1,4 +1,4 @@
     PFA  nfa -- pfa
 
-Convert name field address to PFA. nfa is a resolved
+Convert name field address to PFA. nfa is a resolved (physical) 
 address, as given by LATEST, NFA, <NAME or FAR.

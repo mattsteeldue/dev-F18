@@ -767,22 +767,16 @@ CODE upper ( c1 -- c2 )
 \ On fail, a false flag  (no more: leaves addr unchanged)
 
 \ ( DP and HP model )
-\ Current dictionary
-\   nfa    --> byte + name, same current format
-\   lfa    --> link to previous normal entry
-\   lfa+2  --> this is xt
-\   cfa+3  --> pfa
 
-\ Future Dictionary + Heap
-\   xt-2   --> heap pointer to name                     must use FAR
-\   xt     --> that is actual machine code or CALL aa
-\   xt+3   --> in which case the definition follows     >BODY vs CFA
+\ Dictionary memory structure
+\   xt-2   --> heap-pointer to lfa+2 (use FAR), see <NAME
+\   xt     --> actual machine code, or CALL to definition handler 
+\ ( xt+3 ) --> in which case the definition follows (see >BODY vs CFA)
 \ 
-\ Heap
-\   nfa    --> byte + name, same current format
-\   lfa    --> link to previous heap entry
-\   lfa+2  --> contains xt
-\ 
+\ Heap memory structure
+\   nfa    --> length-byte, name
+\   lfa    --> heap-pointer link to previous heap entry 
+\   lfa+2  --> contains xt in main memory 
 
 CODE (find) ( addr voc -- ff | cfa b tf  )
         \ first save current status of MMU7
@@ -3411,14 +3405,14 @@ HEX 1EFF constant page-watermark
 
 \ new
 .( >BODY )
-: >body ( cfa -- pfa )
+: >body ( xt -- pfa )
     3 +
     ;
 
 
 \ new
 .( <NAME )
-: <name ( cfa -- nfa )
+: <name ( xt -- nfa )
     cell-           \ mirror cell, it holds a heap-pointer
     @ far           \ xt cell in heap
     cell-           \ lfa
@@ -4199,7 +4193,7 @@ CHAR . C,  CHAR . C,  CHAR . C,  CHAR . C,
 
 
 .( -FIND )
-: -find ( "ccc" -- cfa b 1 | 0 )
+: -find ( "ccc" -- xt b 1 | 0 )
     bl word         \ a
     2find
 ;
@@ -4256,11 +4250,22 @@ CHAR . C,  CHAR . C,  CHAR . C,  CHAR . C,
     ;
 
 
+\ Dictionary memory structure
+\   xt-2   --> heap-pointer to lfa+2 (use FAR), see <NAME
+\   xt     --> actual machine code, or CALL to definition handler 
+\ ( xt+3 ) --> in which case the definition follows (see >BODY vs CFA)
+\ 
+\ Heap memory structure
+\   nfa    --> length-byte, name
+\   lfa    --> heap-pointer link to previous heap entry 
+\   lfa+2  --> contains xt in main memory 
+
 .( CODE )
 : code  ( -- cccc )
-    -find       \ cfa b tf | ff
-    If          \ cfa b 
-        drop    \ cfa
+    -find       \ xt b tf | ff
+    \ warning if the word already exists
+    If          \ xt b 
+        drop    \ xt
         <name   \ nfa and correct MMU7 
         id.
         [ 4 ] Literal 
@@ -4268,25 +4273,36 @@ CHAR . C,  CHAR . C,  CHAR . C,  CHAR . C,
         MESSAGE \ ___ forward ___
         space
     Then
+    \ prepare at HERE the Heap structure
     here                                    \ a
+    \ save the total length of the structure to return stack
     dup c@ width @ min 1+                   \ a  n
         dup allot                           \ a  n
         cell+ cell+                         \ a  4+n
         >r                                  \ a       R: 4+n
+    \ set bit 7 (name start) and bit 5 (smudge bit) of count-byte 
     dup     [ decimal 160 ] Literal         \ a  a  160
     toggle                                  \ a
+    \ set last-character msb
     here 1- [ decimal 128 ] Literal         \ a  a1 128
     toggle                                  \ a
-    current @ @ ,                           \ a       compile lfa as heap-ptr
-    dup cell+ ,                             \ a       compile xt  as a+2 !
-\   hp@ ." hp ->  " u. CR
-    hp@ current @ !                         \       
-    hp@ far r@ cmove                        \ a       R: 4+n   copy to heap
+    \ prepare LFA using latest nfa as a heap-pointer 
+    current @ @ ,                           \ a       
+    \ prepare xt value
+    dup cell+ ,                             \ a      
+    \  hp@ ." hp ->  " u. CR  \ debugging
+    \ now we can save new latest
+    hp@ current @ !                         \ a        
+    \ move to Heap the code definition structure just created at HERE
+    hp@ far r@ cmove                        \         R: 4+n   
+    \ restore back Dictionary Pointer at starting HERE
     r@ negate allot                         \ 
+    \ advance Heap Pointer to next free location
     r> hp +!
-    hp@ cell- ,                             \         compile heap-ptr
-    ( this is where the code will be compiled )
-    0 skip-hp-page
+    \ compile heap-ptr mirror, so HERE is the above value xt
+    hp@ cell- ,                             \         
+    \ HERE is where the code will be compiled 
+    0 skip-hp-page           \ check if we need to advance HP to next page
 ;
 
 
