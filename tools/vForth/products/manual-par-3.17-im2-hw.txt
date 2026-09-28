@@ -1,11 +1,11 @@
-Paragraph 3.22 "Hardware Interrupt Mode 2 (IM2-HW)" -- draft text for the
-vForth manual (.odt). To be pasted by hand after 3.21 Direct Memory
+Paragraph 3.17 "Hardware Interrupt Mode 2 (IM2-HW)" -- draft text for the
+vForth manual (.odt). To be pasted by hand after 3.16 Direct Memory
 Access (or wherever the two new libraries end up in the final numbering
 -- adjust the heading number to fit). Placing it right after (or as a
-subsection of) 3.5 "Interrupt Service Routine" is also reasonable, since
+subsection of) 3.7 "Interrupt Service Routine" is also reasonable, since
 it is the modern counterpart of that legacy library.
-Word-entry format follows 3.12 Beeper / 3.13 AY, and the register-map
-table follows the one already used in 3.13 for the AY chip.
+Word-entry format follows 3.13 Beeper / 3.14 AY, and the register-map
+table follows the one already used in 3.14 for the AY chip.
 
 STATUS CAVEAT -- IMPORTANT, read before pasting: as of 2026-07-11 this is
 a REWRITE IN PROGRESS, not yet committed, not yet load-tested in the
@@ -16,20 +16,20 @@ prompts/IM2-HW-PLAN.md, transcribed into the working tree but still
 unverified end-to-end (see prompts/REVIEW-2026-07-11.md and the
 "Verification plan" section of the plan file). Recommend NOT pasting this
 into the manual yet, or pasting it clearly marked "experimental /
-unverified" (the way 3.2's LAYER24 note is marked in CLAUDE.md), and
+unverified" (the way the LAYER24 note is marked in CLAUDE.md), and
 revisiting once the library has been committed and confirmed.
 Drafted 2026-07-11.
 
 ======================================================================
 
-3.22 Hardware Interrupt Mode 2 (IM2-HW)
+3.17 Hardware Interrupt Mode 2 (IM2-HW)
 
 [EXPERIMENTAL -- unverified as of 2026-07-11, see caveat above. Do not
 publish this section until the library has been load-tested and
 confirmed on CSpect / real hardware.]
 
 The following definitions are available after you type NEEDS IM2-HW,
-which also pulls in NEEDS INTERRUPTS (3.5): the library reuses its
+which also pulls in NEEDS INTERRUPTS (3.7): the library reuses its
 ISR-DI, ISR-EI, ISR-IM2, SETIREG and ISR-OFF low-level words, and its
 small dedicated data and return stacks for interrupt-time execution. To
 forget this library from the dictionary you can type NO-IM2-HW (a MARKER
@@ -37,12 +37,12 @@ placed at its head).
 
 This library targets the Z80N's Hardware Interrupt Mode 2, available on
 ZX Spectrum Next core 3.0 and later, which is a more structured
-alternative to the legacy software IM2 mechanism described in 3.5.
+alternative to the legacy software IM2 mechanism described in 3.7.
 Instead of a single shared vector table entry point for every interrupt
 source, hardware IM2 gives each source its own slot in a 32-byte,
 32-aligned vector table, dispatched through the Z80 daisy-chain priority
 order -- so a handler always knows which source triggered it without
-polling. Classic ISR-ON mode (3.5) and IM2-HW-ON mode are mutually
+polling. Classic ISR-ON mode (3.7) and IM2-HW-ON mode are mutually
 exclusive: use one or the other, never both at the same time.
 
 The sixteen slots, in hardware daisy-chain priority order (0 = highest
@@ -76,16 +76,16 @@ there is normally no need to touch it directly.
 
 Handler contract: a handler installed with IM2-HW-HANDLER! runs with
 interrupts disabled, on the same small ISR-SP0/ISR-RP0 stacks (about 40
-cells) that 3.5's ISR-XT handlers use. Keep handlers short: no console or
+cells) that 3.7's ISR-XT handlers use. Keep handlers short: no console or
 file I/O, and no MMU7 remapping without saving and restoring the current
-page (see the note on tutorial 049 in 3.5). MMU7 is the single gateway
+page (see the note on tutorial 049 in 3.7). MMU7 is the single gateway
 through which any code reaches the expansion RAM pool, and it is not
 touched automatically between one word and the next: it stays on
 whichever 8K page a prior MMU7! (or an equivalent NEXTREG $57 write)
 last selected -- the heap dictionary only while the compiler is actively
 searching it, and at other times whatever the foreground code currently
 needs there: a Heap string mid-decode via FAR (as the TUTORIAL library
-uses it), a LAYER2 framebuffer page, or a page LED (3.3) is currently
+uses it), a LAYER2 framebuffer page, or a page LED (3.1.2) is currently
 editing. This is exactly why a handler that pages in a different page
 without restoring it can corrupt whatever the foreground code still
 needs from the one it interrupted (see the Heap Memory Facility and the
@@ -142,8 +142,8 @@ further sources afterwards with slot IM2-HW-ENABLE.
 IM2-HW-OFF                            ---
 Leave hardware IM2 mode. Disables interrupts; clears $C0 (hardware IM2
 off); restores $C4 to its power-on default ($81: expansion bus + ULA);
-clears $C5 and $C6; then calls ISR-OFF (3.5) to restore interrupt mode 1
+clears $C5 and $C6; then calls ISR-OFF (3.7) to restore interrupt mode 1
 and the default I register value.
 
 
-See also: 3.5 Interrupt Service Routine, Direct Memory Access (DMA)
+See also: 3.7 Interrupt Service Routine, Direct Memory Access (DMA)

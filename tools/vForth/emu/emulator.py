@@ -10,6 +10,7 @@ import struct
 import time
 import z80_instructions as z80
 from z80_instructions import INSTRUCTION_MAP, EXTENDED_MAP, IX_INSTRUCTION_MAP
+from zxchars import zx_char
 
 
 class Z80CPU:
@@ -216,7 +217,7 @@ class VForthEmulator:
         """
         ORIGIN = 0x6366
         self.cpu.PC = ORIGIN
-        self.cpu.SP = 0xD2F8   # transient; ColdRoutine reloads from S0_origin
+        self.cpu.SP = 0xD0F4   # transient; ColdRoutine reloads from S0_origin
         self.cpu.F = 0         # carry clear -> cold start path
         # IY must point to the ZX system-variable base $5C3A (the OS keeps it
         # there for the 50Hz interrupt handler). KEY reads FLAGS via (iy+1).
@@ -402,8 +403,8 @@ class VForthEmulator:
     def handle_emit(self):
         """EMIT / EMITC: write character in A register to stdout"""
         # EMITC writes full byte (0-255), EMIT masks to 7-bit ASCII
-        # We'll write both the same way for now
-        char = chr(self.cpu.A & 0x7F) if self.cpu.A < 128 else chr(self.cpu.A)
+        # We'll write both the same way for now; codes >= $80 are graphics
+        char = zx_char(self.cpu.A & 0xFF)
         sys.stdout.write(char)
         sys.stdout.flush()
         self.log_transcript("OUTPUT", char)

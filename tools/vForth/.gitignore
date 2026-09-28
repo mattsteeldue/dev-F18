@@ -8,3 +8,7 @@ doc/manual/pilot/media*/*/*.*
 # Post per community (restano solo in locale)
 products/DISCORD*
 products/FACEBOOK*
+
+# Artefatti temporanei di /check-f18e (util/cmp-f18e.py)
+/forth18_.bin
+/forth18-cmp.log

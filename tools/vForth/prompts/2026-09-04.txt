@@ -1,0 +1,119 @@
+04/09/2026 08:30
+
+Agisci come un Principal Software Architect incaricato di eseguire una reverse engineering completa di questo repository.
+
+Obiettivo:
+produrre un documento ONBOARDING.md che permetta ad un nuovo sviluppatore senior di comprendere e contribuire al sistema nel minor tempo possibile.
+
+Non limitarti a descrivere la struttura delle directory.
+Deduci il funzionamento reale del sistema dal codice sorgente, dalle configurazioni, dalle pipeline CI/CD, dai test, dai manifest, dai container e dalla documentazione esistente.
+
+Analizza l'intero repository e genera un ONBOARDING.md strutturato nelle sezioni seguenti.
+
+# 1. Executive Summary
+- Scopo del software
+- Problemi che risolve
+- Utenti principali
+- Flussi funzionali principali
+
+# 2. System Overview
+- Architettura ad alto livello
+- Componenti principali
+- Diagramma mermaid dell'architettura
+- Dipendenze tra componenti
+
+# 3. Repository Map
+- Descrizione di ogni cartella significativa
+- Cosa contiene
+- Perché esiste
+- Livello di importanza
+
+# 4. Runtime Architecture
+- Processo di startup
+- Entry point
+- Flussi principali
+- Comunicazioni fra moduli
+
+# 5. Business Domains
+Identifica automaticamente:
+- bounded contexts
+- domini funzionali
+- aggregate principali
+- concetti di business
+
+# 6. Data Layer
+- database coinvolti
+- schema deducibile
+- ORM utilizzati
+- migration strategy
+- entità principali
+
+# 7. External Dependencies
+- servizi esterni
+- API consumate
+- code/event bus
+- storage
+- autenticazione
+
+# 8. Configuration Guide
+- file di configurazione
+- variabili ambiente
+- segreti richiesti
+- ordine di priorità delle configurazioni
+
+# 9. Development Setup
+- prerequisiti
+- installazione
+- build
+- test
+- debug locale
+- avvio ambiente
+
+# 10. Deployment
+- pipeline CI/CD
+- ambienti
+- release process
+- rollback
+
+# 11. Testing Strategy
+- tipologie di test
+- copertura osservata
+- aree poco testate
+
+# 12. Observability
+- logging
+- monitoring
+- tracing
+- metriche
+
+# 13. Technical Debt
+Identifica:
+- possibili code smell
+- dipendenze cicliche
+- moduli ad alto accoppiamento
+- codice morto
+- rischi architetturali
+
+# 14. Knowledge Transfer
+Per ogni sezione genera:
+- Cosa un nuovo sviluppatore deve sapere
+- Errori comuni
+- Checklist operativa
+
+# 15. First Week Survival Guide
+Genera una roadmap:
+Day 1
+Day 2
+Day 3
+Week 1
+
+# 16. FAQ
+Crea automaticamente una FAQ con almeno 20 domande che un nuovo membro del team farebbe.
+
+Regole:
+- Non inventare informazioni.
+- Se qualcosa non è deducibile, dichiararlo esplicitamente.
+- Evidenziare il livello di confidenza (High/Medium/Low) delle conclusioni.
+- Citare sempre file, classi, package, cartelle e configurazioni utilizzate per inferire ogni conclusione.
+- Preferire informazioni ricavate dal codice rispetto alla documentazione.
+- Evidenziare eventuali incoerenze tra documentazione e implementazione.

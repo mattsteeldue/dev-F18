@@ -3,13 +3,13 @@
 gen-dict-structure.py -- regenerate the dynamic text of the manual
 (vForth1.8-core-en .odt) sections that contain build-specific addresses:
 
-  par. 3.20 "Dictionary memory structure": for the two contiguous
+  par. 4.6 "Dictionary memory structure": for the two contiguous
   definitions SWAP and DUP,
     1. the "Heap memory / Main memory" layout tables (NFA/LFA/CFA,
        mirror, xt)
     2. the "You can verify yourself" transcript (SEE + DUMP output)
 
-  par. 3.6.1 "Debugger Utility": the three SEE example transcripts
+  par. 3.8 "Debugger Utility": the three SEE example transcripts
   (TYPE: colon-definition, NIP: CODE word, IF: IMMEDIATE), plus the
   data for the prose note about the bytes following NIP's jp (ix).
 
@@ -20,22 +20,33 @@ be pasted by hand into the .odt (which must NEVER be edited
 automatically). Every block of output is labelled with the manual
 paragraph it belongs to.
 
+At the end each block is compared with the text already in the manual
+(the newest doc/vForth1.8-core-en-*.odt, or --odt PATH), read-only from
+its content.xml: INVARIATO means nothing to paste, DA AGGIORNARE lists
+the lines not found in the manual. The comparison works on whitespace-
+and "|"-separated tokens, so line breaks, table cells and spacing of the
+.odt do not matter; when in doubt it reports DA AGGIORNARE, never a
+false INVARIATO.
+
 Usage (from tools/vForth, takes ~2 minutes for the boot):
 
-    python3 util/gen-dict-structure.py
+    python3 util/gen-dict-structure.py [--odt PATH | --no-compare]
 """
 import os
 import re
 import sys
 import contextlib
+import glob
+import html
 import io
+import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "emu"))
 os.chdir(ROOT)
 
-WORD_A, WORD_B = "SWAP", "DUP"          # par. 3.20
-DEBUGGER_WORDS = ["TYPE", "NIP", "IF"]  # par. 3.6.1
+WORD_A, WORD_B = "SWAP", "DUP"          # par. 4.6
+DEBUGGER_WORDS = ["TYPE", "NIP", "IF"]  # par. 3.8
 
 # minimal Z80 disassembler, enough for the tiny xt bodies shown in the doc
 ONE_BYTE = {
@@ -155,7 +166,76 @@ def layout_block(d, name, drv, prev_label):
     return "\n".join(lines), nlen
 
 
+# --- comparison with the text already in the manual (read-only) --------
+
+# typographic characters LibreOffice/Word may have put in the .odt
+TYPO = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201c": '"',
+                      "\u201d": '"', "\u2013": "-", "\u2014": "-",
+                      "\u00a0": " ", "\u00ad": None, "\u200b": None})
+
+
+def tokens(text):
+    return [t for t in re.split(r"[\s|]+", text.translate(TYPO)) if t]
+
+
+def odt_tokens(path):
+    """Plain-text tokens of the .odt body. Spaces, tabs, line breaks and
+    paragraph/cell ends become separators; every other tag (spans,
+    bookmarks) is dropped without one, so words split across styles stay
+    whole."""
+    x = zipfile.ZipFile(path).read("content.xml").decode("utf-8")
+    x = re.sub(r"<text:s(?: [^>]*)?/>|<text:tab/>|<text:line-break/>"
+               r"|</text:p>|</text:h>|</table:table-cell>", " ", x)
+    return tokens(html.unescape(re.sub(r"<[^>]+>", "", x)))
+
+
+def contains(hay, needle):
+    if not needle:
+        return True
+    n, first = len(needle), needle[0]
+    return any(hay[i:i + n] == needle
+               for i, t in enumerate(hay) if t == first)
+
+
+def default_odt():
+    found = sorted(glob.glob("doc/vForth1.8-core-en-*.odt"))
+    return found[-1] if found else None
+
+
+def compare_with_manual(blocks, odt):
+    print()
+    print("=" * 72)
+    print("Comparison with the manual: %s" % odt)
+    print("=" * 72)
+    try:
+        hay = odt_tokens(odt)
+    except (OSError, KeyError, zipfile.BadZipFile) as e:
+        print("  not readable (%s): open in LibreOffice? Check by hand." % e)
+        return
+    todo = 0
+    for label, text in blocks:
+        if contains(hay, tokens(text)):
+            print("  INVARIATO     %s" % label)
+            continue
+        todo += 1
+        print("  DA AGGIORNARE %s" % label)
+        missing = [ln.strip() for ln in text.splitlines()
+                   if tokens(ln) and not contains(hay, tokens(ln))]
+        for ln in missing:
+            print("      ! %s" % ln)
+        if not missing:
+            print("      (every line is in the manual, but not in this order:"
+                  " check by hand)")
+    print()
+    print("  %d block(s) to update, %d unchanged."
+          % (todo, len(blocks) - todo))
+
+
 def main():
+    args = sys.argv[1:]
+    odt = None
+    if "--no-compare" not in args:
+        odt = args[args.index("--odt") + 1] if "--odt" in args else default_odt()
     date = build_date()
     print("Booting the emulator with the current binaries (~2 min) ...",
           file=sys.stderr)
@@ -191,8 +271,8 @@ def main():
             lines = [ln for ln in lines
                      if not re.fullmatch(r"\s*[0-9A-F]{1,3}\s*", ln)]
             # - zero-pad the 16-bit heap-pointer in the Lfa: line; the
-            #   manual does this in par. 3.20 but keeps SEE's raw output
-            #   in par. 3.6.1
+            #   manual does this in par. 4.6 but keeps SEE's raw output
+            #   in par. 3.8
             if pad_lfa:
                 lines = [re.sub(r"^(\s*Lfa: [0-9A-F]{4} )([0-9A-F]{1,3})\b",
                                 lambda m: m.group(1) + m.group(2).zfill(4),
@@ -206,7 +286,7 @@ def main():
     ver_b = "\n".join([transcript("SEE " + WORD_B)] +
                       [transcript(c) for c in dump_cmds_b])
 
-    # --- par. 3.6.1 Debugger Utility: SEE example transcripts -----------
+    # --- par. 3.8 Debugger Utility: SEE example transcripts -----------
     # The manual shows these in DECIMAL (e.g. the literal 12 in TYPE's
     # body); SEE prints addresses in hex regardless of BASE.
     drv.send("DECIMAL")
@@ -224,6 +304,12 @@ def main():
     next_cfa_hp = trail[0] | (trail[1] << 8)
     next_nfa = dnip["lfa"] + 4          # heap entries are contiguous
     next_name = heap_name(drv, next_nfa)
+    # what "$<mirror> FAR 8 DUMP" shows: the next word's xt (its CFA
+    # slot), then the NFA of the word after it
+    next_cfa = 0xE000 + next_cfa_hp
+    next_xt_bytes = drv.mem(next_cfa, 2)
+    next_xt = next_xt_bytes[0] | (next_xt_bytes[1] << 8)
+    after_name = heap_name(drv, next_cfa + 2)
 
     print("=" * 72)
     print("Manual dynamic parts regenerated from build %s." % date)
@@ -232,41 +318,62 @@ def main():
     print("=" * 72)
     print()
     print("-" * 72)
-    print("[par. 3.20 -- Dictionary memory structure]")
+    print("[par. 4.6 -- Dictionary memory structure]")
     print("-" * 72)
+    blocks = []                 # (label, text) compared with the manual
+
+    def emit(label, text, compare=None):
+        print(text)
+        blocks.append((label, text if compare is None else compare))
+
     print()
-    print("For example the two contiguous definitions %s and %s appears in"
-          % (WORD_A, WORD_B))
-    print("memory as follow (as per build %s, since it's perfectly possible"
-          % date)
-    print("that a different build shows different addresses).")
+    emit("par. 4.6 intro sentence",
+         "For example the two contiguous definitions %s and %s appears in\n"
+         "memory as follow (as per build %s, since it's perfectly possible\n"
+         "that a different build shows different addresses)."
+         % (WORD_A, WORD_B, date))
     print()
-    print(block_a)
+    emit("par. 4.6 table %s" % WORD_A, block_a)
     print()
-    print(block_b)
+    emit("par. 4.6 table %s" % WORD_B, block_b)
     print()
     print("You can verify yourself all of that by typing some commands.")
     print()
-    print(ver_a)
+    emit("par. 4.6 transcript %s" % WORD_A, ver_a)
     print()
-    print(ver_b)
+    emit("par. 4.6 transcript %s" % WORD_B, ver_b)
     print()
     print("-" * 72)
-    print("[par. 3.6.1 -- Debugger Utility]")
+    print("[par. 3.8 -- Debugger Utility]")
     print("-" * 72)
     for w in DEBUGGER_WORDS:
         print()
-        print("[par. 3.6.1 -- transcript: SEE %s]" % w)
+        print("[par. 3.8 -- transcript: SEE %s]" % w)
         print()
-        print(transcript("SEE " + w, pad_lfa=False, raw=dbg[w]))
+        t = transcript("SEE " + w, pad_lfa=False, raw=dbg[w])
+        # the manual puts prose between the command and its output
+        # ("the system will show ..."): compare the output only
+        output = t.split(chr(10), 1)[1]
+        emit("par. 3.8 SEE %s" % w, t, compare=output)
     print()
-    print("[par. 3.6.1 -- data for the prose note after SEE NIP]")
+    print("[par. 3.8 -- data for the prose note after SEE NIP]")
     print()
     print("  bytes following NIP's jp (ix): %s" % pairs(trail))
-    print("  i.e. the Mirror of the subsequent definition %s" % next_name)
-    print("  (heap-pointer %s to its CFA slot); its NFA is at" % hx(next_cfa_hp))
-    print("  heap-pointer $%s -- the inspect command for the manual is:" % hx(hp_of(next_nfa)))
-    print("      $%s FAR 8 DUMP" % hx(hp_of(next_nfa)))
+    print("  $%s FAR 8 DUMP shows: %s (%s's xt $%s) + %s's NFA"
+          % (hx(next_cfa_hp), pairs(drv.mem(next_cfa, 8)), next_name,
+             hx(next_xt), after_name))
+    print()
+    emit("par. 3.8 note after SEE NIP",
+         "The bytes that follow  - %s - are the beginning of the subsequent\n"
+         "definition compiled in dictionary (%s in this case): %s is %s's\n"
+         "Mirror, i.e. the heap-pointer $%s to its CFA. Try $%s FAR 8 DUMP to\n"
+         "inspect the HEAP: you'll see %s's xt $%s followed by %s's NFA."
+         % (pairs(trail), next_name, pairs(trail[:2]), next_name,
+            hx(next_cfa_hp), hx(next_cfa_hp), next_name, hx(next_xt),
+            after_name))
+
+    if odt:
+        compare_with_manual(blocks, odt)
 
 
 if __name__ == "__main__":

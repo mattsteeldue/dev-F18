@@ -23,6 +23,7 @@ import argparse
 EMU_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(EMU_DIR)
 sys.path.insert(0, EMU_DIR)
+from zxchars import zx_char
 
 BIN = os.path.join(ROOT, "project", "vForth18_DOES", "output", "forth18e.bin")
 RAM = os.path.join(ROOT, "project", "vForth18_DOES", "output", "ram8.bin")
@@ -82,7 +83,8 @@ class Repl:
 
     def _drain(self):
         """Render the raw byte stream like a terminal: apply CR/backspace,
-        drop the blinking-cursor glyphs, map the ZX copyright glyph."""
+        drop the blinking-cursor glyphs, map the ZX copyright glyph and the
+        graphics codes >= $80 (see zxchars.py)."""
         line, col, lines = [], 0, []
         for b in self.out_raw:
             if b in (0x0D, 0x0A):
@@ -92,7 +94,7 @@ class Repl:
             elif b in CURSOR_GLYPHS or b < 0x20:
                 continue
             else:
-                ch = "(c)" if b == 0x7F else chr(b)
+                ch = zx_char(b)
                 if col < len(line):
                     line[col] = ch
                 else:

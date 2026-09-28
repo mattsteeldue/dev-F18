@@ -18,7 +18,7 @@ this repository.
 computer. It includes a complete Forth compiler (self-bootstrapping), Z80/Z80N assembly
 support, and multiple library modules for graphics, sound, file I/O, and hardware control.
 
-**Current version**: 1.8 (build 2026-09-20)  
+**Current version**: 1.8 (build 2026-09-26)  
 **License**: MIT  
 **Author**: Matteo Vitturi
 
@@ -29,7 +29,11 @@ dot-command), the deliverable gets a new build number = the current date.
 It appears in two encodings -- `YYYY-MM-DD` in the SPLASH banner strings
 (DOES and DOT `L0.asm`), in `src/F18e.f`'s header, in this file's "Current
 version" line and in the first 512-byte block of `!Blocks-64.bin`;
-`YYYYMMDD` in the `main.asm` header comments. The **`/bump-build` skill**
+`YYYYMMDD` in the `main.asm` header comments (DOES and DOT) and in the first
+REM of the two tokenised BASIC loaders `Forth18.bas` / `Forth18_loader.bas`
+(patched in place: file length and +3DOS header checksum must stay valid) --
+**nine** files in all, the table in the skill being the reference list. The
+**`/bump-build` skill**
 (`.claude/skills/bump-build/SKILL.md`) updates every canonical location and
 rebuilds both variants; historical copies under `version/`,
 `project/*/source/version/`, `util/` and `doc/` must never be touched.
@@ -61,13 +65,26 @@ Run it in report mode freely; it is read-only and exits 1 when residue is
 found, which is how `/release-rebuild` gates on it (step 1c). Everything
 else about the manual still goes through the author by hand.
 
+**Text meant to be pasted by hand into the manual** (the `.txt` files in
+`products/`, and any similar hand-off) is written with **one paragraph per
+line**: a single long line ended by one CRLF (`0x0D 0x0A`), never hard-wrapped
+at 80 columns. The author opens these files in UltraEdit with soft wrap on, and
+frequent line breaks make copying into the `.odt` awkward. Paragraphs are
+separated by one empty line. Preformatted material keeps its own line
+breaks: SEE/DUMP transcripts, code, tables, lists (one item per line). The
+7-bit ASCII rule still applies. The 80-column limit is for sources (`.f`,
+`.asm`), not for these texts.
+
 ## The Three Codebases and Their Roles
 
 The project has three codebases in order of priority:
 
 1. **vForth18_DOES** -- the master. All changes originate here.
 2. **vForth18_DOT** -- near-identical twin. The vast majority of source is shared with
-   vForth18_DOES; only startup/closedown routines and MMU7 8K page allocation differ.
+   vForth18_DOES; only startup/closedown routines and MMU7 8K page handling differ.
+   The `system.asm` equates are byte-identical in both: the difference is at run
+   time, the DOT prologue saving and restoring MMU2..MMU7 (`Saved_MMU`), CPU
+   speed and layer (`project/vForth18_DOT/source/L2.asm`).
 3. **F18e.f** -- the human-readable Forth form of the core. Its primary value is
    **readability**: a Forth programmer can study it to understand how the core is
    implemented, in idiomatic Forth. The `.asm` files remain the authoritative source, but
@@ -82,7 +99,7 @@ The project has three codebases in order of priority:
 
 | | vForth18_DOES (master) | vForth18_DOT (twin) | F18e.f (readable core) |
 |---|---|---|---|
-| Role | Master -- changes originate here | Near-identical; differs only in startup/closedown and MMU7 page allocation | Human-readable Forth form of the core -- read continuously by the VS Code extension; kept aligned and verified |
+| Role | Master -- changes originate here | Near-identical; differs only in startup/closedown and the run-time save/restore of MMU2..MMU7 | Human-readable Forth form of the core -- read continuously by the VS Code extension; kept aligned and verified |
 | VS Code project | `project/vForth18_DOES/` | `project/vForth18_DOT/` | -- |
 | Launcher | `Forth18_loader.bas` + `forth18e.bin` + `ram8.bin` | ZX Spectrum Next dot-command (`.vforth`) | -- |
 | Sync path (nextsync) | `tools/vForth/` | `dot/` | -- |
@@ -98,14 +115,21 @@ The project has three codebases in order of priority:
   `ok` prompt; `printf '.quit\n' | python emu/repl.py` is the smoke test (the
   SPLASH banner must show the current build date). Docs in `emu/README.md`;
   Python regression scripts are `emu/test_*.py`. If bare `python` resolves to the
-  WindowsApps stub, use the explicit `C:\Users\matteo\anaconda3\python.exe`.
+  WindowsApps stub, use the explicit
+  `C:\Users\matteo\AppData\Local\Python\pythoncore-3.14-64\python.exe` (the same
+  path the skills use; `anaconda3` is still installed but stuck at 3.9).
+  Characters >= `$80` (block graphics, UDG, tokens) are rendered by
+  `emu/zxchars.py`; `PYTHONIOENCODING=utf-8` is no longer needed (before
+  2026-09-25 a cp1252 console crashed on `WORDS`).
 - **Forth test suite**: runs inside vForth (emulator or CSpect) via
   `INCLUDE TEST/CORE-TESTS.f` etc. -- structure and `{...}T` notation in
   `test/CLAUDE.md`.
 - **F18e.f against the core**: `/check-f18e` (see "The Three Codebases"). Run it after any
   change to `src/F18e.f` that is not comment-only, after any core change, and before a
   release. Claude does not launch CSpect: the author compiles with
-  `INCLUDE SRC/F18E.F` and saves the result with `SAVE "forth18_.bin" CODE <HERE+3>,7754`,
+  `INCLUDE SRC/F18E.F` and saves the result with `SAVE "forth18_.bin" CODE <HERE+3>,<len>`
+  (both numbers are printed, in decimal, by the last lines of `F18e.f`: `give PROC
+  Forth( <HERE+3> )` and `give SAVE f$ CODE A, <len>`; 7692 at build 2026-09-26),
   then Claude runs `util/cmp-f18e.py` on that file. Editing rules for `src/F18e.f`: 7-bit
   ASCII, no TAB, lines of 80 bytes or fewer, and for a tidy-up pass (typos, obsolete
   comments, spacing) the code tokens must stay identical -- a comment-only diff cannot
@@ -137,8 +161,9 @@ BC'/DE'/HL' -- more W's used in complex definition: it's customary using EXX to 
 - **BASIC RAMTOP** `$61FF` (at $6200 there is the IM-2 interrupt verctor table)
 - **Origin**: `$6366` (binary/tape mode) or `$8080` (DeZog debug mode)
 - **Heap Dictionary**: lives at `$E000-$FFFF` (MMU7 page); name-space and code-space split
-- **S0/TIB/R0/USER**: below `$E000` (computed from `LIMIT_system = $E000`, 6 buffers of
-  512 bytes each + 4 bytes each to keep track of BLOCK number and flags)
+- **S0/TIB/R0/USER**: below `$E000` (computed from `LIMIT_system = $E000`, 7 buffers of
+  512 bytes each + 4 bytes each to keep track of BLOCK number and flags; since
+  build 2026-09-25 `FIRST` = `$D1E4`, `S0` = `$D0F4`)
 - **Blocks/Screens**: 2 Blocks forms a Screen 512 bytes each, blocks are persistently stored in `!Blocks.txt` on SD card
 
 ### Banks (16K) vs Pages (8K) -- BASIC vs vForth
@@ -294,18 +319,24 @@ cold start. The flow, with the `vForth18_DOES` code addresses (from `list/main.l
 
 ```
 entry $6366  -> ColdRoutine self-init -> COLD
-COLD  $7616  -> init block buffers (EMPTY-BUFFERS, NMODE, FIRST/PREV/USE...) -> falls into WARM
-WARM  $760D  -> BLK-INIT  then  ABORT
-BLK-INIT $78D2 -> close any open block handle (BLK-FH), then F_OPEN the block file
-ABORT $75EA  -> init data/return stacks (S0/SP!, R0/RP!), then call AUTOEXEC (first time only)
-AUTOEXEC $8003 -> 11 LOAD  (Screen 11, user-configurable)
-SPLASH $7FDF -> banner (called by the default Screen 11 / lib/autoexec.f)
+COLD  $75CA  -> init block buffers (EMPTY-BUFFERS, NMODE, FIRST/PREV/USE...) -> falls into WARM
+WARM  $75C1  -> BLK-INIT  then  ABORT
+BLK-INIT $7886 -> close any open block handle (BLK-FH), then F_OPEN the block file
+ABORT $759E  -> init data/return stacks (S0/SP!, R0/RP!), then call AUTOEXEC (first time only)
+AUTOEXEC $7FD1 -> 11 LOAD  (Screen 11, user-configurable)
+SPLASH $7FAD -> banner (called by the default Screen 11 / lib/autoexec.f)
 ```
+
+The addresses are the CFAs (the label after the 2-byte mirror pointer, i.e.
+the `Colon_Def` line address + 2) for **build 2026-09-26**. They drift with
+every core change: this table went 12 bytes stale unnoticed for several
+builds. Treat `list/main.lst` (or the `F` records of `list/main.sld.txt`) as
+the only address authority and re-read them before setting a breakpoint.
 
 Key points:
 
 1. **BLK-INIT** opens the persistent block file `!Blocks-64.bin` (16 MB; name string in
-   `BLK-FNAME` at $785F) via `F_OPEN`. If the open **fails**, vForth still returns to the
+   `BLK-FNAME` at $7810) via `F_OPEN`. If the open **fails**, vForth still returns to the
    `Ok` prompt but is left in an **inconsistent state** -- the boot must be allowed to
    continue to `ABORT` regardless.
 
@@ -382,9 +413,7 @@ project/
   vForth18_DOT/   -- Dot-command variant (v1.8): parallel to vForth18_DOES
     source/     -- same structure as vForth18_DOES
     output/     -- dot-command binary
-  DIRECT/       -- Historical v1.5
-  DIRECT_RP/    -- Variant
-  INDIRECT/     -- Indirect-threaded (legacy)
+  vForth16_MDR_MGT/ -- Historical v1.6 MDR/MGT variant (`/build MDR`)
 dot/          -- Dot-command binaries at repo root (vforth, term0)
 emu/          -- Headless Z80/Z80N + vForth emulator in Python (see emu/README.md)
 lib/          -- Library modules loaded via NEEDS (GRAPHICS.f, MOUSE.f, AY.f, ...)
@@ -397,13 +426,46 @@ tutorial/     -- Guided tutorials
 doc/          -- PDF reference manual
 util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py)
 version/      -- Historical build snapshots (never modify, see build number convention)
-prompts/      -- Plans, analyses, and design docs produced while discussing
+planners/     -- Plans, analyses, and design docs produced while discussing
+  archive/    -- Plans already carried out
+products/     -- Deliverable texts bound elsewhere: manual paragraphs awaiting
+                 paste into the .odt, community posts, transcripts
+situation/    -- Point-in-time status snapshots and gap analyses
+dev/          -- Modules not yet promoted to lib/ (DMA.f, IM2-HW.f)
+prompts/      -- Older notes and third-party analyses (new plans go in planners/)
 ```
 
-> **Plans go in `prompts/`, never the project root.** Any plan, analysis, or
+`planners/`, `products/` and `situation/` are PC-side material like
+`prompts/`, yet the three sync exclusion lists (`syncignore.txt` at the git
+root, `$SyncExcludeTopDirs` in `util/sd-sync.config.ps1`, the extension's
+`vforth.sdExcludeTopDirs`) exclude `prompts` and `dev` but not them, so they
+currently reach the SD image.
+
+> **Plans go in `planners/`, never the project root.** Any plan, analysis, or
 > design document we produce by discussing (e.g. `LAYER24-PLAN.md`,
-> `PAINT-PLAN.md`) must be saved under `prompts/`, not at the repo root, which
-> is to be kept clean. Write new plans there by default.
+> `PAINT-PLAN.md`) must be saved under `planners/`, not at the repo root, which
+> is to be kept clean. Write new plans there by default; completed ones move
+> to `planners/archive/`.
+
+### Working from several workstations
+
+The author works on this repo from at least three PCs. Claude's auto-memory
+(`~/.claude/projects/<path>/memory/`) is **local to each PC and never
+synchronised**; git is the only shared state. Hence:
+
+- **The repo wins over memory.** Before calling a plan "still to do", check
+  `git log` and the plan file itself: it may have been carried out on another
+  PC. A memory entry that contradicts the repo is stale -- fix the memory.
+- **Durable knowledge goes into the repo** (this file, a subdirectory
+  `CLAUDE.md`, the plan file), not only into memory, or the other PCs never
+  see it.
+- **Every plan in `planners/` opens with a status line**, kept current at the
+  end of each session: `> Stato: APERTO` / `IN CORSO (ripresa da ...)` /
+  `APPLICATO <date> (commit ...), resta: ...` / `FATTO`. A plan with nothing
+  left moves to `planners/archive/`.
+- The author pulls with GitHub Desktop when sitting down; a `SessionStart`
+  hook (`.claude/settings.json`) shows the recent commits and the working-tree
+  status at the start of every session.
 
 ## Character Encoding
 
@@ -469,12 +531,13 @@ Source of truth: `NDOM_PTR`/`NCDM_PTR` in `project/vForth18_DOES/source/L3.asm`
 omitted `\` (illegal in FAT/Windows filenames as a path separator).
 
 **Known collision: `:` and `\` both map to `_`.** A file named `inc/_.f`,
-`lib/_.f` or `help/_.txt` is therefore ambiguous between the two words. As
-of this writing neither word has an `inc/doc/` or `help/` file of its own,
-so the collision is latent, not live. If one is ever added, give it a
-distinct filename (e.g. `colon.f`/`colon.txt` for `:`, `bslash.f`/
-`bslash.txt` for `\`) and keep `_.f`/`_.txt` as a combined entry covering
-both, since `NEEDS`/`HELP` will always resolve either word to that name.
+`lib/_.f` or `help/_.txt` is therefore ambiguous between the two words.
+Since 2026-08-26 the collision is **live in `help/`** and resolved as
+prescribed: `help/colon.txt` (`:`) and `help/bslash.txt` (`\`) hold the
+full entries, and `help/_.txt` is a combined entry covering both, since
+`HELP` always resolves either word to that name. Neither word has an
+`inc/doc/` file yet; if one is added, follow the same pattern (`colon.f` /
+`bslash.f` plus a combined `_.f`).
 
 An audit of every defined name in the core (`project/vForth18_DOES/source/`),
 `inc/` and `lib/` found no other collision under this mapping -- `:`/`\` is
@@ -561,25 +624,27 @@ byte must not be `0x20`. Trailing `0x0A`s are fine (the file may end with severa
 blank lines); trailing spaces on *interior* lines are harmless. Only the final two
 bytes matter.
 
-**Block-buffer starvation: an INCLUDEd file can lose its own source line.**
+**Block-buffer starvation -- FIXED in build 2026-09-25.**
 `F_INCLUDE` reads each line into the **BLOCK 1 buffer** and sets `BLK` to 1, so
-the line being interpreted lives in the block buffer pool -- and that pool is
-**six buffers handed out round-robin** (`FIRST`/`PREV`/`USE`). A file that reads
-six other distinct blocks while interpreting therefore recycles the buffer
-holding its own current line: `WORD` re-reads BLOCK 1 from disk, gets the block
-file's metadata instead of the source line, and the interpreter walks off into
-it. **What it looks like is a random word "is undefined"** -- a *different* word
-on each run, because it depends on whatever the recycled buffer happened to
-hold. Nothing points at the real cause, and the file is usually blameless.
+the line being interpreted lives in the block buffer pool, handed out
+round-robin (`FIRST`/`PREV`/`USE`). Up to build 2026-09-24 the pool held six
+buffers and any of them could be recycled: a file that read six other distinct
+blocks while interpreting lost its own current line -- `WORD` re-read BLOCK 1
+from disk, got the block file's metadata, and **a random word came out "is
+undefined"**, a different one on each run. Found 2026-08-24 via
+`test/CHOMP-MAZE-TESTS.f` (whose header comment still tells that story).
 
-Budget accordingly: an INCLUDEd source can afford roughly **four or five
-distinct blocks**, and re-reading an already-resident block costs nothing.
-Anything heavier belongs in a word that is *compiled* by the file and *executed
-from the `ok` prompt*, where input comes from TIB, `BLK` is 0, and no source
-line is at risk. Found 2026-08-24 via `test/CHOMP-MAZE-TESTS.f`, whose
-`MAZE-CHECK` reads three blocks per maze: checking three disk mazes touched nine
-distinct blocks and died on the sixth read, exactly when the round-robin came
-back round to BLOCK 1.
+Since build 2026-09-25 the pool has **seven buffers** and `BUFFER` **never
+evicts BLOCK 1** (`r@ @ 2* 2-` test, `L3.asm`), so user code still has six
+buffers and an INCLUDEd file may read any number of blocks; `FLUSH` inside an
+INCLUDE is safe too. Regression test: `test/BLOCK1-PIN-TESTS.f`. What remains
+(plan `planners/PLAN-MITIGATION-BLOCK-1-BUG.md` par. 7):
+
+- `EMPTY-BUFFERS` still erases the whole pool, BLOCK 1 included -- never call
+  it from an INCLUDEd file.
+- Nested INCLUDE/EVALUATE levels still share the one BLOCK 1 line buffer.
+- BLOCK 1 is never written back by rotation or `FLUSH`. After hand-editing
+  its bytes (e.g. the build date), persist them with `1 BLOCK 1 0 R/W`.
 
 **Editing note (trailing spaces):** there is **no need to strip trailing spaces**
 from source files -- only the final two bytes are constrained by the rule above.
@@ -616,5 +681,5 @@ unexpected behaviour on CSpect: the image is shifted 256 px to the right
 correctly, and LAYER22 works on the same emulator, so this is suspected to be
 a CSpect emulation artifact -- but it has NOT yet been verified on real
 hardware. Until then, treat LAYER24 as experimental. Details and 2026-06-28
-findings in `prompts/LAYER24-PLAN.md`.
+findings in `planners/LAYER24-PLAN.md`.
 

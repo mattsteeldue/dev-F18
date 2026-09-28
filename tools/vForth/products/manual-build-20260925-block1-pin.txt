@@ -1,0 +1,132 @@
+MANUAL CHANGES FOR BUILD 2026-09-25
+===================================
+
+Starting point: doc/vForth1.8-core-en-20260920.odt
+Cause: core change "BLOCK 1 never recycled + 7 block buffers"
+(planners/PLAN-MITIGATION-BLOCK-1-BUG.md), with the compact BUFFER
+test 2* 2- (-6 bytes).
+Addresses: util/gen-dict-structure.py on the 2026-09-25 binaries,
+memory map: project/vForth18_DOES/source/system.asm (BUFFERS = 7).
+
+Text to paste is between the ">>>" and "<<<" lines.
+
+
+1. Par. 4.6 "Dictionary memory structure" -- intro sentence
+------------------------------------------------------------
+
+The SWAP and DUP addresses have NOT changed: the Heap/Main memory tables
+stay as they are.  Only the date changes (the current text also has a
+typo, "2026-09s-20"):
+
+  before: (as per build 2026-09s-20, since ...
+>>>
+(as per build 2026-09-25, since ...
+<<<
+
+
+2. Par. 3.8 "Debugger Utility" -- SEE IF transcript
+-----------------------------------------------------
+
+IF has moved (it follows BUFFER in the dictionary): Cfa 804C -> 8064.
+>>>
+Nfa: EC91 C2
+Lfa: EC94 C88 BACK
+Cfa: 8064 69F7
+COMPILE 0BRANCH HERE 0 , 2 EXIT ok
+<<<
+
+The SEE TYPE and SEE NIP transcripts do not change.
+
+
+3. Par. 3.8 -- prose note after SEE NIP
+-----------------------------------------
+
+Error that predates this build: the definition following NIP is TUCK, not
+SWAP, and $0305 is TUCK's CFA slot, not its NFA (the NFA is at $02FE).
+Form chosen by the author (2026-09-26): keep $0305 and describe it.
+>>>
+The bytes that follow  - 05 03 E1 F1 - are the beginning of the
+subsequent definition compiled in dictionary (TUCK in this case): 05 03
+is TUCK's Mirror, i.e. the heap-pointer $0305 to its CFA. Try $0305 FAR
+8 DUMP to inspect the HEAP: you'll see TUCK's xt $68E0 followed by
+SWAP's NFA.
+<<<
+
+
+4. Par. 2.4 "Block / Screen system" -- number of buffers
+-------------------------------------------------------
+
+  before: ... The dedicated memory area that lies between FIRST and
+          LIMIT. In this system there are 6 buffers.
+>>>
+... The dedicated memory area that lies between FIRST and LIMIT. In this
+system there are 7 buffers, one of which is reserved to BLOCK 1 while
+it is used as the line buffer of INCLUDE, so 6 are left to user blocks.
+<<<
+
+
+5. Glossary: BUFFER -- sentence to append
+-----------------------------------------
+>>>
+The buffer holding BLOCK 1 is never reassigned: BLOCK 1 is the line
+buffer used by INCLUDE, NEEDS and EVALUATE, and its content cannot be
+re-read from disk.
+<<<
+
+
+6. Glossary: FLUSH -- sentence to append (optional)
+---------------------------------------------------
+>>>
+Since BLOCK 1 is never reassigned, FLUSH does not write it back to disk
+even if it was marked by UPDATE, and it can safely be used inside a file
+being INCLUDEd. To rewrite BLOCK 1 on purpose use  1 BLOCK 1 0 R/W .
+<<<
+
+
+7. NEEDS/INCLUDE paragraph ("NEEDS exploits BLOCK number 1 ...") -- append
+-------------------------------------------------------------------------
+>>>
+Since build 2026-09-25 the buffer holding BLOCK 1 is never recycled, so a
+source file can read any number of other blocks while it is being
+included without losing its own current line.
+<<<
+
+
+8. Appendix: memory map (the table starting with "61FF *RAMTOP")
+----------------------------------------------------------------
+
+The current S0/TIB line was already wrong before this build (D3A2 is
+higher than R0).  Replace the lines from "D3A2 S0 @" down to "D3E8 FIRST"
+with:
+>>>
+D0F4                    S0 @
+D0F4         TIB @      <160 bytes it shares memory with Return-Stack.
+             RP@        Return Stack grows downward it can hold 80 entries
+D194                    R0 @
+D194-D1E4               User variables area (40 entries, 80 bytes)
+D1E4         FIRST      First buffer: There are 7 buffers (516*7 = 3612 bytes)
+<<<
+
+
+9. Existing errors in the par. 4.6 transcripts (optional)
+----------------------------------------------------------
+
+These do not depend on this build, but the manual text differs from what
+the core actually prints:
+
+- $E307 9 DUMP, first line, ASCII column:  "SWAP~ r"  ->  "SWAP~ i"
+- $E307 9 DUMP, second line:
+    E30F  68 83 44 55  D0 07 03 F0  h DUP  p
+  (the manual has F9 and "h DUP  \")
+- $E310 8 DUMP, ASCII column:  " DUP  yh"  ->  " DUP  ph"
+- SEE SWAP, SEE DUP and SEE NIP print two dump lines, not one; the
+  missing second lines are:
+    SEE SWAP:  68F1  E5 E5 DD E9  1E 03 F1 E1  ee]i  qa
+    SEE DUP:   68F8  E1 E3 F5 E5  DD E9 27 03  acue]i'
+    SEE NIP:   68E2  E5 F5 E5 DD  E9 0E 03 E1  eue]i  a
+
+The full paragraph text, laid out like the manual, comes from:
+    python util/gen-dict-structure.py
+
+
+Once pasted: export the .pdf again from LibreOffice.

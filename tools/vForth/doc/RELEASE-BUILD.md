@@ -48,63 +48,23 @@ Il **riempimento** della cartella e' archivio storico curato a mano: non e'
 automatizzato per scelta. Allo script basta che la cartella ci sia.
 
 
-## 4. Aggiornare il numero di build nel BLOCK #1 da dentro CSpect
+## 4. Data di build nel BLOCK 1 e Screen editati in CSpect
 
-Passo invisibile agli script -- va fatto a mano nell'emulatore, **prima** di
-lanciare `/release-rebuild`, perche' lo skill genera il dump
-`doc/txt/!Blocks-64.bin_YYYYMMDD.txt` dal file che trova sul PC.
+La data nel primo blocco di `!Blocks-64.bin` non va piu' toccata a mano: la
+aggiorna `/bump-build` (lanciato da `/release-rebuild` prima del dump dei
+blocchi), e all'occorrenza la si corregge direttamente da VS Code con
+l'estensione vForth.
 
-Premessa: `/sync-cspect` copia sempre e solo **PC -> SD**, e per giunta esclude
-`!Blocks-64.bin` (sovrascriverlo distruggerebbe gli Screen editati
-nell'emulatore). Il file dei blocchi torna sul PC solo con la copia manuale del
-punto 4.7 qui sotto.
+Resta valido un solo accorgimento: `/sync-cspect` copia sempre e solo
+**PC -> SD** ed esclude `!Blocks-64.bin`. Se nell'emulatore sono stati editati
+Screen che devono entrare nel rilascio, chiudi CSpect e ricopia il file da SD a
+PC **prima** di lanciare lo skill:
 
-La stringa da correggere e':
+    & C:\zx\forth\F18\tools\vForth\util\mountw.ps1
+    Copy-Item 'W:\tools\vForth\!Blocks-64.bin' 'C:\zx\forth\F18\tools\vForth\!Blocks-64.bin' -Force
+    & C:\zx\forth\F18\tools\vForth\util\mountw.ps1 -Dismount
 
-    \ v-Forth 1.8 - NextZXOS versione - build YYYY-MM-DD
-
-Sta nei primi byte del file (offset 36), che sono l'inizio del **BLOCK 1**: il
-file non contiene alcun BLOCK 0, ed e' proprio da qui che nasce la confusione di
-questo passo. Lo Screen 0 sarebbe `BLOCK 0` + `BLOCK 1`, ma la sua prima meta'
-non esiste su file -- CLAUDE.md la elenca infatti come "Screen 0.5". Nell'editor la
-riga da correggere e' quindi la **riga 8**, non la riga 0.
-
-1. **Sincronizza prima** l'immagine SD, cosi' CSpect vede le novita' di questa
-   build: `/sync-cspect` (CSpect e MAME chiusi, due popup UAC).
-2. Avvia CSpect e vForth.
-3. **`EMPTY-BUFFERS` -- sempre, prima di qualunque altra cosa.** Scarta il
-   contenuto dei buffer di blocco in RAM senza riversarlo su file. E'
-   indispensabile qui piu' che altrove: lo Screen 0 comprende il BLOCK 1, che il
-   sistema usa di continuo come buffer di linea per `INCLUDE`/`NEEDS`/`F_INCLUDE`,
-   quindi e' facile che un buffer contenga una copia stantia o marcata `UPDATE`
-   che finirebbe riscritta sopra la modifica appena fatta.
-4. `NEEDS EDIT`, poi `1 LIST` per selezionare lo Screen #1 e infine `EDIT` e di 
-   seguito dare la sequenza `[Edit] + B` per arretrare di uno Screen: non e' 
-   possibile editare direttamente lo Screen #0.
-   L'editor mostra 16 righe da 64 colonne: le righe 0-7 sono un teorico BLOCK 0 
-   (che non esiste nel file) mentre le righe 8-15 il BLOCK 1.
-5. Correggi la data nella riga 8, basandoti sull'indicatore di riga del pannello
-   inferiore, in quanto il tentativo di visualizzazione del BLOCK 0 rende la
-   schermata molto confusa per la presenza di caratteri 0x00, 
-   esci dall'editor con `[Edit] + Q` e riversa con `FLUSH`.
-6. Riapplica **`EMPTY-BUFFERS`** per evitare di avere il BLOCK 0 spurio.
-
-   > **Perche' e' tricky:** questa e' l'area che il sistema considera non
-   > modificabile -- il BLOCK 1 e' proprio scelto come buffer di linea di
-   > `F_INCLUDE` perche' `EDIT` non lo tocca mai (vedi CLAUDE.md, "Blocks,
-   > Screens, and reserved ranges"). Muoversi qui richiede attenzione e la
-   > profilassi del punto 4.3.
-
-7. **Chiudi CSpect e ricopia `!Blocks-64.bin` da SD a PC** -- e' la conclusione
-   necessaria del passo, senza la quale la modifica resta solo nell'immagine:
-
-       & C:\zx\forth\F18\tools\vForth\util\mountw.ps1
-       Copy-Item 'W:\tools\vForth\!Blocks-64.bin' 'C:\zx\forth\F18\tools\vForth\!Blocks-64.bin' -Force
-       & C:\zx\forth\F18\tools\vForth\util\mountw.ps1 -Dismount
-
-   E' l'unico trasferimento del progetto che va nella direzione **SD -> PC**.
-   Vale anche per qualsiasi altro Screen editato dentro CSpect che debba entrare
-   nel rilascio.
+E' l'unico trasferimento del progetto che va nella direzione **SD -> PC**.
 
 
 ## 5. Chiudere tutto prima di lanciare lo skill

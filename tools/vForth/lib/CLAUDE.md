@@ -242,6 +242,18 @@ A heap-pointer is a single 16-bit cell:
 `FAR ( ha -- a )` decodes `ha`: maps the page onto MMU7, returns real address in
 `$E000-$FFFF`. The page stays mapped until the next `FAR` call.
 
+**Dictionary names: `ha` vs resolved nfa, by position (build 2026-09-26).**
+Every cell *stored* in the dictionary structure is an `ha` -- LFA content,
+vocabulary cell (`CONTEXT @ @`), the mirror cell at `cfa-2`, `HP`, the cells
+`MARKER` saves. Every `nfa` *on the stack* is resolved -- returned by `LATEST`,
+`NFA`, `<NAME`, expected by `ID.` and `PFA`. So a link is followed with an
+explicit `FAR`: `>BODY LFA @ FAR ID.`. The old numeric guess (`?HEAP_PTR` /
+`?>HEAP`, threshold `$6300`, and `$6000` inside `(FIND)`) -- a leftover of the
+1.6 -> 1.7 move of names into the heap -- is gone, and with it the cap that
+made any name laid down with `HP` >= `$6000` break the dictionary search.
+Regression test: `emu/test_nfa_contract.py`; history and rationale in
+`planners/PLAN-NFA-AMBIGUITY.md`.
+
 ### Key heap words
 
 | Word | Stack | Description |

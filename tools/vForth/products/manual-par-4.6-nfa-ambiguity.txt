@@ -1,0 +1,21 @@
+Replacement for paragraph 4.6.1 of the vForth manual (.odt) -- draft text, build 2026-09-26.
+
+Placement: at the very END of 4.6, after the "You can verify yourself" SEE/DUMP transcript and after the MMU7 cross-reference paragraph (products/manual-par-4.6-mmu7-crossref.txt), BEFORE section "5 Error messages". It REPLACES the earlier draft of this file, "4.6.1 Known limitation: the NFA representation ambiguity" (2026-07-12, extended 2026-09-26 morning): that limitation no longer exists since build 2026-09-26. Do not touch the build-specific tables and transcript above it, which come from util/gen-dict-structure.py.
+
+Glossary: ?HEAP_PTR, ?>HEAP and ?IN_MMU7 have been removed from the core in build 2026-09-26; if the manual lists them anywhere else (word index, chapter 5 dictionary), those entries go too.
+
+Background: planners/PLAN-NFA-AMBIGUITY.md.
+
+======================================================================
+
+4.6.1 Heap-pointers and resolved addresses
+
+Since names live in the heap, two kinds of 16-bit value describe a dictionary entry. A heap-pointer (ha) uses bits 15-13 to select one of the eight 8K heap pages and bits 12-0 as the offset from $E000; a resolved address lies in the MMU7 window $E000-$FFFF and is meaningful only while the right page is fitted there. FAR turns the first into the second, fitting the page as a side effect. Both share the same cell type, so the system tells them apart by position, never by value.
+
+The rule is simple. Every cell stored inside the dictionary structure holds a heap-pointer: the link field (LFA), the vocabulary cell reached through CONTEXT @ and CURRENT @, the mirror cell just before each CFA, HP itself and the cells saved by MARKER. Every nfa passed on the stack is a resolved address: what LATEST, NFA and <NAME return, and what ID. and PFA expect. Following a link therefore always takes an explicit FAR: ' DUP >BODY LFA @ FAR ID. prints SWAP, the word defined just before DUP.
+
+A resolved nfa is only as good as the page currently in MMU7: anything that remaps it in the meantime (another FAR, HEAP, an explicit MMU7!, a call into NextZXOS) leaves it pointing somewhere else. Keep it on the stack for as short a time as possible. Printing is safe: since build 2026-06-12 (EMITC) preserves the MMU7 page across its ROM call.
+
+Up to build 2026-09-25 the core did not follow this rule strictly: ID., PFA and <NAME accepted either form and guessed which one they had received with a numeric threshold. ?HEAP_PTR took any non-zero value below $6300 for a heap-pointer, ?>HEAP applied FAR accordingly, and the machine code of (FIND) carried its own copy of the test, below $6000. The guess dates back to the move from version 1.6, which kept names in the dictionary, to version 1.7, the first to keep them in the heap: during that transition the same core had to read both layouts, and the threshold simply meant "just below the dictionary origin". Once every header lived in the heap the guess no longer had anything to tell apart, but it still capped the heap: a definition whose name was laid down with HP at $6000 or above made the whole dictionary unsearchable. Since build 2026-09-26 the threshold is gone, together with ?HEAP_PTR, ?>HEAP and ?IN_MMU7, and names can use the whole heap.
+
+Code written for earlier builds that passed a link straight to ID. or PFA (for example LFA @ ID.) must now resolve it first with FAR. The library has been adjusted accordingly (SEE, HIDE-WORD, .VOCAB), and :NONAME now compiles the mirror cell, so <NAME works on an anonymous xt as well.

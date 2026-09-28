@@ -13,6 +13,31 @@ INCLUDE TEST/FIXED88-TESTS.f
 Each suite loads `lib/testing.f` (via NEEDS TESTING inside the file) which provides
 the `{...}T` test notation.
 
+## Reading the output (CORE-TESTS.f)
+
+- **All `NEEDS` first.** The suite loads every dependency at the top, so their
+  banners (`.( NAME )`) come before any real test and are not noise to judge.
+- **`TESTING` just announces a group**: it echoes its source line, e.g.
+  `TESTING \ F.3.1 Basic Assumptions` -> `\ F.3.1 Basic Assumptions`. The
+  backslash is only decorative.
+- **A passing `T{ ... }T` is silent.** A failing one goes through `ERROR1`
+  (`lib/testing.f`): it prints the offending source line, then message
+  #50-#54 (`Incorrect result.`, `Wrong number of results.`, ...), then `.S`.
+- **`ACCEPT` (F.6.1.0695, `test/accept.f`) waits for one line of keyboard
+  input** near the end and echoes it back as `RECEIVED: "..."`.
+- **Expected warning**: `GDX has already been defined.` -- `test/_.f`
+  (F.6.1.0450) redefines `GDX` on purpose and says so in the two `TESTING`
+  lines that follow ("It's correct seeing this message"); F.3.23 in
+  `CORE-TESTS.f` redefines it twice more for the same reason. Any other
+  "has already been defined" is a real anomaly.
+- The last step is `TESTING-DONE`, which unloads the whole suite.
+
+In the headless emulator: `python emu/test_core_suite.py [suite]` does all of
+the above -- it supplies the `ACCEPT` line, checks it comes back, accepts only
+the `GDX` warnings, flags any failure message or core error, and exits 0 when
+the suite is clean (about 10 minutes). The author's reference run is CSpect
+(CORE-TESTS 100% ok on build 2026-09-26).
+
 ## Test notation
 
 ```forth

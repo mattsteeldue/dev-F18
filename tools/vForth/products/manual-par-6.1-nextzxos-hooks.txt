@@ -1,16 +1,16 @@
-Additions for section 5.1 "The 'core' dictionary" (alphabetical dictionary
+Additions for section 6.1 "The 'core' dictionary" (alphabetical dictionary
 entries) and for the "NextZXOS" word-family table (the chart that already
 lists File hook / Directory hook / +3DOS hook / Other columns, found in the
 same area as the DIR/LED narrative). To be pasted by hand: the 16
 dictionary entries below go into their correct alphabetical slots among
-the existing 5.1 entries; the table addition goes into the NextZXOS chart,
+the existing 6.1 entries; the table addition goes into the NextZXOS chart,
 as a new "General hook" column plus three more rows in the existing File
 hook and Directory hook columns.
 
 Word-entry format follows the existing F_CLOSE/F_OPEN/F_FGETPOS entries in
-5.1 (name, compact stack effect, prose mentioning the RST 8 service
+6.1 (name, compact stack effect, prose mentioning the RST 8 service
 number, closing "This definition is available after NEEDS cccc" sentence
-per the 5.1 introductory note).
+per the 6.1 introductory note).
 
 STATUS CAVEAT -- read before pasting: as of 2026-07-29, only M_DOSVERSION
 has been exercised on real hardware (confirmed returning $0208 for
@@ -24,7 +24,7 @@ corrections once each word has actually been exercised.
 
 ======================================================================
 
-5.1 dictionary entries (insert alphabetically):
+6.1 dictionary entries (insert alphabetically):
 
 
 DOSVER                                                              ---

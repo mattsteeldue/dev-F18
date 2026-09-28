@@ -78,15 +78,30 @@ PBuf_Endif:                                     // endif
 // disk before reading the block n.
 
                 Colon_Def BUFFER, "BUFFER", is_normal
-                dw      USED, FETCH             // used @
-                dw      DUP, TO_R               // dup >r
-                                                // begin
+Buffer_Retry:                                   // begin
+                dw      USED, FETCH             //      used @
+                dw      DUP, TO_R               //      dup >r
+                                                //      begin
 Buffer_Begin:                                                
-                dw          PBUF                //      +buf
-                                                // until
+                dw          PBUF                //          +buf
+                                                //      until
                 dw      ZBRANCH
                 dw      Buffer_Begin - $
-                dw      USED, STORE             // used !
+                dw      USED, STORE             //      used !
+                // BLOCK 1 is the line buffer of INCLUDE/EVALUATE: its content
+                // cannot be re-read from disk, so it is never recycled.
+                // 2* drops the UPDATE bit: 2- gives zero only for block 1.
+                dw      R_OP, FETCH             //      r @
+                dw      TWO_MUL, TWO_MINUS      //      2* 2-   ( 0 = block 1 )
+                dw      DUP, ZEQUAL             //      dup 0=
+                                                //      if
+                dw      ZBRANCH
+                dw      Buffer_Keep - $
+                dw          R_TO, DROP          //          r> drop
+Buffer_Keep:                                    //      endif
+                                                // until
+                dw      ZBRANCH
+                dw      Buffer_Retry - $
                 dw      R_OP, FETCH, ZLESS      // r @ 0<
                                                 // if
                 dw      ZBRANCH
@@ -493,18 +508,9 @@ Needs_11:
                 dw      DUP, FENCE, FETCH       // dup fence @ 
                 dw      ULESS, LIT, 21, QERROR  // u< 21 ?error
                 dw      DUP, NFA                // dup nfa 
-                
-            //  dw      DUP
-            //  dw      LIT, $E000, LESS
-            //  dw      MMU7_FETCH, ONE, EQUALS
-            //  dw      OR_OP, NOT_OP
-            //  dw      ZBRANCH
-            //  dw      Forget_then - $
-
                 dw      MMU7_FETCH, FROM_FAR
                 dw      HP, STORE
                 dw      DUP, CFA, CELL_MINUS
-// Forget_then:    
                 dw      DP, STORE               // dp !
                 dw      LFA, FETCH              // lfa @
                 dw      CONTEXT, FETCH, STORE   // context @ !
@@ -531,12 +537,8 @@ Needs_11:
                 dw      DUP, FETCH, CURRENT, STORE, CELL_PLUS
                 dw      DUP, FETCH, CONTEXT, STORE, CELL_PLUS
                 dw      DUP, FETCH
-            //  dw      DUP, QHEAPP
-            //  dw      ZBRANCH
-            //  dw      Marker_then - $
-                dw          DUP, HP, STORE
-                dw          PFA, CFA, CELL_MINUS
-// Marker_then:
+                dw      DUP, HP, STORE          // restore heap-pointer
+                dw      FAR, PFA, CFA, CELL_MINUS
                 dw      DP, STORE, CELL_PLUS
                 dw      FETCH, CURRENT, FETCH, STORE
                 dw      EXIT
