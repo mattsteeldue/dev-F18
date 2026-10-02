@@ -6,14 +6,13 @@
 
 NEEDS SPLIT
 
-BASE @ \ save base
-
-HEX
+\ hex literals use the $ prefix and BASE is never changed: in HEX a token
+\ such as BB is found first as a word (BB of lib/editor.f, autoexec)
 
 MARKER NO-DMA
 
 \ Port address constant
-006B CONSTANT DMA-PORT
+$6B CONSTANT DMA-PORT
 
 \ Low-level primitives
 : DMA! ( b -- )
@@ -26,35 +25,35 @@ MARKER NO-DMA
     SPLIT SWAP DMA! DMA! ;
 
 \ WR0 register bytes - direction and parameter bits
-7D CONSTANT DMA-WR0-A2B     \ A->B, append both A addr and length
-79 CONSTANT DMA-WR0-B2A     \ B->A, append both A addr and length
+$7D CONSTANT DMA-WR0-A2B     \ A->B, append both A addr and length
+$79 CONSTANT DMA-WR0-B2A     \ B->A, append both A addr and length
 
 \ WR1 register bytes - Port A configuration
-14 CONSTANT DMA-A-MEM-INCR  \ A=memory, address increments
-24 CONSTANT DMA-A-MEM-FIXED \ A=memory, address fixed
+$14 CONSTANT DMA-A-MEM-INCR  \ A=memory, address increments
+$24 CONSTANT DMA-A-MEM-FIXED \ A=memory, address fixed
 
 \ WR2 register bytes - Port B configuration
-10 CONSTANT DMA-B-MEM-INCR  \ B=memory, address increments
-28 CONSTANT DMA-B-IO-FIXED  \ B=I/O, address fixed
+$10 CONSTANT DMA-B-MEM-INCR  \ B=memory, address increments
+$28 CONSTANT DMA-B-IO-FIXED  \ B=I/O, address fixed
 
 \ WR4 register bytes - Port B address (continuous mode)
-AD CONSTANT DMA-WR4-CONT    \ continuous mode, append B address
+$AD CONSTANT DMA-WR4-CONT    \ continuous mode, append B address
 
 \ WR5 register byte - CE only, stop on end of block
-82 CONSTANT DMA-WR5-DEFAULT
+$82 CONSTANT DMA-WR5-DEFAULT
 
 \ WR6 command register bytes
-83 CONSTANT DMA-CMD-DISABLE
-87 CONSTANT DMA-CMD-ENABLE
-8B CONSTANT DMA-CMD-RESET-STATUS
-A7 CONSTANT DMA-CMD-INIT-READ-SEQ
-BB CONSTANT DMA-CMD-READ-MASK
-BF CONSTANT DMA-CMD-READ-STATUS
-C3 CONSTANT DMA-CMD-RESET
-C7 CONSTANT DMA-CMD-RESET-A-TIMING
-CB CONSTANT DMA-CMD-RESET-B-TIMING
-CF CONSTANT DMA-CMD-LOAD
-D3 CONSTANT DMA-CMD-CONTINUE
+$83 CONSTANT DMA-CMD-DISABLE
+$87 CONSTANT DMA-CMD-ENABLE
+$8B CONSTANT DMA-CMD-RESET-STATUS
+$A7 CONSTANT DMA-CMD-INIT-READ-SEQ
+$BB CONSTANT DMA-CMD-READ-MASK
+$BF CONSTANT DMA-CMD-READ-STATUS
+$C3 CONSTANT DMA-CMD-RESET
+$C7 CONSTANT DMA-CMD-RESET-A-TIMING
+$CB CONSTANT DMA-CMD-RESET-B-TIMING
+$CF CONSTANT DMA-CMD-LOAD
+$D3 CONSTANT DMA-CMD-CONTINUE
 
 \ Module state - shadow registers and scratch buffers
 VARIABLE DMA-A-ADDR   \ Port A address parameter
@@ -110,13 +109,13 @@ CREATE DMA-FILL-BYTE 1 ALLOT  \ single-byte buffer for FILL operations
 
 : DMA-STATUS ( -- b )
     DMA-CMD-READ-MASK DMA!
-    01 DMA!                    \ read mask: status byte only
+    $01 DMA!                   \ read mask: status byte only
     DMA-CMD-INIT-READ-SEQ DMA! \ reset read sequence to first masked reg
     DMA@ ;                     \ read status from DMA port
 
 : DMA-DONE? ( -- flag )
     DMA-STATUS
-    20 AND 0= ;    \ bit 5 = 0 when done
+    $20 AND 0= ;    \ bit 5 = 0 when done
 
 \ === Public Transfer Words (continuous mode) ===
 
@@ -182,4 +181,3 @@ CREATE DMA-FILL-BYTE 1 ALLOT  \ single-byte buffer for FILL operations
 \ NEEDS guard: defined last so NEEDS DMA succeeds only after a full load
 : DMA ;
 
-BASE !

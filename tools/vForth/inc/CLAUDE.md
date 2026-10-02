@@ -82,15 +82,16 @@ The canonical template is [`inc/.border.f`](.border.f):
 \
 .( .BORDER )
 \
-BASE @          \ save base status
-HEX
 CODE .BORDER  ( b -- )
-    E1  C,          \ pop hl
+    $E1 C,          \ pop hl
     ...
-    DD  C,  E9 C,   \ jp (hl)
+    $DD C, $E9 C,   \ jp (ix)
     SMUDGE
-BASE !
 ```
+
+Many older `inc/` and `lib/` files still use the `BASE @ HEX ... BASE !` form.
+Do not convert them in bulk; convert a file to `$` literals when it is being
+edited anyway (see "Numeric literal conventions" for why).
 
 ### Automatic conversion: asm2hex.py
 
@@ -113,6 +114,11 @@ The script accepts both upper and lowercase mnemonics in the source.
 
 Use `$`, `%`, `#` prefix characters rather than switching BASE globally.
 Changing BASE during compilation (e.g. `HEX` inside a source file) is error-prone.
+Concrete failure (2026-10-02, `lib/DMA.f` on real hardware): in `HEX` a token
+such as `BB` is looked up as a word **before** being parsed as a number, and
+`lib/editor.f` (loaded by autoexec) defines `BB`; `BB CONSTANT ...` ran the
+editor's screen index instead and the load derailed. `B`, `D`, `E`, `CD` are
+defined words too. A `$BB` literal is never mistaken for a word.
 
 - **Preferred** -- prefix characters in source: `$FF`, `%11111111`, `#255`
 - **Tolerated** -- global base switch for output formatting: `HEX . DECIMAL`
