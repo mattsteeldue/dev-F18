@@ -434,7 +434,7 @@ planners/     -- Plans, analyses, and design docs produced while discussing
 products/     -- Deliverable texts bound elsewhere: manual paragraphs awaiting
                  paste into the .odt, community posts, transcripts
 situation/    -- Point-in-time status snapshots and gap analyses
-dev/          -- Modules not yet promoted to lib/ (DMA.f, IM2-HW.f)
+dev/          -- Modules not yet promoted to lib/ (IM2-HW.f)
 prompts/      -- Older notes and third-party analyses (new plans go in planners/)
 ```
 
