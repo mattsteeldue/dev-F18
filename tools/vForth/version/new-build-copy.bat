@@ -138,6 +138,7 @@ copy  util\blocks2txt.pl                    %DEST%\util
 
 echo Copying tutorial
 copy  tutorial\*.f                              %DEST%\tutorial
+copy  tutorial\*.png                            %DEST%\tutorial
 : pause
 
 : _____________________________________________________
