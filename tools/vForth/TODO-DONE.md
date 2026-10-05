@@ -85,3 +85,50 @@ graphics) have not been promoted to `tutorial/`, unlike their sibling
 tutorials following the standard tutorial/CLAUDE.md structure.
 **Status: Done** 2026-08-27 -- brot.f became tutorial 064, Fedora.f
 tutorial 065 (065-fedora-silhouette.f).
+
+
+# .VOCAB is broken
+**2026-06-01**
+Split from the TODO.md entry "?VOCAB and .VOCAB are broken" (tested on real
+hardware, both removed from tutorial/018-vocabularies.f). `.VOCAB` stepped
+back two cells from the voc-link before calling `NFA`, one too many.
+**Status: Done** 2026-09-27 (build 2026-09-26, commit 49ef116) -- one `CELL-`
+dropped in `inc/.vocab.f`. On the headless emulator `CURRENT @ .VOCAB` prints
+`753E FORTH` and `SHAPES CONTEXT @ .VOCAB` prints `81D7 SHAPES`. Not re-tested
+on real hardware. What is left of `?VOCAB` stays in TODO.md.
+
+
+# ASSEMBLER has no NO-ASSEMBLER restore word
+**2026-06-03**
+`ASSEMBLER` patches `;CODE` in the core by replacing the `NOOP` placeholder with the
+ASSEMBLER vocabulary. There is no `NO-ASSEMBLER` word to undo this patch and restore
+`;CODE` to its original state. This has never been a problem in practice because ASSEMBLER
+is the only library that patches `;CODE`, so the patched state is always consistent while
+ASSEMBLER is loaded. However it means ASSEMBLER cannot be cleanly unloaded and reloaded
+within a session without a full restart.
+Analyse whether a NO-ASSEMBLER is feasible and whether ;CODE needs a two-slot design
+(stub + restore pointer) analogous to the FLOATING / NO-FLOATING pattern.
+**Status: Done** 2026-10-04 -- `NO-ASSEMBLER` added to `lib/assembler.f`: it
+verifies the 4th xt of `;CODE` is `ASSEMBLER` (error #14 otherwise), stores
+`NOOP` back and runs the `FORGET-ASSEMBLER` marker; no two-slot design was
+needed. `COLD` is redefined as `NO-ASSEMBLER COLD`, like FLOATING does.
+Verified on the headless emulator only: load / unload / reload, a `CODE`
+word assembled after the reload, and `COLD` with the library loaded.
+
+
+# Tutorial 054 (DMA): verification still partial
+**2026-10-03**
+`lib/DMA.f` is promoted (it was `dev/DMA.f`), `NEEDS DMA` works and the 15
+`help/dma*.txt` pages say "Available after NEEDS DMA". On a real Next
+(2026-10-02) the module loads and `32 STRIPES` draws the border bands at
+28 MHz (checklist item 4, `tutorial/054-stripes.png`).
+Still open, see the "NEEDS TESTING" section at the bottom of
+`tutorial/054-dma.f`: the DUMP checks (items 2-3), and why the transfer to
+port $FE looks as if the DMA ran at 3.5 MHz (`7 REG@`, then `32 STRIPES`
+after `0 SPEED!` and after `3 SPEED!`). The headless emulator does not model
+the zxnDMA controller, so these need CSpect or real hardware.
+**Status: Done** 2026-10-04 -- tutorial 054 created and tested by the author
+on a real Next. Evidence that the DMA works: `tutorial/054-stripes.png`,
+captured from the Next's video output through OBS while `32 STRIPES` was
+sending 2048 bytes to port $FE. The question of the actual transfer speed
+stays open as a separate entry in TODO.md.

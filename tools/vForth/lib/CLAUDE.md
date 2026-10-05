@@ -40,7 +40,12 @@ this patch, restoring `NUMBER` in `INTERPRET`.
 **ASSEMBLER** is a `VOCABULARY`. It patches `;CODE` in the core by replacing the `NOOP`
 placeholder left intentionally in the core for this purpose. The patch installs the
 ASSEMBLER vocabulary so that words after `;CODE` are looked up in the assembler word-set.
-There is currently no `NO-ASSEMBLER` equivalent to restore `;CODE` -- see `TODO.md`.
+`NO-ASSEMBLER` (defined in `lib/assembler.f`, since 2026-10-04) undoes it: it checks
+that the slot really holds `ASSEMBLER` (else error #14), stores `NOOP` back and runs
+`FORGET-ASSEMBLER`, the `MARKER` at the top of `src/Z80N-asm.f`. The module also
+redefines `COLD` as `NO-ASSEMBLER COLD`, as FLOATING does, because `COLD` rewinds the
+dictionary but not the patched cell. `INVERT`, `FLIP` and `<BUILDS` are loaded
+before the marker and stay in the dictionary.
 
 For FLOATING, the correct unload sequence is:
 
