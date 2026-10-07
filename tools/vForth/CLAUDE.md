@@ -221,6 +221,7 @@ unit vForth allocates internally in `!Blocks.txt`. Two consecutive Blocks form o
 | 4-8 | 8-17 | Standard error messages #0-#79 -- read by `?ERROR` -> `ERROR` -> `MESSAGE` |
 | 9 | 18-19 | `9 LOAD` -- prints the whole message list, page by page, then FORGETs itself |
 | 10 | 20-21 | Previously held `include src/f18e.f`; now free for end-user use |
+| 11 | 22-23 | **Autoexec** -- `11 LOAD`ed at the first cold start: by `AUTOEXEC` in the DOES variant, by `lib/autoexec-dot.f` in the DOT variant. Sets up colours, then `INCLUDE LIB/AUTOEXEC.F` |
 
 **Note on BLOCK 1 and F_INCLUDE:** The first 512 bytes of `!Blocks.txt` are BLOCK 1 and
 contain system metadata and copyright information. Because it can never be modified by EDIT is used as
@@ -347,7 +348,9 @@ Key points:
 
 3. **AUTOEXEC** performs `11 LOAD` -- Screen 11 is user-configurable. By default Screen 11
    runs `INCLUDE lib/autoexec.f`, and that script normally calls **SPLASH** to print the
-   banner (and may load utilities via `NEEDS`).
+   banner (and may load utilities via `NEEDS`). The DOT variant reaches the same
+   Screen by another route: its `AUTOEXEC` includes `lib/autoexec-dot.f`, whose only
+   statement is `11 LOAD` (and only when `.vforth` is invoked without parameters).
 
 4. After AUTOEXEC (or once it is patched out), control reaches the `QUIT` loop ->
    `QUERY` / `ACCEPT` -> the interactive REPL prompt (`ok`).
