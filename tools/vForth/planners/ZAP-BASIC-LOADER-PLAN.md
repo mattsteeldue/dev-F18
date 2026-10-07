@@ -1,5 +1,9 @@
 # ZAP-BASIC-LOADER: loader BASIC generato, a costo di memoria nullo
 
+> Stato: APERTO -- non implementato. Dal 2026-10-07 il piano ombrello e'
+> `planners/ZAP-PLAN.md`, che ne riprende le fasi e ne corregge alcuni punti
+> superati dal core (sua sez. 6): leggerlo prima di questo.
+
 **Status**: Design Plan (non ancora implementato)
 **Author**: Matteo Vitturi (con Claude)
 **Date**: 2026-09-17 (rev. 3)
