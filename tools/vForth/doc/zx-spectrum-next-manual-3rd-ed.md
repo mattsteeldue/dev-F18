@@ -13,13 +13,14 @@ Each page was compared with its page image and transcribed again, starting from 
 - A listing whose text colours the book refers to is an HTML `<pre><code>` block, with each coloured run in `<span data-colour="NAME">`. NAME is a colour name, as for `[colour: NAME]`. Other listings are code blocks.
 - An overlined (active low) signal name has U+0305 COMBINING OVERLINE after each overlined character, for example R̅E̅S̅E̅T̅.
 - Images are in `public/documentation/manual/rev3/figures/` and are linked as `/documentation/manual/rev3/figures/FILE`. `data/manual/rev3/figures.json` records where each image comes from in the PDF. Where a figure also has a text version below it, the text gives the words in the image, and the image is correct.
+  - Local copy note: in this copy the links are relative, `zx-spectrum-next-manual-3rd-ed-figures/FILE`. The 86 PNG files were downloaded from `https://explorer.specnext.dev/documentation/manual/rev3/figures/` into that folder, which sits beside this file and is listed in `.gitignore`: on another workstation download it again with `python util/fetch-next-manual-figures.py`.
 - Footnote labels have the form `[^pN-M]`: footnote M, defined on PDF page N.
 
 <!-- PDF page 1 -->
 
-![sinclair](/documentation/manual/rev3/figures/p001-sinclair-logo.png)
+![sinclair](zx-spectrum-next-manual-3rd-ed-figures/p001-sinclair-logo.png)
 
-![ZX Spectrum Next](/documentation/manual/rev3/figures/p001-title-zx-spectrum-next.png)
+![ZX Spectrum Next](zx-spectrum-next-manual-3rd-ed-figures/p001-title-zx-spectrum-next.png)
 
 Written and Illustrated by\
 Phoebus R. Dokos, BSc (Hons)
@@ -108,7 +109,7 @@ Type in the following two lines:
 
 so that the screen looks like this:
 
-![Fig. 1 – Entering program lines in NextBASIC](/documentation/manual/rev3/figures/p005-fig01-entering-program-lines.png)
+![Fig. 1 – Entering program lines in NextBASIC](zx-spectrum-next-manual-3rd-ed-figures/p005-fig01-entering-program-lines.png)
 
 ```
 10 LET a=10
@@ -278,7 +279,7 @@ The line at the bottom should now read:
 
 Press **ENTER** and it will replace the old line 20, so that the screen looks like this:
 
-![Fig. 2 – Editing a program](/documentation/manual/rev3/figures/p008-fig02-editing-a-program.png)
+![Fig. 2 – Editing a program](zx-spectrum-next-manual-3rd-ed-figures/p008-fig02-editing-a-program.png)
 
 ```
 10 LET a=10
@@ -913,7 +914,7 @@ We have said before that the program carries on looping as long as the control v
 
 You must be careful if you are running two **FOR...NEXT** loops together, one inside the other. Try this program, which prints out the numbers for a complete set of six spot dominoes.
 
-![The listing with a brace labelled n-loop inside a larger brace labelled m-loop](/documentation/manual/rev3/figures/p022-nested-loops.png)
+![The listing with a brace labelled n-loop inside a larger brace labelled m-loop](zx-spectrum-next-manual-3rd-ed-figures/p022-nested-loops.png)
 
 ```
 10 FOR m=0 TO 6
@@ -926,7 +927,7 @@ You must be careful if you are running two **FOR...NEXT** loops together, one in
 
 You can see that the n-loop is entirely inside the m-loop – they are properly *nested*. What must be avoided is having two **FOR … NEXT** loops that overlap without either being entirely inside the other, like this:
 
-![The listing with overlapping braces labelled m-loop and n-loop](/documentation/manual/rev3/figures/p022-overlapping-loops.png)
+![The listing with overlapping braces labelled m-loop and n-loop](zx-spectrum-next-manual-3rd-ed-figures/p022-overlapping-loops.png)
 
 ```
  5 REM this program is wrong
@@ -1331,7 +1332,7 @@ As you can see, there's a default value for parameter n and two separate exit po
 
 Executing the program will return the following:
 
-![Fig. 3 - Screen output from the example procedures](/documentation/manual/rev3/figures/p031-fig03-procedure-output.png)
+![Fig. 3 - Screen output from the example procedures](zx-spectrum-next-manual-3rd-ed-figures/p031-fig03-procedure-output.png)
 
 ```
 11 risen to the 2nd power is :12
@@ -1947,7 +1948,7 @@ This will return **1200** when run. To demonstrate what went on we could illustr
 
 Once we see how the numbers are stored in memory as a series of bits we can easily understand what happened:
 
-![Fig. 4 - Bit shifting](/documentation/manual/rev3/figures/p044-fig04-bit-shifting.png)
+![Fig. 4 - Bit shifting](zx-spectrum-next-manual-3rd-ed-figures/p044-fig04-bit-shifting.png)
 
 <table>
 <tbody>
@@ -2405,7 +2406,7 @@ Consider a sausage machine. You feed it meat in at one end, turn a handle, and o
 
 *Function*s are practically indistinguishable from sausage machines but there is a difference: they work on data instead of meat. You supply one value (called the *argument*), mince it up by doing some calculations or transformations on it, and eventually get another value, the *result*.
 
-![Fig. 5 – How functions work](/documentation/manual/rev3/figures/p052-fig05-how-functions-work.png)
+![Fig. 5 – How functions work](zx-spectrum-next-manual-3rd-ed-figures/p052-fig05-how-functions-work.png)
 Meat\
 Sausage Machine\
 ACME Corp.\
@@ -2961,7 +2962,7 @@ Like *e*, π is an infinite non-recurring decimal; it starts off as **3.14159265
 
 The trigonometrical functions measure what happens when a point moves round a circle. Here is a circle of *radius* **1** (1 what? It doesn't matter, as long as we keep to the same unit all the way through. There is nothing to stop you inventing a new unit of your own for every circle that you happen to be interested in) and a point moving round it. The point started at the *3 o'clock* position, and then moved round in an anti-clockwise direction.
 
-![Fig. 6 – Basics of trigonometrical measurements](/documentation/manual/rev3/figures/p062-fig06-trig-basics.png)
+![Fig. 6 – Basics of trigonometrical measurements](zx-spectrum-next-manual-3rd-ed-figures/p062-fig06-trig-basics.png)
 Distance moved\
 around circle = a
 
@@ -2990,7 +2991,7 @@ Sometimes we need to work these functions out in reverse, finding the value of *
 
 In the diagram of the point moving round the circle, look at the radius joining the centre to the point. You should be able to see that the distance we have called *a*, the distance
 
-![Fig. 7 – Graphical representation of trigonometrical functions](/documentation/manual/rev3/figures/p063-fig07-trig-functions.png)
+![Fig. 7 – Graphical representation of trigonometrical functions](zx-spectrum-next-manual-3rd-ed-figures/p063-fig07-trig-functions.png)
 Cotangent of a\
 COT a
 
@@ -3554,7 +3555,7 @@ To define a new character for yourself, follow this recipe – it defines a char
 
 i. Work out what the character looks like. Each character has an 8x8 square of dots, each of which can show either the paper colour or the ink colour (see *Chapter 15* regarding **INK** and **PAPER**). You'd draw a diagram something like this, with black squares for the ink colour:
 
-   ![8 by 8 grid of squares; the black squares form the Σ character](/documentation/manual/rev3/figures/p075-udg-sigma-grid.png)
+   ![8 by 8 grid of squares; the black squares form the Σ character](zx-spectrum-next-manual-3rd-ed-figures/p075-udg-sigma-grid.png)
 
    We've left a 1 square margin round the edge because the other letters all have one (except for lower case letters with tails, where the tail goes right down to the bottom of the square).
 
@@ -3950,11 +3951,11 @@ This situation changes when we change *layers* and go to the other two groups (r
 
 *Table 6* above, showed us that although we could pack our screen with 170 characters per line, in practice 3 pixel wide fonts are almost unreadable, even at the highest available resolution of *Layer 1,2*. In the example program that's meant to demonstrate character cells for the **AT** modifier (but written using the **POINT** modifier strangely enough!) we're including below, you can see all the possible combinations for all *layers*.
 
-![Fig. 8 – Layer 0 coordinate system for PRINT and INPUT](/documentation/manual/rev3/figures/p084-fig08-layer0-coordinates.png)
+![Fig. 8 – Layer 0 coordinate system for PRINT and INPUT](zx-spectrum-next-manual-3rd-ed-figures/p084-fig08-layer0-coordinates.png)
 
 *Fig. 8 – Layer 0 coordinate system for PRINT and INPUT*
 
-![Fig. 9 – LoRes and Standard Resolution coordinate system for PRINT and INPUT](/documentation/manual/rev3/figures/p084-fig09-lores-standard-coordinates.png)
+![Fig. 9 – LoRes and Standard Resolution coordinate system for PRINT and INPUT](zx-spectrum-next-manual-3rd-ed-figures/p084-fig09-lores-standard-coordinates.png)
 
 *Fig. 9 – LoRes and Standard Resolution coordinate system for PRINT and INPUT*
 
@@ -3978,7 +3979,7 @@ LAYER 1,1: PRINT POINT 256,0;"*"
 
 would produce the same exact error. To properly calculate where to print if you want to keep your coordinates cell-based instead of pixel-based, a simple *function* could do that for you quite easily. In *Fig. 8* as well as *Fig. 9* we've done that for you assuming a standard font, but what about a shorter, or perhaps taller font? It's quite simple if you keep in mind that, if you follow the heights defined earlier, you can find exactly how many rows and columns you can fit in your screen. Note that **POINT**'s arguments must not begin with a parenthesis because it will be evaluated as a function and attempting to store the line you're typing will fail.
 
-![Fig. 10 – High Resolution coordinate system for PRINT and INPUT](/documentation/manual/rev3/figures/p085-fig10-hires-coordinates.png)
+![Fig. 10 – High Resolution coordinate system for PRINT and INPUT](zx-spectrum-next-manual-3rd-ed-figures/p085-fig10-hires-coordinates.png)
 
 *Fig. 10 – High Resolution coordinate system for PRINT and INPUT*
 
@@ -4471,7 +4472,7 @@ It's easy to understand *spatial resolution*. We –as you already read here and
 
 This is very straightforward and indeed the ZX Spectrum Next uses this way to store graphic data on *Layers 2*[^p96-2] and *Layer 1,0*. However in all the older modes, it uses a variation of linear storage called *interleaved* storage. The screen area is separated vertically into three 64 *pixel* high strips (or 8 attribute cells) arranged in blocks of 32. Each complete line (*x*) is stored linearly; in other words a *pixel* stored in horizontal coordinate 9 follows the *pixel* stored in horizontal coordinate 8 however, when it comes to the vertical order, there is a virtual hopscotch of sorts happening: The computer stores the first line of the first block of *attribute cells*, then stores the first line of the second block until it reaches the first line of the 8th block, then returns to the second line of the first block and the order continues with all second lines, then thirds and so on, until each third of the screen is full. *Fig.19* demonstrates the order of storage for ZX Spectrum Next legacy modes in order to visualise it a little better. We will get into more detail on why the graphic data is stored in that way later.
 
-![Fig. 11 – Interleaved graphic data storage for ZX Spectrum Next standard resolution Legacy modes](/documentation/manual/rev3/figures/p096-fig11-interleaved-storage.png)
+![Fig. 11 – Interleaved graphic data storage for ZX Spectrum Next standard resolution Legacy modes](zx-spectrum-next-manual-3rd-ed-figures/p096-fig11-interleaved-storage.png)
 
 *Fig. 11 – Interleaved graphic data storage for ZX Spectrum Next standard resolution Legacy modes*
 
@@ -4543,7 +4544,7 @@ This system dates from the early ZX Spectrum models and was mainly conceived to 
 
 by two additional bits that can make the colours flashing and/or brighter. *Fig. 12*, shows how colour information is stored in each byte in the COLOUR_FILE area.
 
-![Fig. 12 - Attribute byte organisation](/documentation/manual/rev3/figures/p099-fig12-attribute-byte.png)
+![Fig. 12 - Attribute byte organisation](zx-spectrum-next-manual-3rd-ed-figures/p099-fig12-attribute-byte.png)
 ```
       0     1     2     3     4     5     6     7
 MSB   FL    BR    G     R     B     G     R     B    LSB
@@ -4709,7 +4710,7 @@ This (as we will see in *Chapter 22 – IN, OUT and the Next Registers*) directl
 
 *Fig. 13 below visualises the way layers compound, to form the ZX Spectrum Next display.*
 
-![Fig. 13 – Display Layers](/documentation/manual/rev3/figures/p104-fig13-display-layers.png)
+![Fig. 13 – Display Layers](zx-spectrum-next-manual-3rd-ed-figures/p104-fig13-display-layers.png)
 
 *Fig. 13 – Display Layers*\
 *(Graphics courtesy of Lampros Potamianos from: The Hollow Earth Hypothesis)*
@@ -5248,7 +5249,7 @@ For instance suppose **a**=π . Then whatever values *x* and *y* take, a semicir
 
 which will draw this:
 
-![Fig. 14 – Arc drawn with DRAW statement](/documentation/manual/rev3/figures/p116-fig14-arc.png)
+![Fig. 14 – Arc drawn with DRAW statement](zx-spectrum-next-manual-3rd-ed-figures/p116-fig14-arc.png)
 
 ```
 0 OK, 10:2
@@ -5853,7 +5854,7 @@ So where for a UDG you wrote 8 **DATA** statements of 8 bits each, for a sprite 
 
 This is best demonstrated visually so, let's try to implement the following sprite via **DATA** statements:
 
-![Fig. 15 – A sprite](/documentation/manual/rev3/figures/p129-fig15-sprite.png)
+![Fig. 15 – A sprite](zx-spectrum-next-manual-3rd-ed-figures/p129-fig15-sprite.png)
 
 *Fig. 15 – A sprite*
 
@@ -6553,7 +6554,7 @@ Finally when it gets to the bottom of the screen it has the border and then a bl
 
 This diagram will hopefully help to visualise that:
 
-![Fig. 16 – Copper operation](/documentation/manual/rev3/figures/p142-fig16-copper-operation.png)
+![Fig. 16 – Copper operation](zx-spectrum-next-manual-3rd-ed-figures/p142-fig16-copper-operation.png)
 ```
                                                      Right    H_Blank    Left
                                                      Border              Border
@@ -6626,7 +6627,7 @@ where, as usual, *duration* and *pitch* represent any numerical expressions. The
 
 Here is a diagram to show the pitch values of all the notes in one *octave* on the piano:
 
-![Fig. 17 – Pitch/note equivalents](/documentation/manual/rev3/figures/p144-fig17-pitch-note-equivalents.png)
+![Fig. 17 – Pitch/note equivalents](zx-spectrum-next-manual-3rd-ed-figures/p144-fig17-pitch-note-equivalents.png)
 ```
    -2    1    3         6    8   10        13   15
    B♭   D♭   E♭        G♭   A♭   B♭        D♭   E♭
@@ -6671,11 +6672,11 @@ When you run this, you should get the funeral march from Mahler's first symphony
 
 Suppose for example that your tune is written in the key of *C minor*, like the Mahler above. The beginning looks like this:
 
-![Stave: treble clef, key signature of three flats, common time, the first four bars of the Mahler tune](/documentation/manual/rev3/figures/p145-mahler-stave.png)
+![Stave: treble clef, key signature of three flats, common time, the first four bars of the Mahler tune](zx-spectrum-next-manual-3rd-ed-figures/p145-mahler-stave.png)
 
 and you can write in the pitch values of the notes like this:
 
-![The same stave with the pitch value of each note written under it](/documentation/manual/rev3/figures/p145-mahler-stave-pitches.png)
+![The same stave with the pitch value of each note written under it](zx-spectrum-next-manual-3rd-ed-figures/p145-mahler-stave-pitches.png)
 
 ```
 0  2  3 2 0   0  2  3 2 0   3  5  7   3  5  7
@@ -6876,7 +6877,7 @@ Try changing the *octave* number progressively to hear the full pitch range whic
 
 Since each pitch range covers two *octaves*, two adjacent ranges overlap. For example, the high part of **O4** contains the low part of **O5** (see *Figure* below). The following diagram shows how you can create different notes using the **PLAY** *octave command*. As mentioned previously, the command **O** followed by a number from **0** to **7** sets the current *PSG* to a range of two *octaves* beginning with a *C*. The diagram shows the complete range of notes covered by **O3**, **O4**, and **O5**. Adjacent *octave* ranges overlap, so the same notes appear in the upper part of one range and the lower part of another. Individual notes within an *octave* range are set by using the letters **c** to **b** in lower case for the lower notes and **C** to **B** in capitals to give the notes in the upper *octave*. Placing a **#** before any note letter gives a sharp note – a **$** flattens it.
 
-![Fig. 18 – Octaves and Pitch values for making music with PLAY](/documentation/manual/rev3/figures/p149-fig18-octaves-play.png)
+![Fig. 18 – Octaves and Pitch values for making music with PLAY](zx-spectrum-next-manual-3rd-ed-figures/p149-fig18-octaves-play.png)
 ```
 C D E F G A B C D E F G A B C D E F G A B C D E F G A B
 c d e f g a b C D E F G A B
@@ -6921,9 +6922,9 @@ plays a *triplet quaver* of **A**, **C** and **E**. The following table lists th
 | 7 | Half | Minim | 𝅗𝅥 |
 | 8 | Dotted Half | Dotted Minim | 𝅗𝅥𝅭 |
 | 9 | Whole | Semibreve | 𝅝 |
-| [colour: pale yellow] 10 | [colour: pale yellow] Triplet sixteenth | [colour: pale yellow] Triplet semiquaver | [colour: pale yellow] ![Three notes joined by a beam, under a bracket marked 3](/documentation/manual/rev3/figures/p150-triplet-10.png) |
-| [colour: pale yellow] 11 | [colour: pale yellow] Triplet eighth | [colour: pale yellow] Triplet quaver | [colour: pale yellow] ![Three notes joined by a beam, under a bracket marked 3](/documentation/manual/rev3/figures/p150-triplet-11.png) |
-| [colour: pale yellow] 12 | [colour: pale yellow] Triplet quarter | [colour: pale yellow] Triplet crotchet | [colour: pale yellow] ![Three crotchets under a bracket marked 3](/documentation/manual/rev3/figures/p150-triplet-12.png) |
+| [colour: pale yellow] 10 | [colour: pale yellow] Triplet sixteenth | [colour: pale yellow] Triplet semiquaver | [colour: pale yellow] ![Three notes joined by a beam, under a bracket marked 3](zx-spectrum-next-manual-3rd-ed-figures/p150-triplet-10.png) |
+| [colour: pale yellow] 11 | [colour: pale yellow] Triplet eighth | [colour: pale yellow] Triplet quaver | [colour: pale yellow] ![Three notes joined by a beam, under a bracket marked 3](zx-spectrum-next-manual-3rd-ed-figures/p150-triplet-11.png) |
+| [colour: pale yellow] 12 | [colour: pale yellow] Triplet quarter | [colour: pale yellow] Triplet crotchet | [colour: pale yellow] ![Three crotchets under a bracket marked 3](zx-spectrum-next-manual-3rd-ed-figures/p150-triplet-12.png) |
 
 *Table 11 – Note duration values*
 
@@ -7029,14 +7030,14 @@ will cause an *infinite* repeat. This is particularly useful for things like rep
 
 | Effect Value | Visual Representation | Description |
 |---|---|---|
-| 0 | ![Volume envelope: decay then stop](/documentation/manual/rev3/figures/p152-volume-effect-0.png) | Decay then stop |
-| 1 | ![Volume envelope: attack then stop](/documentation/manual/rev3/figures/p152-volume-effect-1.png) | Attack then stop |
-| 2 | ![Volume envelope: decay then hold](/documentation/manual/rev3/figures/p152-volume-effect-2.png) | Decay then hold |
-| 3 | ![Volume envelope: attack then hold](/documentation/manual/rev3/figures/p152-volume-effect-3.png) | Attack then hold |
-| 4 | ![Volume envelope: repeated decay](/documentation/manual/rev3/figures/p152-volume-effect-4.png) | Repeated Decay |
-| 5 | ![Volume envelope: repeated attack](/documentation/manual/rev3/figures/p152-volume-effect-5.png) | Repeated Attack |
-| 6 | ![Volume envelope: repeated attack-decay](/documentation/manual/rev3/figures/p152-volume-effect-6.png) | Repeated Attack-Decay |
-| 7 | ![Volume envelope: repeated decay-attack](/documentation/manual/rev3/figures/p152-volume-effect-7.png) | Repeated Decay-Attack |
+| 0 | ![Volume envelope: decay then stop](zx-spectrum-next-manual-3rd-ed-figures/p152-volume-effect-0.png) | Decay then stop |
+| 1 | ![Volume envelope: attack then stop](zx-spectrum-next-manual-3rd-ed-figures/p152-volume-effect-1.png) | Attack then stop |
+| 2 | ![Volume envelope: decay then hold](zx-spectrum-next-manual-3rd-ed-figures/p152-volume-effect-2.png) | Decay then hold |
+| 3 | ![Volume envelope: attack then hold](zx-spectrum-next-manual-3rd-ed-figures/p152-volume-effect-3.png) | Attack then hold |
+| 4 | ![Volume envelope: repeated decay](zx-spectrum-next-manual-3rd-ed-figures/p152-volume-effect-4.png) | Repeated Decay |
+| 5 | ![Volume envelope: repeated attack](zx-spectrum-next-manual-3rd-ed-figures/p152-volume-effect-5.png) | Repeated Attack |
+| 6 | ![Volume envelope: repeated attack-decay](zx-spectrum-next-manual-3rd-ed-figures/p152-volume-effect-6.png) | Repeated Attack-Decay |
+| 7 | ![Volume envelope: repeated decay-attack](zx-spectrum-next-manual-3rd-ed-figures/p152-volume-effect-7.png) | Repeated Decay-Attack |
 
 *Table 12 – Volume effects values*
 
@@ -7989,7 +7990,7 @@ You can immediately notice two things: First the addition of a column made from 
 
 You may have noticed that the display gets very cluttered when using the **EXP** modifier especially if there are a lot of files with long names as the screen normally fits only 32 columns. If you follow the note in the beginning of this chapter and use 64 or 85 column modes. you'll see the situation improves. Switch to 64 column or 85 column mode, rerun **CAT EXP** and you will get something similar to this:
 
-![Fig. 19 – CAT EXP output in 85 columns](/documentation/manual/rev3/figures/p174-fig19-cat-exp-85col.png)
+![Fig. 19 – CAT EXP output in 85 columns](zx-spectrum-next-manual-3rd-ed-figures/p174-fig19-cat-exp-85col.png)
 
 ```
 DEMOS                       d---  2019-10-22 20:28
@@ -8024,7 +8025,7 @@ Bubble Bobble (1987)(Firebird)(48K-128K).tap
 
 Similarly, the output will be even more pleasant at 64 columns:
 
-![Fig. 20 – CAT EXP output in 64 columns](/documentation/manual/rev3/figures/p175-fig20-cat-exp-64col.png)
+![Fig. 20 – CAT EXP output in 64 columns](zx-spectrum-next-manual-3rd-ed-figures/p175-fig20-cat-exp-64col.png)
 
 ```
 DEMOS                       d---  2019-10-22 20:28
@@ -8244,7 +8245,7 @@ Using a combination of the double dot and slash *shortcuts*, **CD** can also eas
 
 Assuming a structure like the one in your **System/Next™** distribution as partly displayed in the figure below, lets provide some examples of horizontal and vertical navigation.
 
-![Fig. 21 – Folder tree navigation](/documentation/manual/rev3/figures/p179-fig21-folder-tree.png)
+![Fig. 21 – Folder tree navigation](zx-spectrum-next-manual-3rd-ed-figures/p179-fig21-folder-tree.png)
 ```
 System/Next™
 example folder organisation
@@ -9067,7 +9068,7 @@ Once the menu is selected and **ENTER** is pressed, the screen changes to the *B
 
 The *Browser* window consists of five separate areas, as seen in the figure below:
 
-![Fig. 22 – Browser window areas and their function](/documentation/manual/rev3/figures/p194-fig22-browser-window.png)
+![Fig. 22 – Browser window areas and their function](zx-spectrum-next-manual-3rd-ed-figures/p194-fig22-browser-window.png)
 
 Current Drive and Path
 
@@ -9264,7 +9265,7 @@ The *NextZXOS NMI menu* offers, however, many more features over those of the or
 
 Upon loading, we can see the following entries in the menu:
 
-![Fig. 23 – NMI main menu](/documentation/manual/rev3/figures/p198-fig23-nmi-main-menu.png)
+![Fig. 23 – NMI main menu](zx-spectrum-next-manual-3rd-ed-figures/p198-fig23-nmi-main-menu.png)
 
 ```
 NMI Menu
@@ -9293,7 +9294,7 @@ About
 
 *Debug tools* – Gives access to maybe the most powerful set of features in the entire suite: A *Next Register* and *Z80n* Register status browser, a *memory map* and *bank browser*, the ability to *set breakpoints* in memory to intercept running code as well as a *banked memory save tool*.
 
-![Fig. 24 – NMI Settings](/documentation/manual/rev3/figures/p198-fig24-nmi-settings.png)
+![Fig. 24 – NMI Settings](zx-spectrum-next-manual-3rd-ed-figures/p198-fig24-nmi-settings.png)
 
 ```
 Settings
@@ -9305,7 +9306,7 @@ Sound
 
 *Fig. 24 – NMI Settings*
 
-![Fig. 25 – NMI Joystick Settings](/documentation/manual/rev3/figures/p198-fig25-nmi-joystick-settings.png)
+![Fig. 25 – NMI Joystick Settings](zx-spectrum-next-manual-3rd-ed-figures/p198-fig25-nmi-joystick-settings.png)
 
 ```
 Joystick
@@ -9318,7 +9319,7 @@ Keyjoy R Setup
 
 *Fig. 25 – NMI Joystick Settings*
 
-![Fig.26 – NMI Sound Settings](/documentation/manual/rev3/figures/p198-fig26-nmi-sound-settings.png)
+![Fig.26 – NMI Sound Settings](zx-spectrum-next-manual-3rd-ed-figures/p198-fig26-nmi-sound-settings.png)
 
 ```
 Sound
@@ -9339,7 +9340,7 @@ AY2 Mono   Off
 
 *Settings* – Allows easy modification of hardware settings on-the-fly, from the ones available on the configuration menu to the ones that are more nuanced (like the type of DMA chip in use or the machine timings used in the specific personality) which aren't always available through the standard configuration (*Fig. 24 through 27).*
 
-![Fig. 27 - NMI General Settings](/documentation/manual/rev3/figures/p198-fig27-nmi-general-settings.png)
+![Fig. 27 - NMI General Settings](zx-spectrum-next-manual-3rd-ed-figures/p198-fig27-nmi-general-settings.png)
 
 ```
 General
@@ -9453,7 +9454,7 @@ To run *CP/M*, you need to call up the *NextZXOS Startup menu*, go to the *More.
 
 Any software, compatible with *CP/M-80*, *CP/M 2.2*, *CP/M 3.0* or *CP/M Plus* will work on the ZX Spectrum Next's flavour of *CP/M* except *CP/M-86* software (which requires an Intel x86 processor) and *CP/M-68* software (which requires a Motorola MC68K class processor).
 
-![Fig. 28 – Initial CP/M setup procedure](/documentation/manual/rev3/figures/p201-fig28-cpm-setup.png)
+![Fig. 28 – Initial CP/M setup procedure](zx-spectrum-next-manual-3rd-ed-figures/p201-fig28-cpm-setup.png)
 
 ```
              Welcome to the CP/M 3.0 BIOS for the ZX Spectrum Next!
@@ -9484,7 +9485,7 @@ Before you can use *CP/M*, *NextZXOS* will need to prepare it. This is a process
 
 *CP/M* option from the *More... submenu* in the *NextZXOS Startup Menu*, or type **.cpm** in the *NextBASIC Editor* or the *Command Line* will take you straight into *CP/M* *(Fig. 29).*
 
-![Fig. 29 – ZX Spectrum Next properly booted CP/M setup](/documentation/manual/rev3/figures/p202-fig29-cpm-booted.png)
+![Fig. 29 – ZX Spectrum Next properly booted CP/M setup](zx-spectrum-next-manual-3rd-ed-figures/p202-fig29-cpm-booted.png)
 
 ```
 CP/M Plus COPYRIGHT 1998, CALDERA, INC.   101198
@@ -9544,7 +9545,7 @@ In the *CP/M* distribution that comes with *NextZXOS*, there are a number of com
 
 Typing the name of these commands will give some more information on how to use them.
 
-![Fig. 30 – TERMINFO output](/documentation/manual/rev3/figures/p203-fig30-terminfo.png)
+![Fig. 30 – TERMINFO output](zx-spectrum-next-manual-3rd-ed-figures/p203-fig30-terminfo.png)
 
 ```
                    ZX Spectrum Next BIOS Terminal Information         (01 of 13)
@@ -9603,7 +9604,7 @@ where X is the drive letter, from **A** to **P**. If you have created multiple f
 
 Note that *NextZXOS* will also automatically mount these drive images (except any image where **X** is **c**) when it starts up. You can view them in the *Browser* (press **D** to change drives) and copy files between them etc. NextZXOS will mount **drv-X** files in preference to **cpm-X** files. You can also manually mount other disk images which don't follow the automatically-mounted naming scheme. To do this, just press **ENTER** on the **.p3d** or **.dsk** file in the *Browser*.
 
-![Fig. 31 – ZX Spectrum Next CP/M running WordStar 4](/documentation/manual/rev3/figures/p204-fig31-wordstar.png)
+![Fig. 31 – ZX Spectrum Next CP/M running WordStar 4](zx-spectrum-next-manual-3rd-ed-figures/p204-fig31-wordstar.png)
 
 ```
                       WordStar, CP/M Edition, Release 4
@@ -9681,7 +9682,7 @@ menu=ZX Spectrum 128k,1,8,128.rom, esxmmc.bin,<none>
 
 Also, if you have an *RTC* chip installed, go to **c:/nextzxos/** and copy **RTC.SYS** to **c:/sys/**. Save it, eject the SD card and transfer it to your ZX Spectrum Next. Upon boot, press **SPACE** and then using the cursor keys, locate the **ZX Spectrum 128k** line. Press **ENTER** and in a few seconds you'll see something like this:
 
-![Fig. 32 – ZX Spectrum Next running esxDOS 0.8.6](/documentation/manual/rev3/figures/p205-fig32-esxdos.png)
+![Fig. 32 – ZX Spectrum Next running esxDOS 0.8.6](zx-spectrum-next-manual-3rd-ed-figures/p205-fig32-esxdos.png)
 
 ```
 esxDOS             v0.8.6-DivMMC
@@ -10077,7 +10078,7 @@ which will open a TCP connection to port **80** on **specnext.dev**
 
 When we talk about *Windows*, we're really talking about two kinds; *System* and *User Windows*. The former are created and managed by *NextBASIC* while the latter are created and controlled by the user. By default, 4 *System Windows* are created; one for each Layer other than 0. These are full screen and are used to produce output through the standard **s** channel and only a few parameters of these can change (size always remains the maximum possible).
 
-![Fig. 33 – NextBASIC Text Windows](/documentation/manual/rev3/figures/p214-fig33-text-windows.png)
+![Fig. 33 – NextBASIC Text Windows](zx-spectrum-next-manual-3rd-ed-figures/p214-fig33-text-windows.png)
 
 ```
 You can instantly 'wash'
@@ -10227,7 +10228,7 @@ For example, a 10 x 10 window in Layer 2 requires **6400** bytes of available me
 
 <!-- PDF page 218 -->
 
-![The ZX Spectrum Next Issue 2 Mainboard with optional equipment locations](/documentation/manual/rev3/figures/p218-issue2-mainboard.png)
+![The ZX Spectrum Next Issue 2 Mainboard with optional equipment locations](zx-spectrum-next-manual-3rd-ed-figures/p218-issue2-mainboard.png)
 
 Diagram Legend
 
@@ -10251,7 +10252,7 @@ Diagram Legend
 
 <!-- PDF page 219 -->
 
-![The ZX Spectrum Next Issue 4 Mainboard with equipment locations](/documentation/manual/rev3/figures/p219-issue4-mainboard.png)
+![The ZX Spectrum Next Issue 4 Mainboard with equipment locations](zx-spectrum-next-manual-3rd-ed-figures/p219-issue4-mainboard.png)
 
 Diagram Legend
 
@@ -10313,13 +10314,13 @@ Memory is equally simple, however, care must be exercised in that the RAM socket
 
 every other module) make sure you provide enough support on the obverse so the board doesn't flex. Refer to the figure below on the proper installation of each RAM chip.
 
-![Fig. 34 – Optional RAM upgrade installed](/documentation/manual/rev3/figures/p221-fig34-ram-upgrade.png)
+![Fig. 34 – Optional RAM upgrade installed](zx-spectrum-next-manual-3rd-ed-figures/p221-fig34-ram-upgrade.png)
 
 *Fig. 34 – Optional RAM upgrade installed*
 
 The *Raspberry Pi Zero* (RPi0) accelerator requires a little bit of work. You will need to solder the 40 pin (2 x 20) FEMALE IDC header on the *RPi0's* GPIO through-holes. Unlike what would be normally expected the socket needs to be soldered from the component side, therefore facing downwards. With a properly soldered IDC header you need to be able to see the *RPi0's* SD card reader and all its components with the IDC header out of view like in the figure below:
 
-![Fig. 35 – Raspberry Pi 0 installed on Issue 2 board (with WiFi module in view - left)](/documentation/manual/rev3/figures/p221-fig35-rpi0-issue2.png)
+![Fig. 35 – Raspberry Pi 0 installed on Issue 2 board (with WiFi module in view - left)](zx-spectrum-next-manual-3rd-ed-figures/p221-fig35-rpi0-issue2.png)
 
 *Fig. 35 – Raspberry Pi 0 installed on Issue 2 board (with WiFi module in view - left)*
 
@@ -10333,7 +10334,7 @@ You should exercise caution while soldering the oscillator; the through holes ar
 
 ### Raspberry Pi Zero installation on the Issue 4 mainboard
 
-![Fig. 36 – Disassembled Next. Note the expansion port and Raspberry Pi 0 backplates](/documentation/manual/rev3/figures/p222-fig36-disassembled-next.png)
+![Fig. 36 – Disassembled Next. Note the expansion port and Raspberry Pi 0 backplates](zx-spectrum-next-manual-3rd-ed-figures/p222-fig36-disassembled-next.png)
 
 ```
 Expansion Bus backplate (B)
@@ -10362,7 +10363,7 @@ Once you have your add-ons installed, it is time to test them; we'll start with 
 
 This is by far the simplest test; if your memory installation worked, your *NextZXOS Startup menu* will report **1792K** instead of the **768K** it reported up until now (see *Fig. 37*).
 
-![Fig. 37 – NextZXOS Options menu showing 2MB](/documentation/manual/rev3/figures/p223-fig37-options-menu.png)
+![Fig. 37 – NextZXOS Options menu showing 2MB](zx-spectrum-next-manual-3rd-ed-figures/p223-fig37-options-menu.png)
 
 ```
 Options
@@ -10385,7 +10386,7 @@ To further verify that the memory was properly installed, there's a program call
 
 Execute it with the browser or by using the **.nexload** dot command and let it go through all your memory testing it's working properly (see *Fig. 38 and 39*).
 
-![Fig. 38 – Using the browser to launch 2MBTEST](/documentation/manual/rev3/figures/p223-fig38-browser-2mbtest.png)
+![Fig. 38 – Using the browser to launch 2MBTEST](zx-spectrum-next-manual-3rd-ed-figures/p223-fig38-browser-2mbtest.png)
 
 ```
 C:/EXTRAS/RAMTEST/
@@ -10404,7 +10405,7 @@ Drive Copy moVe Rename Erase mKdir Unmount reMount
 
 *Fig. 38 – Using the browser to launch 2MBTEST*
 
-![Fig. 39 – 2MBTEST running without faults so far](/documentation/manual/rev3/figures/p223-fig39-2mbtest.png)
+![Fig. 39 – 2MBTEST running without faults so far](zx-spectrum-next-manual-3rd-ed-figures/p223-fig39-2mbtest.png)
 
 ```
 ==================== Spectrum Next 2MB RAM Test ====================
@@ -10439,7 +10440,7 @@ In case this does not work and you have still questions whether or if your WIFI 
 
 <!-- PDF page 224 -->
 
-![Fig. 40 – NextZXOS Tools submenu](/documentation/manual/rev3/figures/p224-fig40-tools-submenu.png)
+![Fig. 40 – NextZXOS Tools submenu](zx-spectrum-next-manual-3rd-ed-figures/p224-fig40-tools-submenu.png)
 
 ```
 Tools
@@ -10457,7 +10458,7 @@ Logical drives: CM
 
 *Fig. 40 – NextZXOS Tools submenu*
 
-![Fig. 41 – WIFI setup program](/documentation/manual/rev3/figures/p224-fig41-wifi-setup.png)
+![Fig. 41 – WIFI setup program](zx-spectrum-next-manual-3rd-ed-figures/p224-fig41-wifi-setup.png)
 
 ```
 Firmware:
@@ -10550,7 +10551,7 @@ Note that different ESP firmware versions have slightly different versions of th
 
 There are several ways of testing if the *RTC* was properly installed the easiest of which is to launch again the *NextZXOS Startup Menu* and then go to the *Tools Submenu*. There apart from the *WIFI setup* option, you will find a *Set Clock* option. Launching it will allow you to program your RTC using just your **cursor** and the **ENTER** keys:
 
-![Fig. 42 – NextZXOS Set Clock utility](/documentation/manual/rev3/figures/p225-fig42-set-clock.png)
+![Fig. 42 – NextZXOS Set Clock utility](zx-spectrum-next-manual-3rd-ed-figures/p225-fig42-set-clock.png)
 
 ```
 Current date: 05/02/2023
@@ -10572,7 +10573,7 @@ Set Clock
 
 If everything worked right, then *NextZXOS* shall start reporting the current time and date on its menus like so:
 
-![Fig. 43 – RTC Working](/documentation/manual/rev3/figures/p225-fig43-rtc-working.png)
+![Fig. 43 – RTC Working](zx-spectrum-next-manual-3rd-ed-figures/p225-fig43-rtc-working.png)
 
 ```
 NextZXOS
@@ -10600,7 +10601,7 @@ There are a few issues that can occur with the *RTC*; if the output is as above,
 
 A defective battery holder installation as well as a defective (or depleted) battery will manifest itself with the *RTC* not keeping time upon bootup and *NextZXOS* not displaying the time and date information on its *Startup Menu*. Setting the time and date anew, however, will restore the time display.
 
-![Fig. 44 – RTC not working](/documentation/manual/rev3/figures/p226-fig44-rtc-not-working.png)
+![Fig. 44 – RTC not working](zx-spectrum-next-manual-3rd-ed-figures/p226-fig44-rtc-not-working.png)
 
 ```
 No ACK on address/reg select.
@@ -10624,7 +10625,7 @@ Once you prepare the SD card according to the instructions, put it in your Pi Ac
 
 If you have access to the *RPi0* you should see the green led flashing while the ZX Spectrum Next is booting; that's a good first sign showing that the *RPi0* is loading its **NextPi2** distribution. The LED will eventually stop flashing and should turn into a steady green. Once you're all booted up, change to the **NextPi2** support folder, switch to the **terminex** folder and execute (with the browser or with the **SPECTRUM** command) **terminex.snx** by David Saphier. If the *RPi0* installation worked, you will see a message stating **Connection to NextPi established** followed by a **SUP>** prompt which means your *RPi0* installation was successful as shown in the figure below.
 
-![Fig. 45 – RPi Supervisor prompt via Terminex](/documentation/manual/rev3/figures/p226-fig45-terminex.png)
+![Fig. 45 – RPi Supervisor prompt via Terminex](zx-spectrum-next-manual-3rd-ed-figures/p226-fig45-terminex.png)
 
 ```
 TERMINEX
@@ -13349,150 +13350,152 @@ If a device interrupt is disabled, it enters a polled mode
 
 <!-- PDF page 242 -->
 
-#### [?]
+<!-- Reconstruction note: in the PDF the left margin of this page is cropped. In the left column (NextREG 200 (C8h) to 206 (CEh)) the "Group Name" cells, the start of each title and the start of each note line are cut off, and so is the title of NextREG 207 (CFh). They were restored from https://explorer.specnext.dev/registers and from the matching tables of NextREG 196-198 (C4h-C6h) on PDF page 241. The bit positions, colours, descriptions and reset values are those printed on the page. The exact wording of the first words of the notes ("When reading", "When writing", "Set bits indicate", "Shared interrupt", "Write 255 (FFh)") is a reconstruction. -->
+
+#### NextREG 200 (C8h) – Interrupt Status 0
 
 <table>
 <thead>
-<tr><th>[?]</th><th>R</th><th>W</th><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th><th>Description</th><th>H</th><th>D</th></tr>
+<tr><th>Group Name</th><th>R</th><th>W</th><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th><th>Description</th><th>H</th><th>D</th></tr>
 </thead>
 <tbody>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved must be 0</td><td></td><td></td></tr>
+<tr><td>ULA</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>Status</td><td></td><td></td></tr>
+<tr><td>Line</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
+<tr><td>Reserved</td><td>■</td><td>■</td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved must be 0</td><td></td><td></td></tr>
 </tbody>
 </table>
 
-[?]g, set bits indicate that the device generated an interrupt in the past or an in-\
-[?]nding\
-[?], set bits clear the status. In Hardware IM2 mode, the status will continue be-\
-[?]set until the interrupt pending condition is cleared
+\* When reading, set bits indicate that the device generated an interrupt in the past or an in-\
+terrupt is pending\
+When writing, set bits clear the status. In Hardware IM2 mode, the status will continue be-\
+ing set until the interrupt pending condition is cleared
 
-#### [?]C9h) – Interrupt Status 1
+#### NextREG 201 (C9h) – Interrupt Status 1
 
 <table>
 <thead>
-<tr><th rowspan="2">[?]</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
+<tr><th rowspan="2">Group Name</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
 <tr><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th></tr>
 </thead>
 <tbody>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
+<tr><td>CTC Channel 0 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>Status</td><td></td><td></td></tr>
+<tr><td>CTC Channel 1 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
+<tr><td>CTC Channel 2 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
+<tr><td>CTC Channel 3 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
+<tr><td>CTC Channel 4 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
+<tr><td>CTC Channel 5 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
+<tr><td>CTC Channel 6 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
+<tr><td>CTC Channel 7 ZC/TO</td><td>■</td><td>■</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td></td></tr>
 </tbody>
 </table>
 
-[?]g, set bits indicate that the device generated an interrupt in the past or an in-\
-[?]nding\
-[?], set bits clear the status. In Hardware IM2 mode, the status will continue be-\
-[?]set until the interrupt pending condition is cleared
+\* When reading, set bits indicate that the device generated an interrupt in the past or an in-\
+terrupt is pending\
+When writing, set bits clear the status. In Hardware IM2 mode, the status will continue be-\
+ing set until the interrupt pending condition is cleared
 
-#### [?]CAh) – Interrupt Status 2
+#### NextREG 202 (CAh) – Interrupt Status 2
 
 <table>
 <thead>
-<tr><th rowspan="2">[?]</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
+<tr><th rowspan="2">Group Name</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
 <tr><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th></tr>
 </thead>
 <tbody>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>Status</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved, must be 0</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved, must be 0</td><td></td><td>0</td></tr>
+<tr><td>UART 0 Rx available¹</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>Status</td><td></td><td>0</td></tr>
+<tr><td>UART 0 Rx near-full¹</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
+<tr><td>UART 0 Tx empty</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
+<tr><td>Reserved</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved, must be 0</td><td></td><td>0</td></tr>
+<tr><td>UART 1 Rx available²</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
+<tr><td>UART 1 Rx near-full²</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
+<tr><td>UART 1 Tx empty</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Status</td><td></td><td>0</td></tr>
+<tr><td>Reserved</td><td>■</td><td>■</td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved, must be 0</td><td></td><td>0</td></tr>
 </tbody>
 </table>
 
-[?]upt\
-[?]upt\
-[?]g, set bits indicate that the device generated an interrupt in the past or an in-\
-[?]nding\
-[?], set bits clear the status. In Hardware IM2 mode, the status will continue be-\
-[?]set until the interrupt pending condition is cleared
+1 Shared interrupt\
+2 Shared interrupt\
+\* When reading, set bits indicate that the device generated an interrupt in the past or an in-\
+terrupt is pending\
+When writing, set bits clear the status. In Hardware IM2 mode, the status will continue be-\
+ing set until the interrupt pending condition is cleared
 
-#### [?]CBh) – Reserved
+#### NextREG 203 (CBh) – Reserved
 
 <table>
 <thead>
-<tr><th rowspan="2">[?]</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
+<tr><th rowspan="2">Group Name</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
 <tr><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th></tr>
 </thead>
 <tbody>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green]</td><td>Reserved, must be 1</td><td></td><td></td></tr>
+<tr><td>Reserved</td><td>■</td><td>■</td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green] <b>1</b></td><td>[colour: dark green]</td><td>Reserved, must be 1</td><td></td><td></td></tr>
 </tbody>
 </table>
 
-[?]Fh)
+\* Write **255 (FFh)**
 
-#### [?]CCh) – DMA Interrupt Enables 0
+#### NextREG 204 (CCh) – DMA Interrupt Enables 0
 
 <table>
 <thead>
-<tr><th rowspan="2">[?]</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
+<tr><th rowspan="2">Group Name</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
 <tr><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th></tr>
 </thead>
 <tbody>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>ULA</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>Line</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>NMI</td><td>■</td><td>■</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
 </tbody>
 </table>
 
-[?]ate the corresponding interrupt will interrupt a DMA operation when in Hard-\
-[?]ode
+\* Set bits indicate the corresponding interrupt will interrupt a DMA operation when in Hard-\
+ware IM2 mode
 
-#### [?]CDh) – DMA Interrupt Enables 1
+#### NextREG 205 (CDh) – DMA Interrupt Enables 1
 
 <table>
 <thead>
-<tr><th rowspan="2">[?]</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
+<tr><th rowspan="2">Group Name</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
 <tr><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th></tr>
 </thead>
 <tbody>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>CTC Channel 0 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>CTC Channel 1 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>CTC Channel 2 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>CTC Channel 3 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>CTC Channel 4 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>CTC Channel 5 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>CTC Channel 6 ZC/TO</td><td>■</td><td>■</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>CTC Channel 7 ZC/TO</td><td>■</td><td>■</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
 </tbody>
 </table>
 
-[?]ate the corresponding interrupt will interrupt a DMA operation when in Hard-\
-[?]ode
+\* Set bits indicate the corresponding interrupt will interrupt a DMA operation when in Hard-\
+ware IM2 mode
 
-#### [?]CEh) – DMA Interrupt Enables 2
+#### NextREG 206 (CEh) – DMA Interrupt Enables 2
 
 <table>
 <thead>
-<tr><th rowspan="2">[?]</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
+<tr><th rowspan="2">Group Name</th><th rowspan="2">R</th><th rowspan="2">W</th><th colspan="8">Data Bits</th><th rowspan="2">Description</th><th rowspan="2">H</th><th rowspan="2">D</th></tr>
 <tr><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th></tr>
 </thead>
 <tbody>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved, must be 0</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
-<tr><td>[?]</td><td>■</td><td>■</td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved, must be 0</td><td></td><td>0</td></tr>
+<tr><td>UART 0 Rx available</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>UART 0 Rx near-full</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>UART 0 Tx empty</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>Reserved</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved, must be 0</td><td></td><td>0</td></tr>
+<tr><td>UART 1 Rx available</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>UART 1 Rx near-full</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>[colour: pink]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>UART 1 Tx empty</td><td>■</td><td>■</td><td>[colour: dark green]</td><td>•</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>1 to enable</td><td></td><td>0</td></tr>
+<tr><td>Reserved</td><td>■</td><td>■</td><td>[colour: dark green] <b>0</b></td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>[colour: pink]</td><td>Reserved, must be 0</td><td></td><td>0</td></tr>
 </tbody>
 </table>
 
-[?]ate the corresponding interrupt will interrupt a DMA operation when in Hard-\
-[?]ode
+\* Set bits indicate the corresponding interrupt will interrupt a DMA operation when in Hard-\
+ware IM2 mode
 
-#### [?]
+#### NextREG 207 (CFh) – Reserved
 
 <table>
 <thead>
@@ -14328,7 +14331,7 @@ cause the CPU is given a new window in to a different bank in physical memory. T
 
 There are two banking schemes employed in the ZX Spectrum Next: Standard and MMU-based banking. The Standard scheme is inherited from the +3 and the other 128K Spectrum models. The MMU scheme co-exists with the Standard scheme but it is unique to the ZX Spectrum Next.
 
-![Fig. 46 – Standard (NextBASIC) memory map](/documentation/manual/rev3/figures/p248-fig46-standard-memory-map.png)
+![Fig. 46 – Standard (NextBASIC) memory map](zx-spectrum-next-manual-3rd-ed-figures/p248-fig46-standard-memory-map.png)
 ```
  ROM                              RAM
 +----------------+----------------+----------------+----------------+
@@ -14350,7 +14353,7 @@ The Standard banking scheme is controlled by hardware I/O ports (covered in the 
 
 The MMU (memory management unit) scheme is diagrammed below. It is much more flexible in that it can map any **8K** bank of physical RAM into any **8K** slot of the CPU's addressable memory.
 
-![Fig. 47 – MMU based memory map](/documentation/manual/rev3/figures/p248-fig47-mmu-memory-map.png)
+![Fig. 47 – MMU based memory map](zx-spectrum-next-manual-3rd-ed-figures/p248-fig47-mmu-memory-map.png)
 ```
       8192             24576            40960            57344
       2000h            6000h            A000h            E000h
@@ -14483,7 +14486,7 @@ From the above, it is easy to surmise what the initial bank assignments are afte
 
 In case you were thinking that *this looks easy enough – I could page in any bank I want*, don't! In actuality, *NextZXOS* and *NextBASIC* expect certain things to be in certain places at all times within the memory map which is organised in the following manner:
 
-![Fig. 48 – Memory map usage by NextBASIC](/documentation/manual/rev3/figures/p251-fig48-nextbasic-memory-usage.png)
+![Fig. 48 – Memory map usage by NextBASIC](zx-spectrum-next-manual-3rd-ed-figures/p251-fig48-nextbasic-memory-usage.png)
 ```
  DISP_FILE1                    COLOUR_FILE1           SYSVARS            CHANS
 +------------------------------+----------------------+------------------+---------------------~
@@ -14549,7 +14552,7 @@ Finally the *User Defined Graphics area* holds all the definitions to the system
 
 Each line of *NextBASIC* program has the form:
 
-![Program line data structure](/documentation/manual/rev3/figures/p253-program-line.png)
+![Program line data structure](zx-spectrum-next-manual-3rd-ed-figures/p253-program-line.png)
 ```
  MSB  LSB
 +---------+---------+-----------~ ~-----------+-----------------+
@@ -14569,7 +14572,7 @@ The variables have different formats according to their features. The letters in
 
 Number whose name is one letter only:
 
-![Data structure of a number whose name is one letter only](/documentation/manual/rev3/figures/p253-number-one-letter.png)
+![Data structure of a number whose name is one letter only](zx-spectrum-next-manual-3rd-ed-figures/p253-number-one-letter.png)
 ```
 +-----------------+----------+----+---------~ ~---------+
 | 0 1 1           | Exponent |Sign| 4 mantis~ ~sa bytes |
@@ -14580,7 +14583,7 @@ Number whose name is one letter only:
 
 Number whose name is longer than one letter:
 
-![Data structure of a number whose name is longer than one letter](/documentation/manual/rev3/figures/p253-number-long-name.png)
+![Data structure of a number whose name is longer than one letter](zx-spectrum-next-manual-3rd-ed-figures/p253-number-long-name.png)
 ```
 +-----------------+-----------------~ ~-----------------+----------+----+---------~ ~---------+
 | 1 0 1           | 0               ~ ~ 1               | Exponent |Sign| 4 mantis~ ~sa bytes |
@@ -14591,7 +14594,7 @@ Number whose name is longer than one letter:
 
 Array of numbers:
 
-![Data structure of an array of numbers](/documentation/manual/rev3/figures/p253-array-of-numbers.png)
+![Data structure of an array of numbers](zx-spectrum-next-manual-3rd-ed-figures/p253-array-of-numbers.png)
 ```
                                     # of
                                  dimensions
@@ -14609,7 +14612,7 @@ Array of numbers:
 
 Array of numbers whose name is longer than one letter:
 
-![Data structure of an array of numbers whose name is longer than one letter](/documentation/manual/rev3/figures/p254-array-of-numbers-long-name.png)
+![Data structure of an array of numbers whose name is longer than one letter](zx-spectrum-next-manual-3rd-ed-figures/p254-array-of-numbers-long-name.png)
 ```
                                                                                      # of
                                                                                   dimensions
@@ -14631,7 +14634,7 @@ The elements with a given first subscript are ordered in the same way using the 
 
 Control variable of a **FOR**...**NEXT** loop:
 
-![Data structure of the control variable of a FOR...NEXT loop](/documentation/manual/rev3/figures/p254-for-next-variable.png)
+![Data structure of the control variable of a FOR...NEXT loop](zx-spectrum-next-manual-3rd-ed-figures/p254-for-next-variable.png)
 ```
                                                                     Statement
                                                                      # within
@@ -14644,7 +14647,7 @@ Control variable of a **FOR**...**NEXT** loop:
 
 Control variable of a **FOR**...**NEXT** loop whose name is longer than one letter:
 
-![Data structure of the control variable of a FOR...NEXT loop whose name is longer than one letter](/documentation/manual/rev3/figures/p254-for-next-variable-long-name.png)
+![Data structure of the control variable of a FOR...NEXT loop whose name is longer than one letter](zx-spectrum-next-manual-3rd-ed-figures/p254-for-next-variable-long-name.png)
 ```
                                                                                                         Statement
                                                                                                          # within
@@ -14657,7 +14660,7 @@ Control variable of a **FOR**...**NEXT** loop whose name is longer than one lett
 
 String:
 
-![Data structure of a string](/documentation/manual/rev3/figures/p254-string.png)
+![Data structure of a string](zx-spectrum-next-manual-3rd-ed-figures/p254-string.png)
 ```
 +-----------------+-------------+--------------~ ~--------------+
 | 0 1 0           | 2 bytes     |              ~ ~              |
@@ -14668,7 +14671,7 @@ String:
 
 String whose name is longer than one letter:
 
-![Data structure of a string whose name is longer than one letter](/documentation/manual/rev3/figures/p254-string-long-name.png)
+![Data structure of a string whose name is longer than one letter](zx-spectrum-next-manual-3rd-ed-figures/p254-string-long-name.png)
 ```
 +-----------------+-----------------+-------------~ ~-----------------+---------+--------------~ ~--------------+
 | 0 1 1 1 1 1 1 1 | 0 1 0           | 0 1 1       ~ ~ 1               | 2 bytes |              ~ ~              |
@@ -14678,7 +14681,7 @@ String whose name is longer than one letter:
 
 Array of characters:
 
-![Data structure of an array of characters](/documentation/manual/rev3/figures/p254-array-of-characters.png)
+![Data structure of an array of characters](zx-spectrum-next-manual-3rd-ed-figures/p254-array-of-characters.png)
 ```
                                     # of
                                  dimensions
@@ -14696,7 +14699,7 @@ Array of characters:
 
 Array of characters whose name is longer than one letter:
 
-![Data structure of an array of characters whose name is longer than one letter](/documentation/manual/rev3/figures/p255-array-of-characters-long-name.png)
+![Data structure of an array of characters whose name is longer than one letter](zx-spectrum-next-manual-3rd-ed-figures/p255-array-of-characters-long-name.png)
 ```
                                                                                      # of
                                                                                   dimensions
@@ -15253,7 +15256,7 @@ Between these two ports, there are enough bits to address all the RAM pages of a
 
 Let's begin how this all works by first looking at 128K style paging. The hardware port that
 
-![Fig. 49 – Horizontal vs Vertical ROM switching](/documentation/manual/rev3/figures/p267-fig49-rom-switching.png)
+![Fig. 49 – Horizontal vs Vertical ROM switching](zx-spectrum-next-manual-3rd-ed-figures/p267-fig49-rom-switching.png)
 
 ```
                      D4:7FFDh
@@ -16652,7 +16655,7 @@ Just placing a TBBLUE.TBU file on the root of the card won't update the core; th
 
 The regular core update method is quite easy. After you've made sure you have the **TBBLUE.FW** and **TBBLUE.TBU** on the root folder of your card, press and hold **U** on your keyboard and while doing that, *long*[^p298-3] press the **RESET** button. Do not release the **U** key until you see the following screen (Note that if you have a KS1 ZX Spectrum Next, an N-Go computer or a KS1 dev board your Board Id will say **ZX Next Issue 2**):
 
-![Fig. 50 – Core update screen](/documentation/manual/rev3/figures/p298-fig50-core-update.png)
+![Fig. 50 – Core update screen](zx-spectrum-next-manual-3rd-ed-figures/p298-fig50-core-update.png)
 
 ```
                     ZX Spectrum Next Configuration
@@ -16688,7 +16691,7 @@ To enter AB core update; you will need to power off your machine, then press and
 
 tach the power cable. Wait a few moments then release both keys. You should see the following screen:
 
-![Fig. 51 – AB Core update screen](/documentation/manual/rev3/figures/p299-fig51-ab-core-update.png)
+![Fig. 51 – AB Core update screen](zx-spectrum-next-manual-3rd-ed-figures/p299-fig51-ab-core-update.png)
 
 ```
                     ZX Spectrum Next Configuration
@@ -16741,7 +16744,7 @@ When powering up the system, you're presented with the boot screen, where, as we
 
 Pressing **SPACE** (be quick or the option will disappear and booting will continue) will present you with the following screen:
 
-![Fig. 52 – Personality Selection Screen](/documentation/manual/rev3/figures/p300-fig52-personality-selection.png)
+![Fig. 52 – Personality Selection Screen](zx-spectrum-next-manual-3rd-ed-figures/p300-fig52-personality-selection.png)
 
 ```
 ZX Spectrum Next Configuration
@@ -16775,7 +16778,7 @@ By using the cursor keys and **ENTER** you can select a new personality which wi
 
 a personality and pressing **E** will allow you to configure the specific personality further. Doing so will present you with another screen:
 
-![Fig. 53 – Configuration Options Screen](/documentation/manual/rev3/figures/p301-fig53-configuration-options.png)
+![Fig. 53 – Configuration Options Screen](zx-spectrum-next-manual-3rd-ed-figures/p301-fig53-configuration-options.png)
 
 ```
  ZX Spectrum Next Configuration
@@ -16876,7 +16879,7 @@ Alternatively, if you are working on a *NextBASIC* program, you may select the c
 
 When you have selected the *Calculator* option, the screen will change to:
 
-![Fig. 54 – Calculator Screen](/documentation/manual/rev3/figures/p303-fig54-calculator-screen.png)
+![Fig. 54 – Calculator Screen](zx-spectrum-next-manual-3rd-ed-figures/p303-fig54-calculator-screen.png)
 
 ```
 
@@ -16981,7 +16984,7 @@ and the calculator will print the number **27** (i.e. the *cube of 3*).
 
 When you have finished using the calculator, press the **EDIT** key. The screen will change to:
 
-![Fig. 55 – Calculator Options Menu](/documentation/manual/rev3/figures/p305-fig55-calculator-options.png)
+![Fig. 55 – Calculator Options Menu](zx-spectrum-next-manual-3rd-ed-figures/p305-fig55-calculator-options.png)
 
 ```
  Options

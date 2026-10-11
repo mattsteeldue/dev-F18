@@ -15,8 +15,9 @@ Confronto eseguito il 2026-10-11 tra i due file:
   `ZX Spectrum Next Manual 3rd Ed A4 OCR.pdf`, 318 pagine).
 - `doc/zx-spectrum-next-manual-3rd-ed.md` è una trascrizione riparata di quel
   PDF: ogni pagina è stata ricontrollata sulla sua immagine, le tabelle sono
-  vere tabelle, i punti illeggibili sono marcati `[?]` (148 in tutto) e ogni
-  pagina inizia con `<!-- PDF page N -->`.
+  vere tabelle, i punti illeggibili sono marcati `[?]` (73 in tutto, dopo la
+  ricostruzione di pagina 242, vedi 6.6) e ogni pagina inizia con
+  `<!-- PDF page N -->`.
 
 Una prima stesura di questo confronto usava un `.md` ricavato dal solo testo
 OCR del PDF (`util/pdftotext.bat` + `util/txt2md.py`): quel file è stato
@@ -313,6 +314,63 @@ pagina (numero e posizione dei bit, bit riservati).
 L'elenco online usa nomi abbreviati ("INT EN 0", "INT Status 0", "DMA INT EN
 0") e dà `$F0` e `$F8`-`$FA` come validi per "Issues 4 & 5", dove il manuale
 dice "Issue 4 only".
+
+#### Cosa è stato ripristinato nella trascrizione
+
+La ricostruzione è stata riportata anche in
+`doc/zx-spectrum-next-manual-3rd-ed.md`: la pagina 242 non ha più nessun
+`[?]` (nel file ne restano 73, erano 148). In cima alla pagina un commento
+HTML ("Reconstruction note") dichiara la ricostruzione e le sue fonti, così
+resta distinguibile dalla trascrizione fedele.
+
+| Parte tagliata | Ripristinata come | Fonte |
+|---|---|---|
+| Titoli di `$C8`-`$CE` | `NextREG 200 (C8h) – Interrupt Status 0` ... `NextREG 206 (CEh) – DMA Interrupt Enables 2` | elenco online, nella forma dei titoli di pagina 241 |
+| Titolo di `$CF` | `NextREG 207 (CFh) – Reserved` | elenco online (nel PDF il titolo manca del tutto) |
+| Intestazione della prima colonna | `Group Name` | tabelle di `$C4`-`$C6` a pagina 241 |
+| Nomi di `$C8` | ULA, Line, Reserved | elenco online |
+| Nomi di `$C9` e `$CD` | CTC Channel 0-7 ZC/TO | stile di `$C5` a pagina 241 |
+| Nomi di `$CA` e `$CE` | UART 0 / UART 1: Rx available, Rx near-full, Tx empty; due Reserved | stile di `$C6` a pagina 241 |
+| Nomi di `$CB` | Reserved | elenco online |
+| Nomi di `$CC` | ULA, Line, NMI | elenco online |
+| Inizio delle righe di nota | vedi sotto | senso della frase |
+
+Bit, colori delle celle, descrizioni e valori di reset non sono stati
+toccati: sono quelli stampati sulla pagina.
+
+#### Differenze tra manuale ed elenco online
+
+- **Nomi dei registri**: il manuale li scrive per esteso ("Interrupt Status
+  0", "DMA Interrupt Enables 0"), l'elenco online li abbrevia ("INT Status
+  0", "DMA INT EN 0"). Nella trascrizione vale la forma del manuale.
+- **Soglia di ricezione UART**: l'elenco online dice "Rx half full", il
+  manuale a pagina 241 (`$C6`) dice "Rx near-full". Nella trascrizione è
+  stata usata la dizione del manuale.
+- **Canali CTC**: nella trascrizione hanno la forma che il manuale usa per
+  `$C5` a pagina 241, "CTC Channel n ZC/TO" (zero count / time-out), una
+  riga per canale.
+- **`$CF`**: nel PDF la tabella c'è ma è senza titolo; il numero e il nome
+  "Reserved" vengono solo dall'elenco online e dalla posizione nella pagina,
+  tra `$CE` e `$D8`.
+- **Schede**: "Issues 4 & 5" online contro "Issue 4 only" nel manuale per
+  `$F0` e `$F8`-`$FA` (pagina 242, colonna destra, non tagliata).
+
+#### Parti congetturali
+
+Del testo stampato restava solo la coda di ogni riga, quindi le parole
+iniziali delle note sono ricostruite dal senso e non sono il testo certo del
+manuale:
+
+| Resto leggibile sulla pagina | Ricostruito come |
+|---|---|
+| "...g, set bits indicate that the device generated an interrupt..." | "When reading, set bits indicate..." |
+| "..., set bits clear the status." | "When writing, set bits clear the status." |
+| "...ate the corresponding interrupt will interrupt a DMA operation..." | "Set bits indicate the corresponding interrupt..." |
+| "...Fh)" (nota di `$CB`) | "Write 255 (FFh)" |
+| "...upt" su due righe (note 1 e 2 di `$CA`) | "Shared interrupt", per analogia con `$C6` |
+
+Sotto la tabella di `$CE` la pagina non riporta note numerate: i nomi UART
+sono quindi senza richiami di nota, a differenza di `$CA`.
 
 ## 7. Tabelle di riferimento (cap. 24 e Appendice B)
 

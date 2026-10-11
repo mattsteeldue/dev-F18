@@ -12,3 +12,7 @@ products/FACEBOOK*
 # Artefatti temporanei di /check-f18e (util/cmp-f18e.py)
 /forth18_.bin
 /forth18-cmp.log
+
+# Figure del manuale Next 3a edizione, scaricate da
+# https://explorer.specnext.dev/documentation/manual/rev3/figures/
+doc/zx-spectrum-next-manual-3rd-ed-figures/
