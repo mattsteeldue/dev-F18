@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 r"""
-Re-run the Forth snippets of doc/BASIC-to-vForth.md in the headless emulator.
+Re-run the Forth snippets of doc/basic-to-vforth/*.md in the headless emulator.
 
 The guide stays aligned with the core the same way the tests do: every fenced
 ```forth block is typed, line by line, at the vForth prompt and its output is
 compared with what the guide claims.
 
-Conventions the guide follows (see its "How to read this guide" section):
+The guide is one file per chapter (NN-title.md; README.md is the index). The
+chapter is named by the file's first heading, "# Chapter N - Title".
+
+Conventions the guide follows (see "How to read this guide" in README.md):
 
   * a line ending in   \ => text   must print `text` (blanks are collapsed,
     the match is "contains", so an error message can be claimed the same way);
@@ -15,7 +18,9 @@ Conventions the guide follows (see its "How to read this guide" section):
   * a line without a claim must not raise an error;
   * a block preceded by the line  <!-- no-test -->  is skipped (keyboard
     input, endless loops, hardware the emulator does not model);
-  * lines are 80 bytes or fewer, 7-bit ASCII, no TAB.
+  * lines are 80 bytes or fewer, 7-bit ASCII, no TAB;
+  * links between the files keep the .md form, [text](NN-title.md), and
+    must point to a file that exists.
 
 Run from the repo root:
 
@@ -29,22 +34,25 @@ Exit status: 0 when every claim holds, 1 otherwise.
 import os
 import re
 import sys
+import glob
 import argparse
 
 EMU_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(EMU_DIR)
 sys.path.insert(0, EMU_DIR)
 
-GUIDE = os.path.join(ROOT, "doc", "BASIC-to-vForth.md")
+GUIDE_DIR = os.path.join(ROOT, "doc", "basic-to-vforth")
 NO_TEST = "<!-- no-test -->"
 CLAIM = re.compile(r"\\ => (.*)$")
-CHAPTER = re.compile(r"^## (?:Chapter|Appendix) (\w+)")
+CHAPTER = re.compile(r"^# (?:Chapter|Appendix) (\w+)")
+LINK = re.compile(r"\]\(([^)#\s]+\.md)(?:#[^)]*)?\)")
 ERROR = re.compile(r"\S\? \S")          # "WORD? message." as ERROR prints it
 MAX_WAITS = 10                          # run-to-prompt retries per line
 
 
 class Block:
-    def __init__(self, chapter, lineno):
+    def __init__(self, name, chapter, lineno):
+        self.name = name                # file the block comes from
         self.chapter = chapter
         self.lineno = lineno            # line of the opening fence
         self.lines = []                 # (lineno, text)
@@ -55,6 +63,7 @@ def parse(path):
     """Return the testable forth blocks and the list of format complaints."""
     with open(path, "rb") as f:
         raw = f.read()
+    name = os.path.basename(path)
     complaints = []
     text = raw.decode("ascii", errors="replace").replace("\r\n", "\n")
     lines = text.split("\n")
@@ -64,18 +73,23 @@ def parse(path):
         m = CHAPTER.match(line)
         if m:
             chapter = m.group(1)
+        for target in LINK.findall(line):
+            if "://" not in target and not os.path.isfile(
+                    os.path.join(os.path.dirname(path), target)):
+                complaints.append(
+                    f"{name}:{i + 1}: link to missing file {target}")
         if line.strip() == "```forth":
             skip = last_text == NO_TEST
-            blk = Block(chapter, i + 1)
+            blk = Block(name, chapter, i + 1)
             i += 1
             while i < len(lines) and lines[i].strip() != "```":
                 blk.lines.append((i + 1, lines[i]))
                 i += 1
             for n, t in blk.lines:
                 if len(t) > 80:
-                    complaints.append(f"line {n}: longer than 80 bytes")
+                    complaints.append(f"{name}:{n}: longer than 80 bytes")
                 if "\t" in t or any(ord(c) > 126 for c in t):
-                    complaints.append(f"line {n}: TAB or non-ASCII byte")
+                    complaints.append(f"{name}:{n}: TAB or non-ASCII byte")
             j = i + 1                   # a ```text block right after?
             while j < len(lines) and not lines[j].strip():
                 j += 1
@@ -93,6 +107,16 @@ def parse(path):
         elif line.strip():
             last_text = line.strip()
         i += 1
+    return blocks, complaints
+
+
+def parse_guide():
+    """Parse every file of the guide, chapters in order (README.md last)."""
+    blocks, complaints = [], []
+    for path in sorted(glob.glob(os.path.join(GUIDE_DIR, "*.md"))):
+        b, c = parse(path)
+        blocks += b
+        complaints += c
     return blocks, complaints
 
 
@@ -120,7 +144,7 @@ def run(blocks):
 
     failures = 0
     for blk in blocks:
-        print(f"\n-- chapter {blk.chapter}, block at line {blk.lineno}",
+        print(f"\n-- chapter {blk.chapter}, {blk.name}:{blk.lineno}",
               flush=True)
         depth = 0
         runnable = [(n, t) for n, t in blk.lines
@@ -165,14 +189,14 @@ def main():
                     help="list the snippets without booting the emulator")
     args = ap.parse_args()
 
-    blocks, complaints = parse(GUIDE)
+    blocks, complaints = parse_guide()
     if args.chapter:
         blocks = [b for b in blocks if b.chapter == args.chapter]
     for c in complaints:
         print("FORMAT", c)
     if args.list:
         for b in blocks:
-            print(f"\n-- chapter {b.chapter}, block at line {b.lineno}")
+            print(f"\n-- chapter {b.chapter}, {b.name}:{b.lineno}")
             for n, t in b.lines:
                 print(f"{n:5d}: {t}")
             if b.output is not None:

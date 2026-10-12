@@ -4,9 +4,10 @@
 > 2026-10-11. Fase 2 (capitolo pilota, cap. 3) scritta e approvata dall'autore
 > per tono e contenuto, commit 72664ae. Fase 1 avviata il 2026-10-12:
 > `situation/BASIC-vs-vForth-matrix.md` ha le 179 righe delle voci di
-> Appendice B. Resta, per la fase 1: i concetti dei cap. 1-2 e 4-25 e la prova
-> in emulatore delle righe A e B (oggi provato solo il cap. 3); per la fase 2:
-> la prova dei listati BASIC su CSpect.
+> Appendice B e, per i cap. 1-7, anche i concetti del capitolo e la prova in
+> emulatore. Resta, per la fase 1: concetti e prova dei cap. 8-25 (si riparte
+> dal cap. 8); per la fase 2: la prova dei listati BASIC su CSpect. Dal 2026-10-12 la guida è una
+> cartella, `doc/basic-to-vforth/`, un file per capitolo (D2 rivista).
 
 ## 1. Obiettivo
 
@@ -154,6 +155,22 @@ l'autore su CSpect o sulla macchina, e la colonna "Verifica" della matrice lo
 registra. Uno script `emu/test_basic_guide.py` estrae i blocchi di codice della
 guida e li riesegue: la guida resta allineata al core come i test.
 
+**Un file per capitolo** (deciso il 2026-10-12, vedi D2). La guida sta in
+`doc/basic-to-vforth/`:
+
+- `README.md`: titolo, "How to read this guide" e l'indice dei capitoli (un
+  capitolo senza link non è ancora scritto);
+- `NN-titolo.md`, due cifre e titolo in minuscolo (`03-looping.md`): apre con
+  `# Chapter N - Title`, poi il link di ritorno a `README.md`; le sei parti
+  sono intestazioni `##`;
+- le appendici come `app-a-...md`, l'indice inverso come `keyword-index.md`.
+
+I link fra i file restano nella forma `.md` (`[Looping](03-looping.md)`), che
+è quella che funziona nel repo; l'eventuale conversione per la wiki è compito
+del passo di pubblicazione, non dei sorgenti. Lo script di test segnala come
+errore di formato un link verso un file che non esiste. La matrice in
+`situation/` resta invece un file solo.
+
 ### 6.1 Cosa ha fissato il capitolo pilota (2026-10-11)
 
 Convenzioni nate scrivendo il cap. 3, da confermare o correggere nella
@@ -192,8 +209,8 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | Fase | Lavoro | Esce | Chi verifica |
 |---|---|---|---|
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
-| 1 | Matrice: prima le voci di Appendice B (FATTO 2026-10-12), poi i concetti dei cap. 1-25 (fatto solo il cap. 3) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
-| 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- BOZZA 2026-10-11, da rivedere | un capitolo della guida | autore |
+| 1 | Matrice: prima le voci di Appendice B (FATTO 2026-10-12), poi i concetti dei cap. 1-25 e la prova in emulatore (fatti i cap. 1-7) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
+| 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- SCRITTO 2026-10-11 e approvato; restano da provare i listati BASIC su CSpect | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
@@ -211,9 +228,11 @@ costa: si sceglie un capitolo facile, di classe A/B, con tutorial già solidi.
 
 - **D1 - Licenza e listati.** La guida resta sotto **MIT**; i listati BASIC di
   confronto sono scritti da noi, nessun testo né listato copiato dal manuale.
-- **D2 - Formato e posto.** Markdown in `doc/BASIC-to-vForth.md` (`doc/` non va
-  sulla SD) e pubblicazione sulla wiki di `vforth-next`. Scartati: capitolo del
-  manuale `.odt`, serie di tutorial `.f`.
+- **D2 - Formato e posto.** Markdown in `doc/` (che non va sulla SD) e
+  pubblicazione sulla wiki di `vforth-next`. Scartati: capitolo del manuale
+  `.odt`, serie di tutorial `.f`. **Rivista il 2026-10-12:** non più il file
+  unico `doc/BASIC-to-vForth.md` ma la cartella `doc/basic-to-vforth/`, un file
+  per capitolo, con i link fra i file nella forma `.md` (sez. 6).
 - **D3 - Lingua.** Inglese.
 - **D4 - Profondità sui capitoli tecnici.** Per i capitoli di installazione e
   documentali (parti dei cap. 19 e 21, Appendice C): un breve rimando, più

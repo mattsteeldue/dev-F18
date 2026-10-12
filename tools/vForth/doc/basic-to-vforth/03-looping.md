@@ -1,47 +1,10 @@
-# From NextBASIC to vForth
+# Chapter 3 - Looping
 
-A migration guide for programmers who know NextBASIC and want to move to
-vForth, the Forth system for the ZX Spectrum Next.
-
-> **Draft.** Only the pilot chapter (Chapter 3, Looping) is written. It fixes
-> the form and the tone of every other chapter; the plan is in
-> `planners/BASIC-TO-FORTH-PLAN.md`.
-
-## How to read this guide
-
-The guide follows the table of contents of the *ZX Spectrum Next User Manual*,
-third edition: one chapter here for each chapter there, with the same number
-and title. References such as "p. 21" are page numbers of that manual's PDF.
-The manual itself is not quoted: keep it open next to this guide.
-
-Every chapter has the same six parts:
-
-1. **In short** -- how much of the chapter carries over.
-2. **What changes** -- where the Forth model differs from the BASIC one.
-3. **Correspondence table** -- BASIC on the left, vForth on the right.
-4. **Side by side** -- a few short programs in both languages.
-5. **No equivalent** -- what vForth does not offer, and why.
-6. **Further reading** -- tutorials, help entries, vForth manual sections.
-
-Conventions used in the listings:
-
-- The BASIC listings are written for this guide; they are not taken from the
-  manual.
-- In the Forth listings `\ => text` shows what the line prints. When the
-  output takes several lines it follows the listing in a block of its own.
-- `NEEDS name` loads a word that is not part of the core. Words used without
-  a `NEEDS` are always available.
-- Every Forth listing is typed into vForth and checked by
-  `emu/test_basic_guide.py`, except those that wait for a key or never end.
-- Type the Forth listings in order: later ones may use earlier definitions.
-
----
-
-## Chapter 3 - Looping
+[From NextBASIC to vForth](README.md)
 
 Manual: Chapter 3, pp. 21-26.
 
-### In short
+## In short
 
 Everything in this chapter carries over. `FOR ... NEXT` becomes `DO ... LOOP`,
 `STEP` becomes `+LOOP`, `REPEAT ... REPEAT UNTIL` becomes `BEGIN ... UNTIL`,
@@ -49,7 +12,7 @@ Everything in this chapter carries over. `FOR ... NEXT` becomes `DO ... LOOP`,
 small but easy to trip over: where the limit goes, whether the limit is
 included, and the fact that the loop counter is not a variable.
 
-### What changes
+## What changes
 
 **Loops live inside definitions.** BASIC lets you type a `FOR` loop as a
 direct command. Forth loop words only work while a definition is being
@@ -169,7 +132,7 @@ it compiles, and refuses the definition:
 For the same reason there is no jumping into the middle of a loop: there is
 nothing to jump with.
 
-### Correspondence table
+## Correspondence table
 
 | NextBASIC | vForth | Note |
 |---|---|---|
@@ -192,7 +155,7 @@ nothing to jump with.
 | BREAK key | `?TERMINAL` | True while BREAK is pressed. |
 | `EXIT n` (leave and jump to line n) | - | See "No equivalent". |
 
-### Side by side
+## Side by side
 
 **Counting.** The sum of the numbers from 1 to 10.
 
@@ -398,7 +361,7 @@ and the `WHILE` may stand anywhere between the other two words.
 nothing would ever stop `HELLO`. Using `?TERMINAL` as the `UNTIL` flag gives
 back the BREAK key.
 
-### No equivalent
+## No equivalent
 
 - **Fractional steps.** `FOR x=0 TO 1 STEP 0.25` has no direct form. Scale
   the counter to whole numbers and divide when the value is used:
@@ -415,7 +378,7 @@ back the BREAK key.
 - **Error trapping inside loops** (p. 26) is not a property of loops in
   Forth: see Chapter 4 and tutorial 026 (`CATCH` and `THROW`).
 
-### Further reading
+## Further reading
 
 - Tutorial `007` -- counted loops: `DO`, `LOOP`, `+LOOP`, `?DO`, `LEAVE`,
   `BOUNDS`.
