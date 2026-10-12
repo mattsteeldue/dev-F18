@@ -1,11 +1,12 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: revisione del capitolo pilota). Fase 0 chiusa il
-> 2026-10-11 (decisioni D1-D5, sez. 8). Fase 2 anticipata alla fase 1 su
-> richiesta dell'autore: il capitolo pilota (cap. 3, Looping) è in bozza in
-> `doc/BASIC-to-vForth.md`, con `emu/test_basic_guide.py` che ne riesegue gli
-> spezzoni (69 righe, 0 errori, 2026-10-11). Resta: revisione dell'autore su
-> forma e tono (sez. 6.1), prova dei listati BASIC su CSpect, poi fase 1.
+> Stato: IN CORSO (ripresa da: fase 1, concetti dei capitoli). Fase 0 chiusa il
+> 2026-10-11. Fase 2 (capitolo pilota, cap. 3) scritta e approvata dall'autore
+> per tono e contenuto, commit 72664ae. Fase 1 avviata il 2026-10-12:
+> `situation/BASIC-vs-vForth-matrix.md` ha le 179 righe delle voci di
+> Appendice B. Resta, per la fase 1: i concetti dei cap. 1-2 e 4-25 e la prova
+> in emulatore delle righe A e B (oggi provato solo il cap. 3); per la fase 2:
+> la prova dei listati BASIC su CSpect.
 
 ## 1. Obiettivo
 
@@ -191,7 +192,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | Fase | Lavoro | Esce | Chi verifica |
 |---|---|---|---|
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
-| 1 | Matrice: prima le voci di Appendice B, poi i concetti dei cap. 1-25 | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
+| 1 | Matrice: prima le voci di Appendice B (FATTO 2026-10-12), poi i concetti dei cap. 1-25 (fatto solo il cap. 3) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- BOZZA 2026-10-11, da rivedere | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
@@ -282,6 +283,13 @@ altro nome, e va riconfermato nella fase 1.
 `REMOUNT`, `CD`, `PWD`, `MAKEDIR`, `REMOVEDIR`, `RENAME`, `UNLINK`, `F_CHMOD`,
 `DIR`, `SAVE-BYTES`/`LOAD-BYTES`, `SAVE-BANK`, `SCREEN-FROM-FILE`, e in
 `lib/floating.f` trigonometria, `FEXP`, `FLN`, `FSQRT`, `PI`.
+
+**Correzioni emerse compilando la matrice (2026-10-12).** Tre voci di
+"Presenti" qui sopra erano sbagliate: `INKEY` non esiste (nel core è
+commentata), `RENAME` rinomina una parola del dizionario e non un file (per i
+file c'è `F_RENAME`), `SAVE-BANK` è una parola di `lib/ZAP.f` limitata ai
+banchi 16-19. La matrice riporta le forme giuste e, in coda, l'elenco dei file
+di help da rivedere trovati per strada.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
