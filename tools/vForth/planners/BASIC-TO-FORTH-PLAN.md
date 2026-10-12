@@ -1,12 +1,20 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 1, concetti dei capitoli). Fase 0 chiusa il
-> 2026-10-11. Fase 2 (capitolo pilota, cap. 3) scritta e approvata dall'autore
-> per tono e contenuto, commit 72664ae. Fase 1 avviata il 2026-10-12:
-> `situation/BASIC-vs-vForth-matrix.md` ha le 179 righe delle voci di
-> Appendice B e, per i cap. 1-7, anche i concetti del capitolo e la prova in
-> emulatore. Resta, per la fase 1: concetti e prova dei cap. 8-25 (si riparte
-> dal cap. 8); per la fase 2: la prova dei listati BASIC su CSpect. Dal 2026-10-12 la guida è una
+> Stato: IN CORSO (ripresa da: fase 1, rilettura dei cap. 17-25). Fase 0 chiusa
+> il 2026-10-11. Fase 2 (capitolo pilota, cap. 3) scritta e approvata
+> dall'autore per tono e contenuto, commit 72664ae. Fase 1 avviata il
+> 2026-10-12: `situation/BASIC-vs-vForth-matrix.md` ha le voci di Appendice B
+> per tutti i capitoli e, per i cap. 1-14 (la parte "linguaggio"), anche i
+> concetti del capitolo e la prova in emulatore. Per i cap. 15-25 c'è un primo
+> giro: concetti dai cap. 15 e 16 letti per intero e dagli indici degli altri,
+> prova in emulatore di registri e memoria (cap. 22 e 23). Resta, per la
+> fase 1: rileggere i cap. 17-25 e completarne le righe (si riparte dal
+> cap. 17), e le prove su CSpect elencate nella matrice (grafica, colori,
+> sprite, suono, file system, orologio; `%RND` contro `RND`; `+"`). La fase 3
+> (guida, cap. 1-14) può partire: la sua matrice è chiusa. La fase 2 è chiusa: i
+> listati BASIC del cap. 3 sono stati provati tutti dall'autore su MAME il
+> 2026-10-12 e scaricati dall'immagine SD in `bas2f/` (`03-looping-01.bas`
+> ... `-08.bas`). Dal 2026-10-12 la guida è una
 > cartella, `doc/basic-to-vforth/`, un file per capitolo (D2 rivista).
 
 ## 1. Obiettivo
@@ -191,8 +199,9 @@ revisione; valgono per tutti i capitoli successivi.
   spezzata e il resto è interpretato come riga nuova (`OLO? is undefined`):
   gli spezzoni restano entro 72 colonne, definizioni su più righe.
 - **Listati BASIC non provati.** Sono scritti da noi ma qui non c'è modo di
-  eseguirli: vanno provati dall'autore su CSpect prima della pubblicazione
-  (nel cap. 3: `EXIT: EXIT 80`, `REPEAT: WHILE`, `INT (n/2)`).
+  eseguirli: vanno provati dall'autore su CSpect o MAME prima della
+  pubblicazione (nel cap. 3: `EXIT: EXIT 80`, `REPEAT: WHILE`, `INT (n/2)`;
+  provati tutti su MAME il 2026-10-12).
 - **Il fianco a fianco mostra anche l'idioma.** Dopo la traduzione letterale
   (cicli annidati con `J`) viene la versione fattorizzata (`ROW` + `TABLE`):
   è il punto in cui il lettore vede che Forth non si scrive come BASIC.
@@ -209,8 +218,8 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | Fase | Lavoro | Esce | Chi verifica |
 |---|---|---|---|
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
-| 1 | Matrice: prima le voci di Appendice B (FATTO 2026-10-12), poi i concetti dei cap. 1-25 e la prova in emulatore (fatti i cap. 1-7) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
-| 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- SCRITTO 2026-10-11 e approvato; restano da provare i listati BASIC su CSpect | un capitolo della guida | autore |
+| 1 | Matrice: prima le voci di Appendice B (FATTO 2026-10-12), poi i concetti dei cap. 1-25 e la prova in emulatore (fatti i cap. 1-14; primo giro sui cap. 15-25, da rileggere i cap. 17-25) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
+| 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
@@ -309,6 +318,26 @@ commentata), `RENAME` rinomina una parola del dizionario e non un file (per i
 file c'è `F_RENAME`), `SAVE-BANK` è una parola di `lib/ZAP.f` limitata ai
 banchi 16-19. La matrice riporta le forme giuste e, in coda, l'elenco dei file
 di help da rivedere trovati per strada.
+
+**Emerso dai cap. 8-25 (2026-10-12).** Il dettaglio è nella matrice, sezione
+"Cosa esce dalla matrice"; qui solo ciò che tocca il piano.
+
+- Tre trappole da mettere in "What changes" dei rispettivi capitoli: `ACCEPT`
+  restituisce i caratteri letti più uno (cap. 14); `COMPARE` non distingue
+  maiuscole e minuscole finché non si dà `CASEON` (cap. 13); `MMU7!` dal
+  prompt nasconde lo heap con i nomi, quindi va usata dentro una definizione
+  che rimette la pagina (cap. 23).
+- `SQRT` prende una cella, non un doppio: la voce di "Presenti" va letta così.
+- `RND` segue la sequenza di `RND` in virgola mobile di BASIC; se anche
+  `%RND` la segua è da vedere su CSpect (il manuale dà un altro primo valore).
+- Candidati `inc/` nuovi: ricerca in una stringa (`SCAN`, `SEARCH`), potenza
+  fra interi, `UDG!`, una `PAUSE` interrompibile, `TIME`, e le definizioni
+  provate nella matrice (`SGN`, `INPUT#`, `ARRAY`, `MATRIX`, `SARRAY`).
+- Lo script di prova non regge `KEY` da solo (nessun cursore: il giro resta
+  fermo per minuti): negli spezzoni della guida `KEY` va sotto `no-test`.
+- `NEEDS GRAPHICS` in emulatore si carica ma non si inizializza (`IDE_MODE`
+  non emulata): tutti gli spezzoni grafici dei cap. 15-17 sono `no-test` e
+  vanno all'autore, come previsto dalla sez. 6.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

@@ -2,7 +2,10 @@
 
 > Stato: IN CORSO (2026-10-12). Primo giro completo sulle voci di Appendice B
 > (179 righe). Concetti dei capitoli e prova in emulatore: fatti per i cap.
-> 1-7. Restano: concetti e prova dei cap. 8-25.
+> 1-14 (la parte "linguaggio"). Cap. 15-25: primo giro sui concetti (letti per
+> intero solo i cap. 15 e 16, gli altri dagli indici) e prova in emulatore di
+> registri e memoria (cap. 22 e 23). Restano: la rilettura dei cap. 17-25 e
+> tutto quello che si prova solo su CSpect o sulla macchina.
 
 Strumento di lavoro della guida `doc/basic-to-vforth/`; il piano è
 `planners/BASIC-TO-FORTH-PLAN.md` (fase 1). Materiale interno, in italiano.
@@ -27,23 +30,36 @@ edizione; le pagine sono quelle del PDF.
 - **Esistenza delle parole: controllata.** Ogni parola Forth citata è stata
   cercata in `src/F18e.f`, `inc/` e `lib/` (file con il punto iniziale
   compresi), e il `NEEDS` è ricavato da dove sta la definizione.
-- **Comportamento: provato per i cap. 1-7** (colonna Verifica). Per gli
+- **Comportamento: provato per i cap. 1-14** (colonna Verifica). Per gli
   altri capitoli effetto sullo stack e semantica vengono dalle intestazioni dei
   sorgenti e dai file di help, non da una prova. Le righe con "Da verificare"
   nella nota sono quelle più incerte.
-- **Cosa resta senza `emu` nei cap. 1-7**: le righe C, D e N che non hanno
+- **Cosa resta senza `emu` nei cap. 1-14**: le righe C, D e N che non hanno
   uno spezzone da provare; quelle che qui non si possono provare (tutto ciò
-  che passa da `FLOATING`, perché l'emulatore non ha il calcolatore della ROM;
-  `EDIT` / `LED`; `?TERMINAL`); e alcune semplicemente non ancora provate:
-  `INPUT` di un numero (`NUMBER` dopo `ACCEPT`), `REM`, `LIST`, l'assegnazione
-  multipla, e nel cap. 3 le quattro righe rimaste vuote.
+  che passa da `FLOATING`, perché l'emulatore non ha il calcolatore della ROM,
+  cioè quasi tutto il cap. 9; `EDIT` / `LED`; la posizione di stampa, i
+  colori e le dimensioni dei caratteri dei cap. 13-14, perché l'emulatore
+  registra i byte emessi ma non ha uno schermo; le variabili di sistema UDG,
+  CHARS e FRAMES, che in emulatore valgono 0); e alcune semplicemente non
+  ancora provate: `REM`, `LIST`, l'assegnazione multipla, e nel cap. 3 le
+  quattro righe rimaste vuote.
+- **`KEY` da solo non si prova con lo script**: senza il cursore lampeggiante
+  l'emulatore non riconosce l'attesa e il giro resta fermo per minuti.
+  `ACCEPT` invece funziona: la riga successiva del file fa da risposta.
 - **I listati BASIC non sono provati**: i valori attesi lato BASIC vengono dal
   manuale.
 - **Indirizzi dei NextReg** nelle righe `REG!`: presi a memoria e dai tutorial
   040 e 056, da ricontrollare su `doc/zx-next-dev-guide-r3.md` quando si scrive
   il capitolo.
-- **Pagine**: trovate cercando la keyword in grassetto nel capitolo; per le
-  righe di concetto (senza keyword) la pagina manca.
+- **Pagine**: per le keyword, trovate cercando la keyword in grassetto nel
+  capitolo; per le righe di concetto dei cap. 8-25, ricavate dai marcatori
+  `<!-- PDF page N -->` del paragrafo che tratta l'argomento. Dove non c'è un
+  paragrafo preciso la riga porta solo il capitolo.
+- **Cap. 15-25**: provati in emulatore solo `REG!` / `REG@`, `SPEED!`, `P@`,
+  `C!` / `C@` / `!` / `@`, `MMU7!` / `MMU7@`, `FILL` / `CMOVE`, `UNUSED`.
+  `NEEDS GRAPHICS` si carica ma `SETUP` e `LAYER0` finiscono in `NextZXOS DOS
+  call error` (la chiamata `IDE_MODE` non è emulata): grafica, colori, sprite,
+  suono, file system e orologio restano da provare su CSpect.
 - **Capitolo di appartenenza**: dove la keyword non compare nel capitolo
   atteso, la riga è stata messa nel capitolo che la tratta di più (es. `LINE`,
   `ERASE` di righe e `LIST` stanno nel cap. 19 con l'editor).
@@ -52,31 +68,31 @@ edizione; le pagine sono quelle del PDF.
 
 | Cap. | Titolo | Righe | Voci di App. B | Concetti del capitolo | Verifica |
 |---|---|---|---|---|---|
-| 1 | Basic Programming Concepts | 30 | fatto | fatto | emu (18 righe) |
+| 1 | Basic Programming Concepts | 30 | fatto | fatto | emu (19 righe) |
 | 2 | Decisions | 13 | fatto | fatto | emu (12 righe) |
 | 3 | Looping | 16 | fatto | fatto | emu (12 righe) |
 | 4 | Procedures and Subroutines | 19 | fatto | fatto | emu (15 righe) |
 | 5 | READ, DATA, RESTORE | 10 | fatto | fatto | emu (8 righe) |
 | 6 | Expressions | 21 | nessuna voce | fatto | emu (18 righe), virgola mobile esclusa |
 | 7 | Strings | 17 | nessuna voce | fatto | emu (12 righe) |
-| 8 | Functions | 11 | fatto | da fare | da fare |
-| 9 | Mathematical Functions | 7 | fatto | da fare | da fare |
-| 10 | Random Numbers | 3 | fatto | da fare | da fare |
-| 11 | Arrays | 3 | fatto | da fare | da fare |
-| 12 | Conditions | 0 | nessuna voce | da fare | da fare |
-| 13 | The Character Set | 3 | fatto | da fare | da fare |
-| 14 | More about PRINT and INPUT | 8 | fatto | da fare | da fare |
-| 15 | Colours | 16 | fatto | da fare | da fare |
-| 16 | Graphics | 10 | fatto | da fare | da fare |
-| 17 | Time and Motion | 11 | fatto | da fare | da fare |
-| 18 | Sound and Music | 2 | fatto | da fare | da fare |
-| 19 | NextZXOS and alternatives | 28 | fatto | da fare | da fare |
-| 20 | Channels, Streams, Drivers and Windows | 11 | fatto | da fare | da fare |
-| 21 | Optional Features | 0 | nessuna voce | da fare | da fare |
-| 22 | IN, OUT and the Next Registers | 5 | fatto | da fare | da fare |
-| 23 | The Memory | 16 | fatto | da fare | da fare |
-| 24 | The System Variables | 0 | nessuna voce | da fare | da fare |
-| 25 | Using Machine Code | 3 | fatto | da fare | da fare |
+| 8 | Functions | 21 | fatto | fatto | emu (16 righe) |
+| 9 | Mathematical Functions | 15 | fatto | fatto | emu (4 righe), virgola mobile esclusa |
+| 10 | Random Numbers | 9 | fatto | fatto | emu (5 righe) |
+| 11 | Arrays | 16 | fatto | fatto | emu (11 righe) |
+| 12 | Conditions | 15 | nessuna voce | fatto | emu (14 righe) |
+| 13 | The Character Set | 17 | fatto | fatto | emu (11 righe) |
+| 14 | More about PRINT and INPUT | 21 | fatto | fatto | emu (4 righe); posizione e colori solo sulla macchina |
+| 15 | Colours | 27 | fatto | fatto, tranne la parte sulla teoria del colore (pp. 95-103), non riletta | non provabile in emulatore: da fare su CSpect |
+| 16 | Graphics | 19 | fatto | fatto | non provabile in emulatore (`GRAPHICS` non si inizializza): da fare su CSpect |
+| 17 | Time and Motion | 20 | fatto | primo giro: letti `PAUSE`, `TIME`, RTC; sprite e Copper dagli indici | da fare su CSpect |
+| 18 | Sound and Music | 8 | fatto | primo giro, dagli indici del capitolo | da fare su CSpect |
+| 19 | NextZXOS and alternatives | 36 | fatto | primo giro, dagli indici del capitolo | da fare |
+| 20 | Channels, Streams, Drivers and Windows | 18 | fatto | primo giro, dagli indici del capitolo | da fare |
+| 21 | Optional Features | 4 | nessuna voce | primo giro, dagli indici del capitolo | da fare sulla macchina |
+| 22 | IN, OUT and the Next Registers | 14 | fatto | primo giro, dagli indici del capitolo | emu (4 righe) |
+| 23 | The Memory | 24 | fatto | primo giro, dagli indici del capitolo | emu (10 righe) |
+| 24 | The System Variables | 5 | nessuna voce | primo giro, dagli indici del capitolo | da fare sulla macchina |
+| 25 | Using Machine Code | 11 | fatto | primo giro, dagli indici del capitolo | da fare |
 
 ## Capitolo 1 - Basic Programming Concepts
 
@@ -86,7 +102,7 @@ edizione; le pagine sono quelle del PDF.
 | `PRINT` items | cap. 1, p. 10; App. B | `.` `."` `TYPE` `EMIT` `CR` `SPACE` | B | 001, 003 | Nessun a capo automatico: `CR` va scritto. `.` consuma il numero che stampa. Niente separatori `;` e `,`. | emu |
 | `REM` ..., `;` ... | cap. 1, p. 10; App. B | `\ ...` fino a fine riga; `( ... )` | A | 001 | `(` vuole uno spazio dopo di sé: è una parola. |  |
 | `NEW` | cap. 1, p. 9; App. B | `COLD`; `FORGET nome`; `MARKER nome` | B | 005, 022 | Non c'è un programma da cancellare: si dimenticano le definizioni fatte dopo un certo punto. | emu |
-| `INPUT v` | cap. 1, p. 10; App. B | `ACCEPT` poi `NUMBER` o `(NUMBER)` | B | 016, 021 | Manca una parola unica "chiedi un numero": il tutorial 016 la costruisce (`ASK-NUMBER`). Candidata D-inc. |  |
+| `INPUT v` | cap. 1, p. 10; App. B | `ACCEPT` poi `NUMBER` o `(NUMBER)` | B | 016, 021 | Manca una parola unica "chiedi un numero": il tutorial 016 la costruisce (`ASK-NUMBER`). Candidata D-inc. Una forma provata è nel cap. 14 (`INPUT#`). | emu |
 | `GO TO n` | cap. 1, p. 8; App. B | - | C | 006, 007 | Niente numeri di riga e niente salto: `IF`, cicli e definizioni. Le etichette (`@label`) seguono la stessa sorte. |  |
 | `STOP` | cap. 1, p. 13; App. B | `QUIT`; `ABORT` | B | 026 | Tornano al prompt. `ABORT` svuota anche lo stack dei dati. | emu |
 | `CONTINUE` | cap. 1, p. 10; App. B | - | D (scelta) | - | Una parola interrotta non si riprende: la si richiama. |  |
@@ -108,7 +124,7 @@ edizione; le pagine sono quelle del PDF.
 | sostituire una riga (stesso numero) | cap. 1, p. 8 | ridefinire la parola | C | 005 | Avviso `nome has already been defined.`; la definizione vecchia resta e chi la usava continua a usarla. Per sostituirla davvero: `FORGET nome` e ricaricare il sorgente. | emu |
 | le variabili restano dopo `RUN` | cap. 1, p. 9 | dizionario e stack restano fra un comando e l'altro | A | 001, 005 | `QUIT` conserva lo stack, `ABORT` lo svuota. | emu |
 | `PRINT`: i separatori `;` `,` `'` | cap. 1, p. 11 | `;` nulla; `'` `CR`; `,` `n .TAB` -- `NEEDS .TAB` | B | 003 | `.` mette uno spazio dopo il numero; `n w .R` allinea a destra in w colonne, senza spazio. La colonna a metà riga non è automatica. | emu |
-| `INPUT a$` | cap. 1, p. 11 | `PAD 20 ACCEPT` (lascia la lunghezza; il testo è in `PAD`) | B | 016 | Niente virgolette e nessuna espressione in ingresso: per valutare quello che si è letto, `EVALUATE`. | emu |
+| `INPUT a$` | cap. 1, p. 11 | `PAD 20 ACCEPT` (il testo è in `PAD`; lascia la lunghezza più uno, vedi cap. 14) | B | 016 | Niente virgolette e nessuna espressione in ingresso: per valutare quello che si è letto, `EVALUATE`. | emu |
 | tasto BREAK | cap. 1, p. 12 | `?TERMINAL` | B | 006, 032 | Vedi cap. 3: un ciclo senza test proprio si ferma solo con il reset. |  |
 | rapporti (`0 OK`, `9 STOP statement, 130:1`) | cap. 1, p. 10 | `ok`; in errore `parola? messaggio.` | C | 022, 062 | Niente riga e istruzione: il rapporto nomina la parola in corso. Per un errore durante un `LOAD`, `WHERE` mostra Screen e riga -- `NEEDS WHERE`. | emu |
 | `ERROR$` | cap. 1, p. 14 | `n MESSAGE` | B | 059, 062 | I testi stanno nel file dei blocchi (Screen 4-8). | emu |
@@ -243,66 +259,150 @@ edizione; le pagine sono quelle del PDF.
 
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
-| `ABS x` | cap. 8, p. 54; App. B | `ABS`; virgola mobile `FABS` -- `NEEDS FLOATING` | A | 001, 024 |  |  |
-| `DEF FN f(x)=e` | cap. 8, p. 57; App. B | `: f ( x -- y ) e ;` | B | 005 | Una funzione è una definizione come le altre. |  |
-| `FN f(x)` | cap. 8, p. 57; App. B | `x f` | A | 005 |  |  |
-| `INT x` | cap. 8, p. 57; App. B | interi: nessuna; virgola mobile `FINT` -- `NEEDS FLOATING` | B | 024, 015 | La divisione fra interi tronca già (`/`, `/MOD`, `FM/MOD`, `SM/REM` per scegliere l'arrotondamento). |  |
-| `INT {x}` | cap. 8 | `F>D`, `FIX` -- `NEEDS FLOATING` | B | 024 | Da virgola mobile a intero (doppio). |  |
-| `LEN stringa` | cap. 8, p. 53; App. B | la lunghezza è già sullo stack (`a n`); stringa contata: `COUNT` | C | 009 | Una stringa è una coppia indirizzo-lunghezza. |  |
-| `SGN x` | cap. 8, p. 55; App. B | interi: `DUP 0< SWAP 0> -`; virgola mobile `FSGN` -- `NEEDS FLOATING` | B | 006 | Manca una parola per il segno di un intero: candidata D-inc. |  |
+| `ABS x` | cap. 8, p. 56; App. B | `ABS`; virgola mobile `FABS` -- `NEEDS FLOATING` | A | 001, 024 |  | emu |
+| `DEF FN f(x)=e` | cap. 8, p. 57; App. B | `: f ( x -- y ) e ;` | B | 005 | Una funzione è una definizione come le altre: `: SQ ( x -- y ) DUP * ;`. Si può definire anche dal prompt (in BASIC solo dentro un programma). | emu |
+| `FN f(x)` | cap. 8, p. 57; App. B | `x f` | A | 005 | L'argomento prima del nome, senza parentesi; si compongono mettendole in fila: `2 SQ SQ` dà 16. | emu |
+| `INT x` | cap. 8, p. 56; App. B | interi: nessuna; virgola mobile `FINT` -- `NEEDS FLOATING` | B | 024, 015 | La divisione fra interi tronca già, ma verso lo zero: `-7 2 /` dà -3. `INT` arrotonda verso il basso: per quello `FM/MOD` (`-7 S>D 2 FM/MOD` dà quoziente -4, resto 1); `SM/REM` è la forma che tronca. | emu |
+| `INT {x}` | cap. 8, p. 58 | `F>D`, `FIX` -- `NEEDS FLOATING` | B | 024 | Da virgola mobile a intero (doppio). |  |
+| `LEN stringa` | cap. 8, p. 53; App. B | la lunghezza è già sullo stack (`a n`); stringa contata: `COUNT`, o solo la lunghezza `C@` | C | 009 | Una stringa è una coppia indirizzo-lunghezza. | emu |
+| `SGN x` | cap. 8, p. 55; App. B | interi: `DUP 0< SWAP 0> -`; virgola mobile `FSGN` -- `NEEDS FLOATING` | B | 006 | Manca una parola per il segno di un intero: candidata D-inc. Provato: -7, 0, 9 danno -1, 0, 1. | emu |
 | `SGN {i}` | cap. 8 | `.` invece di `U.` | C | 001, 015 | Segno o no è una scelta di chi stampa o confronta (`<` contro `U<`), non del dato. |  |
-| `STR$ x` | cap. 8, p. 53; App. B | `S>D <# #S #>` dà `a n` | B | 014 | L'uscita formattata produce una stringa; `.` la stampa soltanto. |  |
-| `VAL f` | cap. 8, p. 52; App. B | numero: `NUMBER` / `>NUMBER`; espressione: `EVALUATE` -- `NEEDS >NUMBER`, `NEEDS EVALUATE` | B | 021 | `EVALUATE` interpreta testo Forth, non un'espressione infissa. |  |
-| `VAL$ f` | cap. 8, p. 55; App. B | `EVALUATE` -- `NEEDS EVALUATE` | C | 021 |  |  |
+| `STR$ x` | cap. 8, p. 53; App. B | `S>D <# #S #>` dà `a n`; con il segno: `DUP ABS 0 <# #S ROT SIGN #>` | B | 014 | L'uscita formattata produce una stringa; `.` la stampa soltanto. La stringa sta in un'area di lavoro sotto `PAD`: va usata o copiata subito. | emu |
+| `VAL f` | cap. 8, p. 55; App. B | numero: `0 0 a u >NUMBER`, `a NUMBER`; espressione: `EVALUATE` -- `NEEDS >NUMBER`, `NEEDS EVALUATE` | B | 021 | `>NUMBER ( d a u -- d2 a2 u2 )` si ferma al primo carattere che non è una cifra e dice quanti ne restano (`12AB`: 12, restano 2). `NUMBER ( a -- d )` vuole una stringa contata seguita da uno spazio e dà errore se non è tutta un numero (`NUMBER? is undefined.`). | emu |
+| `VAL$ f` | cap. 8, p. 55; App. B | `EVALUATE` -- `NEEDS EVALUATE` | C | 021 | Il testo valutato lascia sullo stack quello che vuole, anche una stringa. |  |
+| ordine di calcolo fra funzioni e operatori | cap. 8, p. 52 | notazione postfissa | C | 001, 002 | Le funzioni non hanno una priorità più alta degli operatori: sono parole come le altre e si applicano nell'ordine in cui sono scritte. |  |
+| `STR$ (x,base[,cifre])` | cap. 8, p. 53 | cambiare `BASE` per il tempo che serve: `: BASE$ ( u base -- a u ) BASE @ >R BASE ! 0 <# #S #> R> BASE ! ;` | B | 004, 014 | `100 16 BASE$ TYPE` dà 64, `201 16 BASE$` C9, `3 2 BASE$` 11. Solo per stampare basta `HEX .` e poi `DECIMAL`. Niente parte frazionaria. | emu |
+| `IN (s$,m$[,inizio[,jolly$]])` (ricerca in una stringa) | cap. 8, p. 54 | - | D-inc | - | Non ci sono `SEARCH` né `SCAN`. Un carattere si cerca con un ciclo di due righe (provato: lo spazio in `Harry is awesome` è in posizione 6, 0 se manca); sottostringa, ricerca all'indietro e jolly sono da scrivere. Omonimo: `IN n` è la lettura di una porta (cap. 22). | emu |
+| `VAL "2*3"` (espressione in una stringa) | cap. 8, p. 55 | `S" 2 3 *" EVALUATE` -- `NEEDS S"`, `NEEDS EVALUATE` | B | 021 | Il testo è Forth, quindi postfisso; può contenere qualsiasi parola, anche definizioni. | emu |
+| `DEF FN` con più argomenti o senza | cap. 8, p. 57 | `: P ( x y -- n ) * 10 + ;`  `: Q ( -- n ) A @ ;` | A | 005 | Nessuna parentesi vuota da ricordare: una parola senza argomenti si scrive da sola. | emu |
+| gli argomenti sono locali alla funzione | cap. 8, p. 57 | gli argomenti sono valori sullo stack, senza nome | C | 002, 061 | Non c'è niente da nascondere: l'argomento non ha un nome che possa coincidere con quello di una variabile. Chi vuole i nomi usa i locali di `lib/LOCALS.f` (cap. 4). |  |
+| `DEF FN` ricorsiva | cap. 8, p. 56 | `RECURSE` -- `NEEDS RECURSE` | A | 061 | `: FACTOR ( n -- n! ) DUP 2 < IF DROP 1 ELSE DUP 1- RECURSE * THEN ;` e `5 FACTOR` dà 120. | emu |
+| `LEFT$`, `RIGHT$`, `MID$`, `TL$` (da definire con `DEF FN`) | cap. 8, p. 58 | aritmetica su `a u`: `LEFT$` è `MIN`; `TL$` è `1- SWAP 1+ SWAP`; `RIGHT$ ( a u n -- a2 u2 )` è `1- OVER MIN >R R@ - SWAP R> + SWAP` | B | 009 | Come lo slicing del cap. 7: viste sugli stessi byte, senza copia. Con `/STRING` sarebbero una parola ciascuna (candidata D-inc). Provate anche sulla stringa vuota. | emu |
+| funzioni in espressioni intere (`%ABS`, `%IN`, `%REG`, `%PEEK`, `%DPEEK`, `%RND`, `BIN`) | cap. 8, p. 58 | `ABS`, `P@`, `REG@`, `C@`, `@`, `RND`, prefisso `%` -- `NEEDS RND` | A | 008, 040 | In Forth sono la forma normale, non una variante veloce. `PRINT %REG 7 & BIN 00000011` diventa `7 REG@ %00000011 AND .`. Dettagli nei cap. 10, 22, 23. | emu |
+| `INT (x+0.5)` (arrotondare al più vicino) | cap. 8, p. 57 | fra interi, sommare metà del divisore prima di dividere: `: ROUND/ ( n d -- q ) DUP 2/ ROT + SWAP / ;` | B | 064 | `29 10 ROUND/` dà 3, `24 10 ROUND/` dà 2. In virgola mobile `1/2 F+ FINT` (da verificare). | emu |
 
 ## Capitolo 9 - Mathematical Functions
 
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
-| `SIN x`, `COS x`, `TAN x` | cap. 9, p. 60; App. B | `FSIN` `FCOS` `FTAN` -- `NEEDS FLOATING` | A | 024 | Dopo `FLOATING`; i numeri in virgola mobile occupano due celle. Radianti; `DEG>RAD`, `RAD>DEG`. |  |
-| `ASN x`, `ACS x`, `ATN x` | cap. 9, p. 60; App. B | `FASIN` `FACOS` `FATAN` -- `NEEDS FLOATING` | A | - | Il tutorial 024 non le nomina. |  |
-| `EXP x` | cap. 9, p. 60; App. B | `FEXP` -- `NEEDS FLOATING` | A | 024 | Omonimo: `EXP` nel core è una variabile utente dell'interprete numerico. |  |
-| `LN x` | cap. 9, p. 60; App. B | `FLN` -- `NEEDS FLOATING` | A | - | Il tutorial 024 non la nomina. |  |
-| `SQR x` | cap. 9, p. 60; App. B | `FSQRT`; interi: `SQRT ( d -- n )` -- `NEEDS FLOATING`, `NEEDS SQRT` | A | 024, 065 | `SQRT` vuole un doppio. |  |
+| `SIN x`, `COS x`, `TAN x` | cap. 9, p. 62; App. B | `FSIN` `FCOS` `FTAN` -- `NEEDS FLOATING` | A | 024 | Dopo `FLOATING`; i numeri in virgola mobile occupano due celle. Radianti, come in BASIC. |  |
+| `ASN x`, `ACS x`, `ATN x` | cap. 9, p. 62; App. B | `FASIN` `FACOS` `FATAN` -- `NEEDS FLOATING` | A | - | Il tutorial 024 non le nomina. |  |
+| `EXP x` | cap. 9, p. 61; App. B | `FEXP` -- `NEEDS FLOATING` | A | 024 | Omonimo: `EXP` nel core è una variabile utente dell'interprete numerico. |  |
+| `LN x` | cap. 9, p. 61; App. B | `FLN` -- `NEEDS FLOATING` | A | - | Il tutorial 024 non la nomina. |  |
+| `SQR x` | cap. 8, p. 56; App. B | `FSQRT` -- `NEEDS FLOATING` | A | 024 | Il manuale la presenta nel cap. 8. Fra interi vedi la riga `SQRT`. |  |
 | `PI` | cap. 9, p. 62; App. B | `PI` -- `NEEDS FLOATING` | A | 024 |  |  |
-| `x ^ y` (potenza) | cap. 9 | `F**` -- `NEEDS FLOATING` | A | 024 | Non è in App. B (cap. 9). Fra interi non c'è. |  |
+| `x ^ y` (potenza) | cap. 9, p. 60 | `F**` -- `NEEDS FLOATING` | A | 024 | Non è in App. B. Fra interi vedi la riga sotto. |  |
+| `x ^ n` con esponente intero | cap. 9, p. 60 | `: ** ( n u -- n^u ) 1 SWAP 0 ?DO OVER * LOOP NIP ;` | B | 007 | Non c'è né nel core né in `inc/`: candidata D-inc. `2 10 **` dà 1024, `2 0 **` dà 1; l'overflow è silenzioso (`2 16 **` dà 0). | emu |
+| `SQR x` fra interi | cap. 8, p. 56 | `n SQRT`; da un doppio `d DSQRT` -- `NEEDS SQRT` | A | 065 | Dà la parte intera: `2 SQRT` dà 1. Per avere decimali si riscala prima: `2000000. DSQRT` dà 1414. `SQRT` prende una cella, non un doppio (`16. SQRT` dà 0): il commento `( d -- n )` in `inc/SQRT.f` è sbagliato. | emu |
+| crescita esponenziale (`10*1.15^y`) | cap. 9, p. 61 | `*/` ripetuto: `: YEARS ( n y -- n2 ) 0 ?DO 115 100 */ LOOP ;` | B | 064 | `1000 5 YEARS` dà 2010 contro 2011,36: ogni giro tronca e l'errore si accumula. Per restare precisi si riscala il capitale (centesimi). | emu |
+| `PI` fra interi | cap. 9, p. 62 | il rapporto 355/113 dentro `*/`: `100 355 113 */` dà 314 | B | 064 |  | emu |
+| `LN x/LN a` (logaritmo in un'altra base) | cap. 9, p. 61 | `x FLN a FLN F/` -- `NEEDS FLOATING` | A | - |  |  |
+| gradi e radianti | cap. 9, p. 63 | `DEG>RAD`, `RAD>DEG` -- `NEEDS FLOATING` | A | 024 | Sono l'esercizio 1 del capitolo, già pronto. |  |
+| trigonometria senza virgola mobile | cap. 9 | tabella di seni (`CREATE` e `,`) e `*/`; oppure `lib/fixed88.f` -- `NEEDS FIXED88` | B | 065, 064 | È il modo normale in un gioco: la virgola mobile passa dal calcolatore della ROM ed è lenta. `FIXED88` (virgola fissa 8.8) non è provata qui. |  |
+| argomento fuori dominio (`A Invalid argument`) | cap. 8, p. 56 | virgola mobile: errore #11 da `FSQRT` di un negativo, `FLN` di un numero non positivo, `FASIN`/`FACOS` fuori da -1..1; interi: nessun controllo | B | - | Dal sorgente di `lib/floating.f` (`11 ?ERROR`), non provato. |  |
 
 ## Capitolo 10 - Random Numbers
 
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
-| `RANDOMIZE [n]` | cap. 10, p. 64; App. B | `n RANDOMIZE` -- `NEEDS RANDOMIZE` | A | - | Scrive la stessa variabile di sistema SEED (23670) di BASIC. Senza argomento non c'è: usare FRAMES a mano. |  |
-| `RND` (fra 0 e 1) | cap. 10, p. 64; App. B | - | D-inc | 064 | Nessun casuale in virgola mobile: si scala l'intero. |  |
-| `% RND i` (intero fra 0 e i-1) | cap. 10 | `i RND`; in alternativa `i CHOOSE`, `RANDOM` -- `NEEDS RND`, `NEEDS CHOOSE`, `NEEDS RANDOM` | A | - | `RND ( u -- u2 )` segue la stessa sequenza della ROM. `CHOOSE`/`RANDOM` sono quelle di Brodie. Nessun tutorial dedicato. |  |
+| `RANDOMIZE n` | cap. 10, p. 65; App. B | `n RANDOMIZE` -- `NEEDS RANDOMIZE` | A | - | Scrive la stessa variabile di sistema SEED (23670) di BASIC: la sequenza riparte uguale, utile per il debug. | emu |
+| `RANDOMIZE` (senza argomento, o 0) | cap. 10, p. 65 | `23672 @ RANDOMIZE` | B | - | L'argomento è obbligatorio: il seme "dal tempo" si prende a mano da FRAMES (23672). In emulatore FRAMES resta a 0: da provare su CSpect. |  |
+| `RND` (fra 0 e 1) | cap. 10, p. 64; App. B | - | D (scelta) | 064 | Nessun casuale in virgola mobile: si chiede direttamente l'intero nell'intervallo che serve (`10000 RND` per quattro decimali). |  |
+| `INT (RND*n)`, `RND (n)` | cap. 10, p. 64 | `n RND` -- `NEEDS RND` | A | - | `RND ( u -- u2 )` dà un intero fra 0 e u-1 con il generatore della ROM. Dopo `1 RANDOMIZE`, `100 RND` ripetuto dà 0 17 87 58 53 e SEED passa a 149: è la sequenza di `RND` di BASIC (0.0022735596 = 149/65536). `0 RND` dà 0. | emu |
+| `% RND n` | cap. 10, p. 64 | `n RND` -- `NEEDS RND` | A | - | Stesso intervallo. Da verificare su CSpect se anche la sequenza coincide: il manuale dice che dopo `RANDOMIZE 1` `%RND 100` comincia con 97, qui il primo valore è 0. |  |
+| dado: `1+INT (RND*6)` | cap. 10, p. 64 | `: DICE ( -- n ) 6 RND 1+ ;` | A | - |  | emu |
+| testa o croce: `coin=%RND 2` e `ON coin` | cap. 10, p. 65 | `2 RND IF ... ELSE ... THEN` | A | 006 | 100 lanci provati: 49 e 51. | emu |
+| altri generatori | cap. 10 | `RANDOM ( -- u )`, `n CHOOSE` -- `NEEDS RANDOM`, `NEEDS CHOOSE` | B | 051, 056, 062, 063 | Quelli di *Starting FORTH* (Brodie): formula diversa, stessa variabile SEED, quindi `RANDOMIZE` vale anche per loro. Non c'è in BASIC. | emu |
+| `RAND` (abbreviazione di `RANDOMIZE`) | cap. 10, p. 65 | - | N | - | Niente abbreviazioni: chi la vuole definisce `: RAND RANDOMIZE ;`. |  |
 
 ## Capitolo 11 - Arrays
 
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
-| `DIM a(n)` | cap. 11, p. 67; App. B | `CREATE a  n CELLS ALLOT`; accesso `a i CELLS + @` | B | 008, 010, 023 | Indici da 0, nessun controllo dei limiti, memoria non azzerata (`ERASE`). |  |
-| `DIM a(n1,...,nk)` | cap. 11 | `CREATE` ... `DOES>` con il calcolo dell'indice | B | 010 | Più dimensioni: la parola definente fa il prodotto degli indici. |  |
-| `DIM a$(n,len)` | cap. 11 | `CREATE a  n len * ALLOT` | B | 009, 010 | Array di stringhe a lunghezza fissa: nessun tutorial lo mostra. |  |
+| `DIM a(n)` | cap. 11, p. 67; App. B | `CREATE a  n CELLS ALLOT`; accesso `a i CELLS + @` | B | 008, 010, 023 | Indici da 0 (in BASIC da 1): si toglie 1 nell'accesso o si riserva un elemento in più. Nessun controllo dei limiti. | emu |
+| l'array parte azzerato | cap. 11, p. 67 | `a n CELLS ERASE`; stringhe: `BLANK` | A | 008 | `ALLOT` riserva soltanto: la memoria contiene quello che c'era. | emu |
+| `a(i)` come parola | cap. 11, p. 67 | parola definente: `: ARRAY ( n -- ) CREATE CELLS HERE OVER ERASE ALLOT DOES> SWAP CELLS + ;` | B | 010, 023 | `10 ARRAY M` e poi `43 3 M !`, `3 M @`: l'array prende l'indice e lascia l'indirizzo dell'elemento, buono sia per leggere sia per scrivere. | emu |
+| `DIM a(n1,n2)` | cap. 11, p. 68 | `: MATRIX ( righe col -- ) CREATE DUP , * CELLS HERE OVER ERASE ALLOT DOES> >R SWAP R@ @ * + CELLS R> + 2 + ;` | B | 010 | `3 6 MATRIX C`, `7 2 5 C !`, `2 5 C @`. Il numero di colonne sta nella prima cella; più dimensioni: stesso schema, un prodotto in più. | emu |
+| `DIM a$(n,len)` | cap. 11, p. 69 | `: SARRAY ( n len -- ) CREATE DUP , * HERE OVER BLANK ALLOT DOES> DUP @ >R 2 + SWAP R@ * + R> ;` | B | 009, 010 | `3 10 SARRAY A$` e `1 A$` lascia `a len` della riga. Nessun tutorial lo mostra. | emu |
+| `a$(i)="..."` (assegnazione procustea) | cap. 11, p. 69 | `: S! ( a1 u1 a2 len -- ) 2DUP BLANK ROT MIN CMOVE ;` | B | 009 | Riempie di spazi e copia al massimo `len` caratteri: una stringa di 16 in una riga da 10 viene troncata senza toccare la riga accanto. | emu |
+| `a$(i,k)`, `a$(i)(m TO n)` | cap. 11, p. 69 | `i A$ DROP k 1- + C@`; `i A$ DROP m 1- + n m - 1+` | B | 009 | Come lo slicing del cap. 7, su una riga dell'array. | emu |
+| spazi in coda agli elementi (esercizio 2) | cap. 11, p. 70 | `-TRAILING` | A | 009 | `2 A$ -TRAILING TYPE ." ing"` stampa `maying`. | emu |
+| `DIM a$(len)` (stringa a lunghezza fissa) | cap. 11, p. 69 | `CREATE a$ len ALLOT` | A | 009 | In Forth è il caso normale di una variabile stringa (cap. 7). |  |
+| array interi `%a(n)` già dimensionati a 64 | cap. 11, p. 67 | - | C | 008 | Niente array predefiniti: ognuno si dichiara, della misura che serve, a celle (`CELLS`) o a byte. |  |
+| `%a[n]` oltre 64 elementi, `%c[x][y]` | cap. 11, p. 68 | - | N | - | Espediente di BASIC (un array "mangia" i successivi): qui la dimensione è libera. |  |
+| array di byte | cap. 11 | `CREATE b n ALLOT`; `b i + C@`, `C!` | A | 008 | In più rispetto a BASIC: metà memoria per valori fino a 255. | emu |
+| indice fuori dai limiti (`3 Subscript wrong`) | cap. 11 | nessun controllo | C | 010 | `99 M @` legge memoria qualsiasi e `!` la sovrascrive, senza avviso. Chi vuole il controllo lo mette nel `DOES>`. | emu |
+| `DIM` ripetuto cancella l'array | cap. 11, p. 67 | `ERASE` per azzerarlo; per cambiarne la misura `FORGET` e ridefinire | C | 005 | Una seconda `CREATE` con lo stesso nome ne fa uno nuovo e lascia il vecchio dov'è. |  |
+| array e variabile con lo stesso nome | cap. 11, p. 67 | - | C | 005 | Un nome è una parola sola: l'ultima definita nasconde le precedenti. |  |
+| funzione `DIM (a()[,k])` | cap. 11, p. 70 | la misura la tiene il programma: una `CONSTANT`, o una cella in testa all'array (`' C >BODY @` dà 6) | B | 010 |  | emu |
+
+## Capitolo 12 - Conditions
+
+| BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
+|---|---|---|---|---|---|---|
+| relazioni unite da `AND`, `OR` | cap. 12, p. 71 | `AND`, `OR` dopo i due confronti: `x 0> y 0> AND` | A | 006, 011 | Lavorano bit a bit, ma sui flag dei confronti (0 e -1) danno il risultato logico. | emu |
+| `NOT` | cap. 12, p. 71 | `0=`; `NOT` è lo stesso | A | 006 | Qui `NOT` è logico: `5 NOT` dà 0. Per invertire i bit c'è `INVERT`. | emu |
+| `NOT a=b` | cap. 12, p. 71 | `a b = 0=`, oppure `a b <>` -- `NEEDS <>` | A | 006 | `>=` e `<=` come negazioni: `< 0=`, `> 0=` (cap. 2). | emu |
+| leggi di De Morgan | cap. 12, p. 71 | valgono allo stesso modo | A | 011 | `a b AND 0=` equivale a `a 0= b 0= OR`. | emu |
+| priorità (`OR` < `AND` < `NOT` < relazioni) | cap. 12, p. 71 | - | C | 001 | Nessuna priorità: l'ordine di scrittura. |  |
+| vero vale 1 | cap. 12, p. 72 | vero vale -1 | C | 006 | `1 2 <> .` stampa -1. Per avere 1: `NEGATE`, oppure `1 AND`. Vedi cap. 6. | emu |
+| `IF` accetta qualsiasi numero | cap. 12, p. 72 | lo stesso: 0 è falso, tutto il resto è vero | A | 006 |  | emu |
+| `x AND y` (x se y, altrimenti 0) | cap. 12, p. 72 | `x f AND`, con f flag di un confronto | A | 011 | Più diretto che in BASIC: il flag -1 è una maschera di tutti 1. `7 5 3 > AND` dà 7, `7 3 5 > AND` dà 0. | emu |
+| `x OR y` (1 se y, altrimenti x) | cap. 12, p. 72 | `IF DROP 1 THEN` | B | 006 | `OR` bit a bit non fa questo: `115 -1 OR` dà -1. | emu |
+| `AND`, `OR` fra numeri che non sono flag | cap. 12, p. 72 | prima si normalizza: `0= 0=` | C | 011 | Trappola: `1 2 AND` dà 0 anche se entrambi sono "veri"; `1 0= 0= 2 0= 0= AND` dà -1. | emu |
+| il maggiore di due: `(a AND a>=b)+(b AND a<b)` | cap. 12, p. 72 | `MAX`; il minore `MIN` | A | 001 |  | emu |
+| `x$ AND y` (la stringa se y, altrimenti vuota) | cap. 12, p. 73 | `a u f AND` | A | 009 | Il flag maschera la lunghezza: resta `a 0`, la stringa vuota. | emu |
+| ordinare due stringhe (`a$>b$`) | cap. 12, p. 73 | `COMPARE 0>` -- `NEEDS COMPARE` | B | 009 | `COMPARE` dà -1, 0 o 1 (cap. 2). | emu |
+| "a diverso sia da b sia da c" (esercizio) | cap. 12, p. 73 | `a b <> a c <> AND` | A | 006 | Stessa logica di BASIC. | emu |
+| appartenenza a un intervallo (`a<=x AND x<=b`) | cap. 12 | `x a b BETWEEN`; `x a b WITHIN` -- `NEEDS BETWEEN`, `NEEDS WITHIN` | A | - | In più rispetto a BASIC. `BETWEEN` include i due estremi, `WITHIN` esclude quello alto. Nessun tutorial le spiega. | emu |
 
 ## Capitolo 13 - The Character Set
 
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
-| `CHR$ n` | cap. 13, p. 74; App. B | `n EMIT`; `n EMITC` per i codici >= 128 | C | 003, 060 | Un carattere è il suo codice: non c'è conversione, solo stampa. |  |
-| `CODE f` | cap. 13, p. 74; App. B | `a C@`; letterale: `CHAR x`, `[CHAR] x` | B | 003, 009 | Omonimo: `CODE` in Forth apre una definizione in linguaggio macchina. |  |
-| `USR "a"` (indirizzo di un UDG) | cap. 13, p. 76; App. B | `c UDG@` -- `NEEDS UDG+` | B | - | In `lib/udg+.f`, con `UDG+` e `.UDG`. Nessun tutorial. |  |
+| `CHR$ n` | cap. 13, p. 74; App. B | `n EMIT`; `n EMITC` per i codici >= 128 e per i codici di controllo | C | 003, 060 | Un carattere è il suo codice: non c'è conversione, solo stampa. Nessun controllo sull'intervallo: `300 EMIT` stampa `,` (300 modulo 256 fa 44), niente `B Integer out of range`. | emu |
+| `CODE f` | cap. 13, p. 74; App. B | `a C@`; letterale: `CHAR x`, in una definizione `[CHAR] x` | B | 003, 009 | Omonimo: `CODE` in Forth apre una definizione in linguaggio macchina. Per una stringa contata il primo carattere è `a$ 1+ C@`. | emu |
+| l'insieme dei caratteri (codici 32-127) | cap. 13, p. 74 | `: CHARSET 128 32 DO I EMIT LOOP ;` | A | 003 | Stessi codici: è la ROM a disegnarli. 127 è il simbolo di copyright. | emu |
+| simboli grafici (128-143) | cap. 13, p. 74 | `n EMITC` | A | 003, 060 | `EMIT` può mascherare a 7 bit: per questi codici serve `EMITC`. | emu |
+| token (codici 165-255) | cap. 13, p. 75 | - | N | - | Il sorgente Forth è testo, senza token. `EMITC` di un codice di token passa dalla ROM, che lo espande come farebbe `PRINT`: da verificare sulla macchina. |  |
+| `BIN 01111100` | cap. 13, p. 75 | `%01111100`; oppure `BINARY` ... `DECIMAL` -- `NEEDS BINARY` | A | 004 | Vedi cap. 6. | emu |
+| `USR "a"` (indirizzo di un UDG) | cap. 13, p. 76; App. B | `CHAR S UDG@` -- `NEEDS UDG+` | B | - | In `lib/udg+.f`. `UDG@ ( c -- a )` parte dalla variabile di sistema UDG (23675), come BASIC. In emulatore la variabile vale 0: l'indirizzo vero va visto sulla macchina. Nessun tutorial. | emu |
+| definire un UDG (`POKE USR "S"+n,riga`) | cap. 13, p. 76 | le otto righe in una tabella, poi una copia: `CREATE SIGMA %00000000 C, %01111100 C, ...` e `SIGMA CHAR S UDG@ 8 CMOVE` | B | 008 | `DATA` e il ciclo di `POKE` diventano `C,` e `CMOVE` (cap. 5). Manca una parola `UDG!`: una riga, candidata D-inc. | emu |
+| stampare un UDG | cap. 13, p. 75 | `CHAR S UDG+ EMITC`; in una definizione `[UDG] S EMITC`; `UDGs` li mostra tutti, `c .UDG` ne disegna la matrice -- `NEEDS UDG+` | B | - | `UDG+ ( c -- c2 )` dà il codice 144-164 (`S` dà 162). `UDGize` e `Gtype` convertono e stampano una stringa intera. | emu |
+| `CHR$ 8` (indietro di un posto) | cap. 13, p. 77 | `8 EMITC` | A | 031 | `." 1234" 8 EMITC ." 5"` mostra 1235. | emu |
+| `CHR$ 13` (a capo) | cap. 13, p. 77 | `CR`; oppure `13 EMITC` | A | 003 |  | emu |
+| `CHR$ 6` (come la virgola di `PRINT`) | cap. 13, p. 77 | `6 EMITC` | A | - | Non provato sulla macchina. |  |
+| codici di controllo 16-23 | cap. 13, p. 77 | `EMITC` del codice e poi dei suoi argomenti; di norma le parole `.INK`, `.PAPER`, `.AT`, `.TAB` | A | 030, 031 | Un argomento fuori intervallo è un errore della ROM (`K Invalid colour`): si esce a BASIC, e `RUN` riprende vForth. Le parole pronte tengono gli argomenti in riga. |  |
+| ordine alfabetico delle stringhe (`<`, `>`, `=`) | cap. 13, p. 78 | `COMPARE` -- `NEEDS COMPARE` | B | 009 | Trappola: di default `COMPARE` non distingue maiuscole e minuscole (`EVIL` e `evil` danno 0), mentre in BASIC `"EVIL"<"evil"`. Segue l'opzione `CASEON` / `CASEOFF` del sistema: dopo `CASEON` lo stesso confronto dà -1. La stringa più corta viene prima (`zoo` contro `zoology` dà -1). | emu |
+| scambio `a$,b$=b$,a$` | cap. 13, p. 78 | `2SWAP` | A | 002 | Si scambiano le due coppie `a u` sullo stack: nessun carattere viene copiato. |  |
+| set di caratteri alternativo (variabile CHARS) | cap. 13, p. 79 | `a 23606 !` | A | 008 | La stessa `POKE` di BASIC: 768 byte per i codici 32-127, e CHARS punta 256 byte prima. In emulatore la variabile vale 0. Da verificare sulla macchina. |  |
+| modo grafico a caratteri (Layer 3) | cap. 13, p. 80 | `lib/layer3.f`, `lib/TILE80.f` -- `NEEDS LAYER3`, `NEEDS TILE80` | B | 058 | In BASIC il Layer 3 si raggiunge solo con `POKE` e `REG`; vForth ha una libreria. |  |
 
 ## Capitolo 14 - More about PRINT and INPUT
 
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
-| `PRINT AT r,c;` | cap. 14, p. 82; App. B | `r c .AT` -- `NEEDS .AT` | A | 030, 031 | Stesso ordine: riga, colonna. |  |
-| `PRINT TAB n;` | cap. 14, p. 82; App. B | `n .TAB` -- `NEEDS .TAB` | A | - | Nessun tutorial. |  |
-| `PRINT #n, ...` | cap. 14 | `n SELECT` ... `VIDEO` | B | 003 | `SELECT` cambia lo stream corrente per tutta l'uscita successiva; `VIDEO` torna allo schermo. |  |
+| `PRINT AT r,c;` | cap. 14, p. 82; App. B | `r c .AT` -- `NEEDS .AT` | A | 030, 031 | Stesso ordine: riga, colonna. In emulatore si vede solo che la parola gira: la posizione va vista sulla macchina. |  |
+| `PRINT TAB n;` | cap. 14, p. 88; App. B | `n .TAB` -- `NEEDS .TAB` | A | - | Nessun tutorial. Come sopra per la verifica. |  |
+| `PRINT #n, ...` | cap. 14 | `n SELECT` ... `VIDEO` | B | 003 | `SELECT` cambia lo stream corrente per tutta l'uscita successiva; `VIDEO` torna allo schermo. Vedi cap. 20. |  |
 | `PRINT POINT x,y` | cap. 14, p. 85; App. B | - | D-inc | - | Testo a coordinate pixel: non trovato. |  |
-| `INPUT LINE a$` | cap. 14, p. 91; App. B | `buf len ACCEPT` | A | 016 | Restituisce il numero di caratteri letti. |  |
+| `INPUT LINE a$` | cap. 14, p. 91; App. B | `buf len ACCEPT` | A | 016 | Trappola: il numero restituito è quello dei caratteri più uno (`Simon` dà 6), perché conta anche il terminatore. La lunghezza della stringa è `ACCEPT 1-`. | emu |
 | `SCREEN$ (r,c)` | cap. 14, p. 88; App. B | - | D-inc | - | Non trovata. |  |
-| `INKEY$` | cap. 14, p. 93; App. B | `KEY` (aspetta); senza attesa: `?TERMINAL`, `?ESCAPE`, `KEY-DOWN?` -- `NEEDS ?ESCAPE`, `NEEDS KEYBOARD` | B | 016, 035, 051 | Non c'è `INKEY`: nel core è commentata. La lettura senza attesa passa dalla matrice (`NEEDS KEYBOARD`). |  |
-| `CLS` | cap. 14, p. 89; App. B | `CLS` | A | 003, 031 |  |  |
+| `INKEY$` | cap. 14, p. 93; App. B | `KEY` (aspetta); senza attesa: `?TERMINAL`, `?ESCAPE`, `KEY-SCAN` -- `NEEDS ?ESCAPE`, `NEEDS KEYBOARD` | B | 016, 035, 051 | Non c'è `INKEY`: nel core è commentata. `KEY-SCAN ( -- n )` legge la matrice e dà l'indice del tasto (0-39) o 255 se nessuno è premuto: un indice, non il carattere. `?TERMINAL` dice solo se è premuto BREAK. | emu |
+| `CLS` | cap. 14, p. 89; App. B | `CLS` | A | 003, 031 |  | emu |
+| righe e colonne secondo il layer | cap. 14, p. 81 | lo stesso: il testo esce dalla routine della ROM (`rst $10`), quindi righe e colonne sono quelle del layer attivo | A | 030, 052 | Il modo testo normale di vForth è `LAYER12` (cap. 15). |  |
+| larghezza dei caratteri (`CHR$ 30;CHR$ n`) | cap. 14, p. 82 | `30 EMITC n EMITC`; già pronte `WIDECHAR` (8) e `NARROWCHAR` (4) -- `NEEDS WIDECHAR`, `NEEDS NARROWCHAR` | A | - | Nessun tutorial le nomina. |  |
+| altezza dei caratteri (`CHR$ 29;CHR$ n`) | cap. 14, p. 82 | `29 EMITC n EMITC` | A | - | Nessuna parola pronta. |  |
+| `CHR$ 22`, `CHR$ 23` (AT e TAB come codici) | cap. 14, p. 92 | `22 EMITC r EMITC c EMITC` | A | 031 | È la definizione stessa di `.AT`; `.TAB` manda 23 e i due byte della colonna. |  |
+| `PRINT AT` fuori schermo (`5 Out of screen`) | cap. 14, p. 83 | - | C | 031 | L'errore lo dà la ROM: si esce a BASIC e `RUN` riprende vForth. Da verificare sulla macchina. |  |
+| `scroll?` e `POKE 23692,n` | cap. 14, p. 89 | `n 23692 C!` | A | 008 | Stessa variabile di sistema (SCR CT). Il comportamento di vForth a fine schermo è da verificare sulla macchina. |  |
+| `CHR$ 26;CHR$ n` (inibire la richiesta di scroll) | cap. 14, p. 92 | `26 EMITC n EMITC` | A | - |  |  |
+| `INPUT "testo", v` | cap. 14, p. 90 | `." testo"` e poi la lettura | B | 016 | Il messaggio è una stampa normale, dove sta il cursore. |  |
+| `INPUT v` (un numero) | cap. 14, p. 90 | `: INPUT# ( -- d ) PAD 1+ 20 ACCEPT 1- PAD C! BL PAD COUNT + C! PAD NUMBER ;` | B | 016 | Manca una parola unica, candidata D-inc. `NUMBER` vuole la stringa contata chiusa da uno spazio e lascia un doppio (`DROP` per la cella singola); accetta il segno e i prefissi `$` `%`. Provata con 42 e -17. Su un testo che non è un numero dà errore e torna al prompt. | emu |
+| espressioni in risposta a `INPUT` (`a+2`) | cap. 14, p. 91 | `PAD 80 ACCEPT 1- PAD SWAP EVALUATE` -- `NEEDS EVALUATE` | B | 021 | Si valuta testo Forth: `A @ 2 +`. Non provata in questa forma. |  |
+| `INPUT AT`, la parte bassa dello schermo | cap. 14, p. 90 | - | C | 016 | Non c'è una zona di input separata: `ACCEPT` legge dove si trova il cursore; prima si posiziona con `.AT`. |  |
+| `INPUT n` (joystick) | cap. 14, p. 93 | `31 P@` (Kempston 1), `55 P@` (Kempston 2) | B | 066 | Stessi bit: destra, sinistra, giù, su, fuoco. In emulatore la porta dà 255. |  |
+| `INPUT -n` (ridefinire i tasti) | cap. 14, p. 94 | `GET-KEY KEY#>RM` e poi `KEY-PRESSED?` -- `NEEDS KEYBOARD` | B | 051 | Il "joystick di tastiera" di NextZXOS non c'è: i tasti scelti si leggono dalla matrice. |  |
 
 ## Capitolo 15 - Colours
 
@@ -324,6 +424,17 @@ edizione; le pagine sono quelle del PDF.
 | `PALETTE DIM n` | cap. 15, p. 108; App. B | `REG!` su `$41` (8 bit) o `$44` (9 bit) | B | 056 |  |  |
 | `PALETTE FORMAT n` | cap. 15, p. 108; App. B | `REG!` su `$42`, `$43` | B | 056 | Da verificare: non coperto dai tutorial. |  |
 | `PALETTE OVER n` | cap. 15, p. 109; App. B | `n $14 REG!` | A | 056 |  |  |
+| attributi per cella 8x8 (INK, PAPER, BRIGHT, FLASH) | cap. 15, p. 98 | lo stesso: è l'hardware; l'area degli attributi è a `$5800` | A | 030 | Il capitolo descrive la macchina, non il linguaggio: vale tale e quale. |  |
+| gli otto colori di base | cap. 15, p. 105 | `_BLACK` `_BLUE` `_RED` `_MAGENTA` `_GREEN` `_CYAN` `_YELLOW` `_WHITE` -- `NEEDS GRAPHICS` | A | 036 | Costanti con il trattino basso davanti; senza `GRAPHICS` si usano i numeri 0-7. |  |
+| `INK 8` (trasparente), `INK 9` (contrasto) | cap. 15, p. 106 | `8 .INK`, `9 .INK` | A | - | Da verificare: `.INK` passa l'argomento da `ATTRIB-MASK` prima di mandarlo alla ROM. |  |
+| colore dentro un `PRINT` (`PRINT PAPER 6;"x"`) | cap. 15, p. 106 | `6 .PAPER ." x"` | C | 030 | Non c'è la differenza fra istruzione e elemento di `PRINT`: `.PAPER` manda il codice di controllo e vale da lì in avanti come colore temporaneo della ROM; `.PERM` lo rende permanente. Da verificare sulla macchina quando la ROM lo riporta al permanente. |  |
+| codici di controllo 16-21 (`CHR$ 16+CHR$ n`) | cap. 15, p. 107 | `16 EMITC n EMITC` | A | 031 | È la definizione stessa di `.INK`. Un argomento fuori intervallo fa uscire a BASIC con `K Invalid colour` (cap. 13). |  |
+| caratteri composti con `OVER 1` e `CHR$ 8` | cap. 15, p. 107 | `1 .OVER ." o" 8 EMITC 34 EMIT 0 .OVER` -- `NEEDS .OVER` | A | 031 | Non provato sulla macchina. |  |
+| `INK` / `PAPER` da 0 a 255 (LoRes, Layer 2) | cap. 15, p. 106 | con `GRAPHICS` caricata: `.INK`, `.PAPER` per il testo e `c TO ATTRIB` per i pixel -- `NEEDS GRAPHICS` | B | 037, 052 | Il colore dei pixel è un `VALUE`, non un comando. |  |
+| `LAYER 2,0` / `LAYER 2,1` (nascondere e mostrare il Layer 2) | cap. 15, p. 105 | bit 7 del NextReg `$69`: `$69 REG@ $80 OR $69 REG!` | B | 037 | Da verificare se `LAYER2` e `LAYER12` lo fanno già da sole. |  |
+| i modi che BASIC non raggiunge (Layer 2 a 320x256 e 640x256) | cap. 14, p. 81; cap. 16, p. 120 | `LAYER22-GRAPHICS`; `LAYER24-GRAPHICS` -- `NEEDS LAYER22-GRAPHICS` | A | 052 | In più rispetto a BASIC, che li ottiene solo con `REG` e `BANK POKE`. Il 640x256 (`LAYER24`) è sperimentale: non verificato su hardware. |  |
+| formato dei colori di palette (RRRGGGBB, 9 bit su due byte) | cap. 15, p. 109 | lo stesso: è l'hardware | A | 056 |  |  |
+| la parte bassa dello schermo prende il colore del bordo | cap. 15, p. 106 | - | C | 030 | Non c'è una parte bassa riservata. |  |
 
 ## Capitolo 16 - Graphics
 
@@ -339,6 +450,15 @@ edizione; le pagine sono quelle del PDF.
 | `LAYER DIM x1,y1,x2,y2` | cap. 16, p. 119; App. B | `REG!` su `$18` (Layer 2), `$1A` (ULA) | B | - | Esiste solo dentro LAYER22/LAYER24. |  |
 | `LAYER ERASE x,y,w,h[,f]` | cap. 16, p. 118; App. B | - | D-inc | - | Riempimento di un rettangolo: non trovato. |  |
 | `TILE ...`, `TILE BANK n`, `TILE DIM ...` | cap. 16, p. 113; App. B | - | D-lib | 058 | Tiling software su Layer 1/2: non c'è. `lib/layer3.f` e `lib/TILE80.f` sono la tilemap hardware, un'altra cosa. |  |
+| origine delle coordinate (in basso a sinistra su Layer 0, in alto altrove) | cap. 16, p. 113 | sempre in alto a sinistra, e il primo numero è la verticale | C | 036 | Trappola doppia: in `lib/GRAPHICS.f` x è la coordinata verticale (dall'alto) e y l'orizzontale. `PLOT bx,by` di BASIC su Layer 0 diventa `175 by - bx PLOT`. |  |
+| posizione corrente (`PLOT` position) | cap. 16, p. 114 | - | C | 036 | Non esiste: `DRAW-LINE` prende i due estremi. Per il tracciato "a penna" si tiene l'ultimo punto in due `VALUE`. |  |
+| colore dentro l'istruzione (`PLOT INK c;x,y`) | cap. 16, p. 115 | `c TO ATTRIB` prima di disegnare -- `NEEDS GRAPHICS` | B | 036, 038 | Resta in vigore finché non si cambia. |  |
+| `PLOT OVER 1` (inverte il pixel) | cap. 16, p. 117 | `x y XPLOT` -- `NEEDS GRAPHICS` | A | 038 | Su LoRes e Layer 2 inverte il valore del pixel. |  |
+| `PLOT INVERSE 1` (cancella il pixel) | cap. 16, p. 117 | l'operatore di `PLOT` è la parola differita `PLOTOP` | B | - | Da verificare come si sceglie "spegni" (`L0-RES`): nessun tutorial lo mostra. |  |
+| punti fuori schermo (errore su Layer 0, ammessi altrove) | cap. 16, p. 114 | `COORD-CHECK ( x y -- x y f )` | B | - | Da verificare se `PLOT` la chiama da sé o se tocca al programma. |  |
+| grafico di una funzione (`PLOT n,88+80*SIN (n/128*PI)`) | cap. 16, p. 113 | tabella di seni e `*/`, oppure `FLOATING` -- `NEEDS GRAPHICS` | B | 065 | Vedi cap. 9: in virgola mobile è lento. |  |
+| tratteggi con un UDG a scacchiera | cap. 16, p. 118 | UDG come nel cap. 13 | B | - |  |  |
+| riempire o copiare in fretta la memoria video | cap. 16, p. 118 | `FILL`, `CMOVE`; a blocchi grandi `DMA-FILL`, `DMA-COPY` -- `NEEDS DMA` | B | 054 | Per il Layer 2 la pagina da 8K va prima mappata con `MMU7!` (cap. 23). |  |
 
 ## Capitolo 17 - Time and Motion
 
@@ -355,6 +475,15 @@ edizione; le pagine sono quelle del PDF.
 | `SPRITE DIM x1,y1,x2,y2` | cap. 17, p. 132; App. B | `REG!` su `$19` | B | - |  |  |
 | `SPRITE PALETTE ...` | cap. 17, p. 135; App. B | `SPRITE-PALETTE-INIT`; `REG!` su `$40`-`$44` -- `NEEDS SPRITE` | B | 053, 056 |  |  |
 | movimento automatico, sprite compositi, collisioni | cap. 17 | - | D-lib | - | `lib/SPRITE.f` copre solo il minimo. |  |
+| pausa che un tasto interrompe | cap. 17, p. 121 | ciclo: `: PAUSE ( n -- ) 0 ?DO 1FRAME ?TERMINAL IF LEAVE THEN LOOP ;` | B | 032, 051 | `1FRAME` aspetta un quadro; per "un tasto qualsiasi" si interroga `KEY-SCAN` al posto di `?TERMINAL`. Candidata D-inc. Non provata. |  |
+| contatore dei quadri (`PEEK 23672` e seguenti) | cap. 17, p. 122 | `23672 @` (i 16 bit bassi di FRAMES) | A | 032 | Circa 21 minuti a 50 Hz prima di ripartire da 0; per i 24 bit si aggiunge `23674 C@`. In emulatore resta a 0. |  |
+| `TIME` (azzera) e `TIME` (legge) | cap. 17, p. 122 | `0 23672 !` e `23672 @` | B | 032 | Nessuna parola pronta. |  |
+| `.time` e `.date` (comandi punto) | cap. 17, p. 122 | `.NOW` -- `NEEDS .NOW` | B | - | Da vForth non si lancia un comando punto: si chiama NextZXOS (`IDE_RTC`). |  |
+| fotogrammi letti da disco | cap. 17, p. 125 | `SCREEN-FROM-FILE`, `LOAD-BYTES`, `BMP-LOAD"` -- `NEEDS SCREEN-FROM-FILE`, `NEEDS LOAD-BYTES`, `NEEDS BMP-LOAD` | B | 042, 046 |  |  |
+| fotogrammi tenuti in memoria (banchi) | cap. 17, p. 127 | `MMU7!` e `CMOVE` (o `DMA-COPY`); doppio buffer con `REG!` su `$12` | B | 041, 054 |  |  |
+| animare uno sprite (alternare i pattern) | cap. 17, p. 132 | stesso slot, pattern diverso nell'attributo 3, poi `SPRITE-UPDATE` | B | 053 | Lo slot si sceglie con la porta `$303B`, il pattern sta nei bit 5:0 dell'attributo 3: scambiarli accende sprite in più. |  |
+| muovere uno sprite | cap. 17, p. 134 | aggiornare x e y nella struttura e chiamare `SPRITE-UPDATE` a ogni quadro (`1FRAME`) | B | 039, 053 | La struttura va azzerata con `ERASE` dopo `ALLOT`: un attributo 2 sporco sposta tutti i colori. |  |
+| il Copper | cap. 17, p. 140 | `COP-WAIT`, `COP-MOVE`, `COP-UPLOAD`, `COP-START`, `COP-STOP` -- `NEEDS COPPER` | A | 045 | In BASIC si programma a colpi di `REG`; qui c'è una libreria. |  |
 
 ## Capitolo 18 - Sound and Music
 
@@ -362,6 +491,12 @@ edizione; le pagine sono quelle del PDF.
 |---|---|---|---|---|---|---|
 | `BEEP x,y` | cap. 18, p. 144; App. B | `ms nota BEEP` -- `NEEDS BLEEP` | A | 033 | Durata in millisecondi, non in secondi; nota in semitoni dal do centrale come in BASIC. `BLEEP` è la forma grezza. |  |
 | `PLAY f1[,...]` | cap. 18, p. 145; App. B | - | D-lib | 034, 050, 055 | Nessun interprete di stringhe musicali. `lib/AY.f` scrive i registri; AFX suona effetti e musiche preparati. |  |
+| melodia da una lista di note (`DATA` e `BEEP`) | cap. 18 | tabella `CREATE` di coppie durata-nota e un ciclo con `BEEP` -- `NEEDS BLEEP` | B | 033 | Cap. 5: la `DATA` diventa una tabella. |  |
+| tre canali, volume, inviluppi (dentro `PLAY`) | cap. 18, p. 153 | i registri del chip AY: `v r AY!`; `AYSELECT` per il chip, `SHH` per il silenzio -- `NEEDS AY` | B | 034 | Si scrivono i registri, non una stringa di note: più lavoro, più controllo. |  |
+| stereo e TurboSound | cap. 18, p. 153 | `ENABLE-TURBOSOUND`, `ENABLE-MONO`, `DISABLE-MONO` -- `NEEDS AY` | A | 034 |  |  |
+| effetti e musiche già pronti | cap. 18 | lettore AFX: `AFXFRAME`, `lib/afxplay.f` -- `NEEDS AFXFRAME` | B | 050, 055 | In più rispetto a BASIC: suona nell'interrupt mentre il programma continua. |  |
+| audio digitale (WAV, MOD, PT3) | cap. 18, p. 153 | - | D-lib | - | In BASIC sono comandi punto e driver; in vForth non c'è niente. |  |
+| audio con l'acceleratore Raspberry Pi | cap. 18, p. 154 | `lib/RPi0.f` | B | 048 | La libreria parla con il Pi; un lettore audio non c'è. |  |
 
 ## Capitolo 19 - NextZXOS and alternatives
 
@@ -395,6 +530,14 @@ edizione; le pagine sono quelle del PDF.
 | `REMOUNT` | cap. 19, p. 186; App. B | `REMOUNT` -- `NEEDS REMOUNT` | A | - | Chiude anche il file dei blocchi. |  |
 | `SPECTRUM ...` | cap. 19, p. 189; App. B | - | N | - | Modo 48K e snapshot. |  |
 | uscita dal sistema | cap. 19 | `BYE`; `BASIC` | B | - | Da BASIC, `RUN` riprende vForth. |  |
+| nomi di file, unità e percorsi | cap. 19, p. 159 | gli stessi di NextZXOS; il nome segue la parola (`INCLUDE lib/x.f`) oppure va messo in PAD (`PAD" nome"`) | A | 042, 043 | Senza virgolette, tranne `PAD"`. I nomi delle parole con caratteri vietati nei file sono mappati da `NEEDS` (`?` diventa `^`, e così via). |  |
+| caratteri jolly | cap. 19, p. 170 | `WILDCARD *.F` e poi `DIR` -- `NEEDS WILDCARD`, `NEEDS DIR` | B | - | Il filtro resta attivo finché non si dà un `WILDCARD` da solo. Nessun tutorial. |  |
+| avvio automatico (`autoexec.bas`, `SAVE ... LINE`) | cap. 19, p. 200 | Screen 11 del file dei blocchi, che include `lib/autoexec.f` | B | 028 | Si modifica con `EDIT` o cambiando `lib/autoexec.f`. |  |
+| spazio libero, dimensione e data di un file | cap. 19, p. 173 | `.FREE-SIZE`, `.FILE-SIZE`, `.DATE-TIME`; primitive `F_GETFREE`, `F_STAT`, `F_FSTAT` -- `NEEDS .FREE-SIZE`, `NEEDS .FILE-SIZE` | B | - | Non provate. |  |
+| comandi punto | cap. 19, p. 199 | - | C | 057 | vForth stesso può essere un comando punto (`.vforth`, variante DOT), ma da dentro non ne lancia altri. |  |
+| dati che restano fra una sessione e l'altra | cap. 19 | il file dei blocchi: `n BLOCK`, `UPDATE`, `FLUSH`; `LIST`, `LOAD` | C | 028, 063 | In più rispetto a BASIC: 16 MB di blocchi da 512 byte sempre aperti, senza `OPEN` né nomi di file. |  |
+| Browser, menu NMI, CP/M, esxDOS, cartucce, RAMdisk, partizioni | cap. 19, p. 193 | - | N | - | Ambiente della macchina, fuori dal linguaggio. |  |
+| `CAT EXP`, `CAT TAB`, `CAT ASN` | cap. 19, p. 174 | - | D (scelta) | 043 | Catalogo esteso, tabella delle partizioni, assegnazione delle unità: `DIR` dà solo l'elenco dei file; per dimensione e data vedi la riga sullo spazio libero. |  |
 
 ## Capitolo 20 - Channels, Streams, Drivers and Windows
 
@@ -411,16 +554,41 @@ edizione; le pagine sono quelle del PDF.
 | `LPRINT` | cap. 20, p. 206; App. B | - | D-inc | - | Come `LLIST`: da verificare `3 SELECT`. |  |
 | `COPY` (stampante) | cap. 20 | - | N | - | ZX Printer. |  |
 | `DRIVER drid,callid ...` | cap. 20, p. 213; App. B | - | D-inc | - | Nessuna parola per `M_DRVAPI`. |  |
+| stream già aperti (schermo, stampante) | cap. 20, p. 208 | `2 SELECT` (o `VIDEO`), `3 SELECT`, `4 SELECT` | B | 003 | `SELECT` sceglie uno stream che esiste già: lo 3 e lo 4 dipendono da un `OPEN #` fatto in BASIC prima di lanciare vForth. Nessun tutorial spiega `SELECT`. |  |
+| scrivere testo in un file (`PRINT #n` su un file) | cap. 20, p. 208 | `a n fh F_WRITE` | B | 042 | `F_WRITE ( a n fh -- n2 f )` scrive byte: i numeri vanno prima convertiti in testo con `<# ... #>`. |  |
+| fine del file | cap. 20, p. 208 | `F_READ ( a n fh -- n2 f )` dice quanti byte ha letto davvero | B | 042 | Meno di quelli chiesti vuol dire fine del file. |  |
+| canale variabile (`v>`) e canale memoria (`m>`) | cap. 20, p. 211 | - | N | - | Servono a BASIC per catturare l'uscita in una stringa: in Forth l'uscita formattata è già una stringa (`<# #>`). |  |
+| rete e seriale (canali driver) | cap. 20, p. 213 | `lib/UART-SYS.f` -- `NEEDS UART-SYS` | B | 047 | Si parla con la UART direttamente, non attraverso un driver di NextZXOS. |  |
+| `CAT #n`, `PWD #n`, `COPY ... TO #n` (uscita di un comando su uno stream) | cap. 20, p. 208 | `n SELECT` prima della parola, `VIDEO` dopo | B | 003 | Da verificare: `DIR` e `PWD` stampano con `EMIT`, quindi dovrebbero seguire lo stream scelto. |  |
+| `POINT #n` (posizione nello stream) | cap. 20, p. 208 | `fh F_FGETPOS` | A | - | Vedi `RETURN #n`. |  |
+
+## Capitolo 21 - Optional Features
+
+| BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
+|---|---|---|---|---|---|---|
+| installazione e prove dell'hardware (memoria, WiFi, RTC, acceleratore) | cap. 21, p. 220 | - | N | - | Capitolo di installazione. |  |
+| orologio in tempo reale (`.time`, `.date`) | cap. 21, p. 227 | `.NOW`; valori grezzi `IDE_RTC`, `M_GETDATE` -- `NEEDS .NOW`, `NEEDS IDE_RTC`, `NEEDS M_GETDATE` | B | - | Data e ora in formato MS-DOS; `.FAT-DATE` e `.FAT-TIME` le stampano. Nessun tutorial. Non provato. |  |
+| modulo WiFi | cap. 21, p. 223 | UART: `lib/UART-SYS.f` | B | 047 |  |  |
+| acceleratore Raspberry Pi Zero | cap. 21, p. 226 | `lib/RPi0.f`; `ASK`, `SH` -- `NEEDS RPi0`, `NEEDS ASK`, `NEEDS SH` | B | 048 | `SH` manda una riga di comando al Pi. |  |
 
 ## Capitolo 22 - IN, OUT and the Next Registers
 
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
-| `OUT m,n` | cap. 22, p. 229; App. B | `n m P!` | A | 039, 053 | Prima il valore, poi la porta. Omonimo: `OUT` nel core è una variabile utente (colonna di stampa). |  |
-| `IN n` | cap. 22, p. 229; App. B | `n P@` | A | 066 |  |  |
-| `REG n,v` | cap. 22, p. 229; App. B | `v n REG!` | A | 040 | Prima il valore, poi il registro. |  |
-| `REG n` (funzione) | cap. 22 | `n REG@` | A | 040 |  |  |
-| `RUN AT speed` | cap. 22, p. 233; App. B | `n SPEED!` (0-3); lettura `SPEED@` -- `NEEDS SPEED!`, `NEEDS SPEED@` | A | 040 |  |  |
+| `OUT m,n` | cap. 22, p. 229; App. B | `n m P!` | A | 039, 053 | Prima il valore, poi la porta. Omonimo: `OUT` nel core è una variabile utente, un contatore dei caratteri emessi (in emulatore vale qualche migliaio dopo poche righe: non è la colonna). |  |
+| `IN n` | cap. 22, p. 229; App. B | `n P@` | A | 066 |  | emu |
+| `REG n,v` | cap. 22, p. 229; App. B | `v n REG!` | A | 040 | Prima il valore, poi il registro. | emu |
+| `REG n` (funzione) | cap. 22 | `n REG@` | A | 040 |  | emu |
+| `RUN AT speed` | cap. 22, p. 233; App. B | `n SPEED!` (0-3); lettura `SPEED@` -- `NEEDS SPEED!`, `NEEDS SPEED@` | A | 040 | `2 SPEED! SPEED@ .` dà 2. | emu |
+| indirizzi di porta a 16 bit | cap. 22, p. 229 | `P@` e `P!` prendono la porta intera: `$FEFE P@` | A | 051 | La mezza riga della tastiera sta nel byte alto. |  |
+| NextREG attraverso le porte `$243B` e `$253B` | cap. 22, p. 232 | è quello che fanno `REG@` e `REG!` | A | 040 |  |  |
+| l'elenco dei NextReg e delle porte | cap. 22, p. 234 | lo stesso: è l'hardware | N | 040 | La guida rimanda al manuale Next; i tutorial coprono solo i registri usati. |  |
+| tastiera (`IN 65278` e le altre mezze righe) | cap. 22 | `$FEFE P@`; libreria `KEYBOARD` -- `NEEDS KEYBOARD` | A | 051 |  |  |
+| mouse Kempston | cap. 22, p. 244 | `lib/MOUSE.f` -- `NEEDS MOUSE` | B | 044 |  |  |
+| joystick Kempston (porte 31 e 55) | cap. 22, p. 244 | `31 P@`, `55 P@` | A | 066 |  |  |
+| interrupt (NextReg `$C0` e seguenti) | cap. 22, p. 241 | `ISR-SETUP`, `ISR-ON`, `ISR-OFF`, `ISR-SYNC` -- `NEEDS INTERRUPTS` | B | 049 | In più rispetto a BASIC, che non può scrivere una routine di interrupt. |  |
+| registri delle MMU (`$50`-`$57`) | cap. 22, p. 237 | `MMU7!`, `MMU7@`; `MMU0!`, `MMU1!` -- `NEEDS MMU0!`, `NEEDS MMU1!` | A | 041 | Solo MMU7 è libera: negli altri slot ci sono vForth, i suoi stack e lo schermo. Vedi cap. 23. |  |
+| DMA, UART, sprite, Layer 2, AY (porte dedicate) | cap. 22, p. 244 | `lib/DMA.f`, `lib/UART-SYS.f`, `lib/SPRITE.f`, `LAYER2`, `lib/AY.f` | B | 054, 047, 039, 037, 034 | Ogni gruppo di porte ha la sua libreria. |  |
 
 ## Capitolo 23 - The Memory
 
@@ -428,20 +596,38 @@ edizione; le pagine sono quelle del PDF.
 |---|---|---|---|---|---|---|
 | `CLEAR [n]` | cap. 23, p. 251; App. B | `FORGET nome` / `MARKER`; stack: `ABORT` | C | 005, 025 | Non ci sono variabili da azzerare in blocco. RAMTOP non si sposta: la mappa di memoria di vForth è fissa. |  |
 | `LAYER BANK n,m` | cap. 23, p. 251; App. B | `REG!` su `$12`, `$13` -- `NEEDS L2-RAM-PAGE` | B | 046 | NextReg `$12` conta in banchi da 16K; `L2-RAM-PAGE` dà la prima pagina da 8K per `MMU7!`. |  |
-| `POKE a,lista` | cap. 23, p. 250; App. B | `b a C!`; più valori: `C,` in una tabella e `CMOVE` | A | 008 | Prima il valore, poi l'indirizzo. |  |
-| `DPOKE a,lista` | cap. 23, p. 257; App. B | `n a !` | A | 008 |  |  |
-| `PEEK a` | cap. 23, p. 250; App. B | `a C@` | A | 008 |  |  |
-| `DPEEK a` | cap. 23; App. B | `a @` | A | 008 |  |  |
+| `POKE a,lista` | cap. 23, p. 250; App. B | `b a C!`; più valori: `C,` in una tabella e `CMOVE` | A | 008 | Prima il valore, poi l'indirizzo. | emu |
+| `DPOKE a,lista` | cap. 23, p. 257; App. B | `n a !` | A | 008 |  | emu |
+| `PEEK a` | cap. 23, p. 250; App. B | `a C@` | A | 008 |  | emu |
+| `DPEEK a` | cap. 23; App. B | `a @` | A | 008 |  | emu |
 | `PEEK$ (a,len)` | cap. 23, p. 249; App. B | `a len` è già una stringa: `TYPE`, `CMOVE` | C | 009 |  |  |
-| `BANK m POKE o,lista` / `BANK m PEEK o` | cap. 23, p. 248; App. B | `pagina MMU7!` poi `C!` / `C@` a `$E000 + o` | C | 041 | BASIC conta in banchi da 16K; `MMU7!` vuole una pagina da 8K: banco m = pagine 2m e 2m+1. |  |
+| `BANK m POKE o,lista` / `BANK m PEEK o` | cap. 23, p. 248; App. B | `pagina MMU7!` poi `C!` / `C@` a `$E000 + o` | C | 041 | BASIC conta in banchi da 16K; `MMU7!` vuole una pagina da 8K: banco m = pagine 2m e 2m+1. | emu |
 | `BANK m DPOKE` / `BANK m DPEEK` | cap. 23 | `MMU7!` poi `!` / `@` | C | 041 |  |  |
-| `BANK m ERASE [o,l,][v]` | cap. 23 | `MMU7!` poi `FILL` | B | 041 | Due pagine per banco. |  |
+| `BANK m ERASE [o,l,][v]` | cap. 23 | `MMU7!` poi `FILL` | B | 041 | Due pagine per banco. | emu |
 | `BANK m COPY TO n`, `BANK m COPY o,l TO n,o2` | cap. 23 | `MMU7!` + `CMOVE` passando da un buffer -- `NEEDS MMU0!`, `NEEDS MMU1!` | B | 041, 054 | MMU7 mostra una pagina alla volta. `MMU0!`/`MMU1!` esistono in `inc/`; per blocchi grandi il DMA. |  |
 | `BANK NEW v` | cap. 23 | - | D-inc | - | L'allocazione via `IDE_BANK` esiste solo dentro `inc/PAINT.f`. |  |
 | `BANK m CLEAR` | cap. 23 | - | D-inc | - | Come sopra. |  |
 | `BANK m LAYER ...` | cap. 23 | - | D-inc | - | Copia fra schermo e banco: non trovata. |  |
 | `BANK 1346 FORMAT` / `USR` | cap. 23 | - | N | - | Gestione del RAMdisk. |  |
 | `BANK m GOSUB/GOTO/LINE/LIST/MERGE/PROC/RESTORE` | cap. 23 | - | N | 025 | Programmi BASIC in banchi. In vForth il codice sta nel dizionario e i nomi nello heap (MMU7). |  |
+| la mappa di memoria | cap. 23, p. 247 | la stessa fino a RAMTOP (`$61FF`); vForth parte da `$6366`; stack e buffer dei blocchi stanno sotto `$E000`; `$E000-$FFFF` è lo slot MMU7 | C | 025, 041 | vForth vive sopra RAMTOP, come un programma in linguaggio macchina lanciato da BASIC. |  |
+| fare posto con `CLEAR n` | cap. 23, p. 259 | lo spazio si prende dal dizionario: `CREATE buf n ALLOT`; `UNUSED` dice quanto ne resta -- `NEEDS UNUSED` | C | 008, 025 | Niente RAMTOP da spostare. | emu |
+| come BASIC tiene programma e variabili | cap. 23, p. 253 | - | N | 022, 025 | Il corrispettivo è la struttura del dizionario (manuale vForth, "Dictionary memory structure"). |  |
+| banco da 16K e pagina da 8K | cap. 23, p. 248 | `: BANK>PAGES ( banco -- p1 p2 ) 2* DUP 1+ ;` | C | 041 | BASIC conta in banchi da 16K, `MMU7!` in pagine da 8K: il banco 20 sono le pagine 40 e 41. Provato: un byte scritto nella pagina 40 non si vede nella 41 e si ritrova tornando alla 40. | emu |
+| cambiare pagina dal prompt | cap. 23 | sempre dentro una definizione che rimette la pagina di prima: `MMU7@ >R ... R> MMU7!` | C | 041 | Trappola: in MMU7 sta lo heap con i nomi delle parole. Cambiando pagina dal prompt l'interprete non trova più niente. | emu |
+| copiare e riempire memoria | cap. 23 | `CMOVE`, `FILL`, `ERASE`, `BLANK`; blocchi grandi `DMA-COPY`, `DMA-FILL` -- `NEEDS DMA` | A | 008, 054 |  | emu |
+| quali banchi sono liberi | cap. 23, p. 251 | - | C | 041 | vForth tiene lo heap nei banchi 16-19 (pagine 32-39); il Layer 2 sta dove dice il NextReg `$12`. Non c'è un allocatore pubblico (vedi `BANK NEW`). |  |
+| i modi di paginazione di NextZXOS (porte `$7FFD`, `$1FFD`, allRAM) | cap. 23, p. 265 | - | N | 041 | vForth usa solo le MMU; il resto va lasciato com'è. |  |
+
+## Capitolo 24 - The System Variables
+
+| BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
+|---|---|---|---|---|---|---|
+| le variabili di sistema (23552-23733) | cap. 24, p. 271 | agli stessi indirizzi: `a C@`, `a @`, `C!`, `!` | A | 008 | Valgono perché vForth stampa e legge la tastiera attraverso la ROM. In emulatore valgono quasi tutte 0 (fa eccezione LAST K, 23560): da vedere sulla macchina. |  |
+| quelle che vForth usa per conto suo | cap. 24 | SEED 23670 (`RND`, `RANDOM`, `RANDOMIZE`), UDG 23675 (`UDG@`), RAMTOP 23730 | A | - | Trovate cercando gli indirizzi in `src/`, `inc/` e `lib/`. Il core in assembler ne usa altre (tastiera): da ricontrollare su `project/vForth18_DOES/source/`. |  |
+| FRAMES 23672 | cap. 24, p. 271 | `23672 @` | A | 032 | Vedi cap. 17. |  |
+| SCR CT 23692, ATTR P 23693, BORDCR 23624, CHARS 23606 | cap. 24, p. 271 | `C@` / `C!`; CHARS con `@` / `!` | A | - | Vedi cap. 13, 14 e 15. |  |
+| le "variabili di sistema" di Forth | cap. 24 | variabili utente: `BASE`, `STATE`, `DP`, `>IN`, `BLK`, `SPAN`, `OUT`, `WARNING` | C | 022 | Sono parole, non indirizzi da ricordare: `BASE @`, `HEX`. |  |
 
 ## Capitolo 25 - Using Machine Code
 
@@ -450,6 +636,14 @@ edizione; le pagine sono quelle del PDF.
 | `USR a` | cap. 25, p. 276; App. B | `n a CALL#`; codice proprio: `CODE nome ... C;` -- `NEEDS CALL#` | C | 027, 057 | `CALL#` passa n in BC e A e restituisce BC. Di norma il linguaggio macchina si scrive come parola `CODE`. Nessun tutorial su `CALL#`. |  |
 | `BANK n USR o` | cap. 25 | `MMU7!` poi `CALL#` -- `NEEDS CALL#` | B | 041 |  |  |
 | chiamate a NextZXOS | cap. 25 | `M_P3DOS` | B | - | Primitiva del core; nessun tutorial. |  |
+| dove mettere il codice (`CLEAR n` e sopra RAMTOP) | cap. 25, p. 275 | nel dizionario: una parola `CODE nome ... C;` | C | 027 | Il codice ha un nome e si chiama come ogni altra parola; niente indirizzi da ricordare. |  |
+| scrivere il codice (byte in `DATA` e `POKE`) | cap. 25, p. 275 | assembler con notazione postfissa, oppure i byte in esadecimale con `C,` -- `NEEDS ASSEMBLER` | B | 027 | In più rispetto a BASIC, che non ha un assembler. I file di `inc/` usano l'esadecimale per non dover caricare l'assembler. |  |
+| passare e ricevere valori (BC) | cap. 25, p. 276 | lo stack dei dati: `POP HL` ... `PUSH HL` | C | 027 | Vanno conservati BC (puntatore di istruzione), DE (return stack) e IX; si chiude con `JP (IX)`. |  |
+| caricare codice da un file (`LOAD "f" CODE`) | cap. 25 | `LOAD-BYTES` in una zona riservata con `ALLOT`, poi `CALL#` -- `NEEDS LOAD-BYTES`, `NEEDS CALL#` | B | 042 | Più naturale tenere il sorgente e ricompilarlo con `INCLUDE`. |  |
+| le chiamate di NextZXOS già pronte | cap. 25, p. 278 | `F_OPEN`, `F_READ`, `F_WRITE`, `F_SEEK`, `IDE_RTC`, `M_GETDATE` e le altre `F_...` | A | 042, 057 | Le più comuni sono già parole; per le altre `M_P3DOS`. |  |
+| istruzioni Z80N | cap. 25, p. 281 | in esadecimale (`ED C, 30 C,` è `MUL`); nell'assembler da verificare | A | 027 | Esempi in `inc/RND.f`. |  |
+| `USR$ a` (codice che restituisce una stringa) | cap. 25 | la parola `CODE` lascia indirizzo e lunghezza sullo stack | C | 027 | Una stringa è `a u` anche per il linguaggio macchina. |  |
+| caricatore BASIC che lancia il codice (`LOAD "loader"`) | cap. 25, p. 277 | - | N | 059 | È quello che fa `Forth18_loader.bas` per avviare vForth. Per un eseguibile autonomo: `ZAP`. |  |
 
 ## Cosa esce dalla matrice
 
@@ -483,11 +677,60 @@ edizione; le pagine sono quelle del PDF.
   contatore dei caratteri emessi, non la colonna. La nota della riga `OUT`
   (cap. 22) dice "colonna di stampa" ed è da ricontrollare.
 
+### Trovato provando i cap. 8-14 in emulatore (2026-10-12)
+
+- **`ACCEPT` restituisce i caratteri letti più uno.** `PAD 20 ACCEPT .` con
+  `Simon` stampa 6: il conteggio comprende il terminatore. Il tutorial 016 lo
+  sa (`?NUMBER` comincia con `1-`), ma l'intestazione nel core dice "n2 is the
+  string length". È la trappola del cap. 14: chi usa il numero come lunghezza
+  si porta dietro un byte a zero.
+- **`COMPARE` non distingue maiuscole e minuscole**: `EVIL` contro `evil` dà
+  0. Passa da `(COMPARE)`, che segue `CASEON` / `CASEOFF`; l'help dice solo
+  "0 if equal". In BASIC `"EVIL"<"evil"`. Con `CASEON` torna -1 (provato).
+- **`SQRT` prende una cella, non un doppio**: `16 SQRT .` dà 4, `16. SQRT .`
+  dà 0. Il commento `( d -- n )` in `inc/SQRT.f` è sbagliato (il doppio lo
+  costruisce lei con `0 DSQRT`); la riga del cap. 9 diceva "vuole un doppio"
+  ed è stata corretta.
+- **`RND` segue la sequenza di `RND` in virgola mobile di BASIC**, non quella
+  che il manuale dà per `%RND`: dopo `1 RANDOMIZE` SEED diventa 149 (cioè
+  0.0022735596, il valore del manuale) e `100 RND` dà 0, mentre il manuale
+  dice che `%RND 100` comincia con 97. Da chiarire su CSpect quale delle due
+  cose fa davvero NextBASIC.
+- **`NUMBER` vuole lo spazio in fondo**: su una stringa creata con `,"` dà
+  `is undefined` anche se il testo è un numero valido, perché dopo l'ultima
+  cifra non trova lo spazio. `>NUMBER` e `(NUMBER)` non hanno il problema.
+- **Nessun controllo, come previsto**: `300 EMIT` stampa `,`; `99 M @` su un
+  array di 10 elementi legge e basta; `2 16 **` dà 0.
+- **I nomi non distinguono maiuscole e minuscole**: `CREATE evil` dopo
+  `CREATE EVIL` avvisa `EVIL has already been defined.` e da lì entrambi i
+  nomi trovano la seconda.
+- **Non ci sono `SEARCH`, `SCAN`, `/STRING`, `**`, `<=`, `>=`**: i primi tre
+  pesano su tutto quello che nei cap. 7, 8 e 11 riguarda le stringhe.
+
+### Trovato nel primo giro sui cap. 15-25 (2026-10-12)
+
+- **`OUT` non è la colonna di stampa**: `OUT @` vale 14804 dopo una trentina
+  di righe. È un contatore dei caratteri emessi; la riga del cap. 22 è stata
+  corretta.
+- **MMU7 dal prompt**: la pagina corrente è la 32 (lo heap con i nomi). Le
+  prove di `MMU7!` sono fatte dentro definizioni che rimettono la pagina di
+  prima; è la forma da mostrare nel cap. 23 della guida.
+- **`L2-RAM-PAGE` è una costante calcolata al caricamento** (da NextReg
+  `$12`): se il Layer 2 viene spostato dopo, non lo segue.
+- **Vuoti nuovi**: una `PAUSE` che un tasto interrompe, `TIME` (azzerare e
+  leggere FRAMES), una parola per mostrare e nascondere il Layer 2.
+
 ### Candidati `inc/` (classe D-inc)
 
 Dai cap. 1-7: `<=` e `>=`, `/STRING`, una parola che copia una stringa in una
 variabile contata (il `PLACE` degli altri Forth), le minuscole, lo scarto degli
 spazi iniziali, la sostituzione di caratteri.
+
+Dai cap. 8-14: la ricerca in una stringa (`IN`: `SCAN` per un carattere,
+`SEARCH` per una sottostringa), la potenza fra interi (`**`), `UDG!` (copia di
+otto byte nella matrice di un UDG), e le definizioni provate qui che si
+possono promuovere così come sono: `SGN`, `INPUT#`, `ARRAY`, `MATRIX`,
+`SARRAY` con `S!`.
 
 Dalle voci di Appendice B:
 un "chiedi un numero" (`INPUT`), il segno di un intero (`SGN`), `SCREEN$`,
@@ -507,7 +750,9 @@ sprite oltre il minimo. A queste si aggiungono finestre e canali di NextZXOS
 trigonometriche inverse e `FLN`, `MAKEDIR` / `REMOVEDIR` / `UNLINK`, UDG (`lib/udg+.f`), orologio
 (`IDE_RTC`, `M_GETDATE`, `.NOW`), `F_RENAME` / `F_CHMOD` / `F_FSTAT`,
 `F_SEEK` / `F_FGETPOS`, `REMOUNT`, `CALL#` e `M_P3DOS`, `BYE` / `BASIC`,
-array di stringhe. Coincidono in buona parte con l'elenco dei tutorial nuovi
+array di stringhe, `BETWEEN` / `WITHIN`, `WIDECHAR` / `NARROWCHAR` e i
+codici di controllo 29 e 30, `RND` (i tutorial usano solo `CHOOSE` e
+`RANDOM`). Coincidono in buona parte con l'elenco dei tutorial nuovi
 del piano (sez. 9).
 
 ### Omonimi da mettere in "What changes"
@@ -515,7 +760,8 @@ del piano (sez. 9).
 `:` (cap. 1); `(`, `@`, `AND` / `OR` / `NOT` (cap. 6); `PLACE` (cap. 7);
 `EXIT`, `REPEAT` (cap. 3); `LIST`, `ERROR`, `ERASE` (cap. 1 e 19); `LOAD`,
 `SAVE`, `RENAME` (cap. 19); `OVER` (cap. 15); `CODE` (cap. 13); `EXP`
-(cap. 9); `OUT` (cap. 22).
+(cap. 9); `OUT` (cap. 22); `IN` (cap. 8: in BASIC è anche la ricerca in
+una stringa, oltre alla lettura di una porta).
 
 ### File di help da rivedere
 
@@ -526,6 +772,10 @@ Trovati leggendo gli help per compilare la colonna vForth; non corretti.
   stream di uscita), `reg!.txt` e `reg@.txt` ("NextZXOS system register":
   sono i NextReg), `video.txt` ("Set video mode": riporta l'uscita
   sullo schermo, `2 SELECT`).
+- Commenti nei sorgenti che non corrispondono: `inc/SQRT.f` (`( d -- n )`,
+  ma prende una cella), `ACCEPT` in `src/F18e.f` ("n2 is the string length":
+  è la lunghezza più uno), `help/compare.txt` (non dice che il confronto
+  segue `CASEON` / `CASEOFF`).
 - Senza voce di help: `RND`, `PAINT`, `DRAW`, `DRAW-CIRCLE`, `POINT`,
   `PIXELADD`, `PIXELATT`, `IDE_RTC`, `.NOW`, `CALL#`, `UDG+`, `F_CHMOD`,
   `F_FSTAT`, `REMOUNT`, `VIEW`, `IDE_MODE!`, `PAUSEOFF`, `LAYER13`, `ZAP`, le
