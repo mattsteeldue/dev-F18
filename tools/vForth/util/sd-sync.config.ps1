@@ -2,11 +2,16 @@
 # Sincronizzazione PC -> immagine SD di CSpect montata come unita' W: via imdisk:
 #   imdisk -a -t file -m w: -o rem -f cspect-next-2gb.img -v 1
 
-$SyncSource = 'C:\zx\forth\F18\tools\vForth'
+# La sorgente e' il repository che contiene questo file (util\ sta sotto la sua
+# radice): cosi' gli script funzionano su ogni postazione, che il repo sia in
+# C:\zx\forth\F18\tools\vForth o in D:\zx\Forth\F18\tools\vForth.
+$SyncSource = Split-Path -Parent $PSScriptRoot
 $SyncDest   = 'W:\tools\vForth'
 
 # Immagine SD di CSpect (quella effettivamente usata; esiste una copia in CSpect.2.19).
-$SyncImage  = 'C:\Zx\CSpect\cspect-next-2gb.img'
+# Sta sullo stesso drive del repository: <drive>:\Zx\CSpect\.
+$SyncDrive  = Split-Path -Qualifier $SyncSource
+$SyncImage  = Join-Path "$SyncDrive\" 'Zx\CSpect\cspect-next-2gb.img'
 
 # Directory escluse SOLO al primo livello (percorso completo):
 # materiale di sviluppo PC che non serve sulla SD.

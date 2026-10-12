@@ -5,9 +5,29 @@ description: Sincronizza le novita' del progetto vForth sull'immagine SD di CSpe
 
 # sync-cspect: deploy su immagine SD di CSpect
 
-Sincronizza `C:\zx\forth\F18\tools\vForth` su `W:\tools\vForth` (immagine SD montata
+Sincronizza il repository (`tools\vForth`) su `W:\tools\vForth` (immagine SD montata
 via imdisk). Tutta la configurazione (percorsi, esclusioni, immagine) sta in
 `util\sd-sync.config.ps1` -- non duplicarla qui.
+
+## Drive C: o D:: decide il repository
+
+Il repository non sta sullo stesso drive su tutte le postazioni
+(`C:\zx\forth\F18\tools\vForth` oppure `D:\zx\Forth\F18\tools\vForth`). Nessun
+percorso e' fissato: `sd-sync.config.ps1` ricava la sorgente dalla propria
+posizione (`$SyncSource` = la cartella sopra `util\`) e cerca l'immagine SD
+sullo **stesso drive** (`<drive>:\Zx\CSpect\cspect-next-2gb.img`).
+
+Gli script vanno quindi lanciati **dal repository in cui si sta lavorando**:
+nei comandi qui sotto `<repo>` e' la directory di lavoro della sessione (la
+radice di `tools\vForth`), mai un percorso scritto a mano con un altro drive.
+Prima di montare, se serve un controllo:
+
+```powershell
+. <repo>\util\sd-sync.config.ps1; $SyncSource; $SyncImage; Test-Path $SyncImage
+```
+
+Se l'immagine non c'e' su quel drive, o `imdisk` non e' nel PATH, fermati e
+dillo all'utente: non cercarla altrove e non ripiegare sull'altro drive.
 
 ## ⚠️ Prerequisito critico
 
@@ -86,13 +106,13 @@ sovrascrivendo: il risultato finale e' lo stesso.
 3. **Mount se serve**: se W: non e' montata, avvisa l'utente che comparira' il
    popup UAC, poi:
    ```powershell
-   & C:\zx\forth\F18\tools\vForth\util\mountw.ps1
+   & <repo>\util\mountw.ps1
    ```
    Exit 0 = ok; 1 = errore/UAC negato; 2 = CSpect attivo. Se fallisce, fermati.
 
 4. **Sync**:
    ```powershell
-   & C:\zx\forth\F18\tools\vForth\util\sync2sd.ps1
+   & <repo>\util\sync2sd.ps1
    ```
    Aggiungi `-WithBlocks` se richiesto `blocks`, `-Mirror` se confermato `mirror`,
    `-DryRun` se richiesto `dry` (in tal caso salta i passi 5-6).
@@ -101,18 +121,18 @@ sovrascrivendo: il risultato finale e' lo stesso.
 
 5. **Verifica**:
    ```powershell
-   & C:\zx\forth\F18\tools\vForth\util\verify2sd.ps1
+   & <repo>\util\verify2sd.ps1
    ```
    Stessi switch `-WithBlocks` del sync. Exit 0 = allineato. Se restano differenze
    subito dopo il sync, qualcosa non va: indaga, non rilanciare alla cieca.
 
 6. **Smount solo se l'hai montata tu** (`-not $wasMounted`), con avviso UAC:
    ```powershell
-   & C:\zx\forth\F18\tools\vForth\util\mountw.ps1 -Dismount
+   & <repo>\util\mountw.ps1 -Dismount
    ```
    Se il detach gentile (`imdisk -d`) fallisce per file aperti (es. Explorer),
    lo script forza da solo con `imdisk -D` (stesso flusso di
-   `C:\Zx\CSpect\umounty.bat`): nessun intervento manuale richiesto.
+   `<drive>:\Zx\CSpect\umounty.bat`): nessun intervento manuale richiesto.
 
 7. **Riepilogo finale**: quanti file copiati, esito verifica, stato di W:
    (montata/smontata). Se W: e' rimasta montata, ricorda che va smontata

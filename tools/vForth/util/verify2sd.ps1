@@ -1,4 +1,4 @@
-# verify2sd.ps1 -- verifica l'allineamento tra C:\zx\forth\F18\tools\vForth e W:\tools\vForth
+# verify2sd.ps1 -- verifica l'allineamento tra il repository (tools\vForth) e W:\tools\vForth
 #
 # Uso:
 #   .\verify2sd.ps1               verifica (timestamp FAT per subdir, hash per .f e radice)

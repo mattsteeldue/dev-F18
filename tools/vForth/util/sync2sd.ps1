@@ -1,4 +1,4 @@
-# sync2sd.ps1 -- copia le novita' da C:\zx\forth\F18\tools\vForth a W:\tools\vForth
+# sync2sd.ps1 -- copia le novita' dal repository (tools\vForth) a W:\tools\vForth
 #
 # Uso:
 #   .\sync2sd.ps1                 copia incrementale (timestamp FAT per subdir, hash per .f e radice)
