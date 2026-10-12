@@ -1,21 +1,18 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 1, rilettura dei cap. 17-25). Fase 0 chiusa
-> il 2026-10-11. Fase 2 (capitolo pilota, cap. 3) scritta e approvata
-> dall'autore per tono e contenuto, commit 72664ae. Fase 1 avviata il
-> 2026-10-12: `situation/BASIC-vs-vForth-matrix.md` ha le voci di Appendice B
-> per tutti i capitoli e, per i cap. 1-14 (la parte "linguaggio"), anche i
-> concetti del capitolo e la prova in emulatore. Per i cap. 15-25 c'è un primo
-> giro: concetti dai cap. 15 e 16 letti per intero e dagli indici degli altri,
-> prova in emulatore di registri e memoria (cap. 22 e 23). Resta, per la
-> fase 1: rileggere i cap. 17-25 e completarne le righe (si riparte dal
-> cap. 17), e le prove su CSpect elencate nella matrice (grafica, colori,
-> sprite, suono, file system, orologio; `%RND` contro `RND`; `+"`). La fase 3
-> (guida, cap. 1-14) può partire: la sua matrice è chiusa. La fase 2 è chiusa: i
-> listati BASIC del cap. 3 sono stati provati tutti dall'autore su MAME il
-> 2026-10-12 e scaricati dall'immagine SD in `bas2f/` (`03-looping-01.bas`
-> ... `-08.bas`). Dal 2026-10-12 la guida è una
-> cartella, `doc/basic-to-vforth/`, un file per capitolo (D2 rivista).
+> Stato: IN CORSO (ripresa da: fase 3, guida cap. 1-14, in mano a un'altra
+> sessione). Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
+> chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
+> 2026-10-12 e scaricati in `bas2f/`. **Fase 1 chiusa il 2026-10-12 per la
+> parte che si fa senza la macchina**: `situation/BASIC-vs-vForth-matrix.md`
+> ha voci di Appendice B, concetti e prova in emulatore per tutti e 25 i
+> capitoli (537 righe; i cap. 17-25 riletti e riscritti nel secondo giro,
+> più la teoria del colore del cap. 15). Resta, della fase 1, solo l'elenco
+> "Da provare su CSpect o sulla macchina" in fondo alla matrice, che tocca
+> all'autore (grafica, file system, stream, RTC, sprite, suono; `%RND`
+> contro `RND`; `+"`). La matrice dei cap. 15-25 è chiusa: la fase 4 può
+> partire. Dal 2026-10-12 la guida è una cartella, `doc/basic-to-vforth/`,
+> un file per capitolo (D2 rivista).
 
 ## 1. Obiettivo
 
@@ -218,7 +215,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | Fase | Lavoro | Esce | Chi verifica |
 |---|---|---|---|
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
-| 1 | Matrice: prima le voci di Appendice B (FATTO 2026-10-12), poi i concetti dei cap. 1-25 e la prova in emulatore (fatti i cap. 1-14; primo giro sui cap. 15-25, da rileggere i cap. 17-25) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
+| 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
@@ -338,6 +335,24 @@ di help da rivedere trovati per strada.
 - `NEEDS GRAPHICS` in emulatore si carica ma non si inizializza (`IDE_MODE`
   non emulata): tutti gli spezzoni grafici dei cap. 15-17 sono `no-test` e
   vanno all'autore, come previsto dalla sez. 6.
+
+**Emerso dalla rilettura dei cap. 17-25 (2026-10-12).** Il dettaglio è nella
+matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
+
+- Altre due voci di "Presenti" da leggere con cautela: `SCREEN-FROM-FILE`
+  copia un file di testo in uno Screen (non carica un'immagine), e `DIR` dà
+  già dimensione, data e ora.
+- `COPY` da file a file non chiede una libreria: tre righe con `F_READ` e
+  `F_WRITE`, provate. Passa a D-inc; `LPRINT` e `LLIST` passano a idioma
+  (`3 SELECT`), da provare con una stampante.
+- Trappole per "What changes": `CD` rompe `NEEDS` (cap. 19); `F_GETLINE`
+  conta anche il fine riga (cap. 20); `SPRITE` è una struttura e
+  `SPRITES-ON` riscrive il NextReg `$15` (cap. 17); nel registro 7 del chip
+  AY il bit a 0 accende (cap. 18).
+- Candidati `inc/` nuovi: `PAUSE` e `FRAMES`, `TIME`, `TIME$` con i
+  secondi, `HIT?` (collisione fra sprite), `FCOPY`, `ZLEN`.
+- In emulatore non si provano `DIR`, `CD`, `PWD`, `IDE_RTC` (chiamate non
+  emulate): negli spezzoni dei cap. 17 e 19 vanno sotto `no-test`.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
