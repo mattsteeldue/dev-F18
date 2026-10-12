@@ -1,7 +1,11 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: APERTO (piano scritto il 2026-10-11). Fase 0 chiusa: decisioni D1-D5
-> prese dall'autore il 2026-10-11 (sez. 8). Prossimo passo: fase 1, la matrice.
+> Stato: IN CORSO (ripresa da: revisione del capitolo pilota). Fase 0 chiusa il
+> 2026-10-11 (decisioni D1-D5, sez. 8). Fase 2 anticipata alla fase 1 su
+> richiesta dell'autore: il capitolo pilota (cap. 3, Looping) è in bozza in
+> `doc/BASIC-to-vForth.md`, con `emu/test_basic_guide.py` che ne riesegue gli
+> spezzoni (69 righe, 0 errori, 2026-10-11). Resta: revisione dell'autore su
+> forma e tono (sez. 6.1), prova dei listati BASIC su CSpect, poi fase 1.
 
 ## 1. Obiettivo
 
@@ -149,13 +153,46 @@ l'autore su CSpect o sulla macchina, e la colonna "Verifica" della matrice lo
 registra. Uno script `emu/test_basic_guide.py` estrae i blocchi di codice della
 guida e li riesegue: la guida resta allineata al core come i test.
 
+### 6.1 Cosa ha fissato il capitolo pilota (2026-10-11)
+
+Convenzioni nate scrivendo il cap. 3, da confermare o correggere nella
+revisione; valgono per tutti i capitoli successivi.
+
+- **Spezzoni verificabili.** In un blocco ` ```forth ` la riga che termina con
+  `\ => testo` dichiara cosa stampa; un blocco ` ```text ` subito dopo è
+  l'uscita dell'ultima riga del blocco Forth (uscite su più righe); una riga
+  senza dichiarazione non deve dare errore. Anche un messaggio d'errore si
+  dichiara così (`\ => DO? Can't be executed.`). Il blocco preceduto da
+  `<!-- no-test -->` è saltato (attesa di un tasto, cicli senza fine, hardware
+  non emulato).
+- **Lo script.** `python emu/test_basic_guide.py [--chapter N] [--list]`:
+  circa 7 minuti per il cap. 3 sul Raspberry Pi (2 di boot). Aspetta `ok` o un
+  errore dopo ogni riga, perché il rilevamento del prompt di `repl.py` torna
+  troppo presto quando una riga compila a lungo senza stampare.
+- **Righe corte.** Una riga oltre gli 80 caratteri digitata nel REPL viene
+  spezzata e il resto è interpretato come riga nuova (`OLO? is undefined`):
+  gli spezzoni restano entro 72 colonne, definizioni su più righe.
+- **Listati BASIC non provati.** Sono scritti da noi ma qui non c'è modo di
+  eseguirli: vanno provati dall'autore su CSpect prima della pubblicazione
+  (nel cap. 3: `EXIT: EXIT 80`, `REPEAT: WHILE`, `INT (n/2)`).
+- **Il fianco a fianco mostra anche l'idioma.** Dopo la traduzione letterale
+  (cicli annidati con `J`) viene la versione fattorizzata (`ROW` + `TABLE`):
+  è il punto in cui il lettore vede che Forth non si scrive come BASIC.
+- **Omonimi che ingannano** vanno in "What changes", non in tabella: nel
+  cap. 3 `EXIT` (esce dalla definizione, non dal ciclo) e `REPEAT` (chiude
+  il ciclo, non lo apre).
+
+Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
+(effetto sullo stack, caso dell'indice oltre il limite); `UNLOOP`, `J` e `K` stanno in `inc/`, tutto il resto del capitolo
+è nel core.
+
 ## 7. Fasi
 
 | Fase | Lavoro | Esce | Chi verifica |
 |---|---|---|---|
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: prima le voci di Appendice B, poi i concetti dei cap. 1-25 | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
-| 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono | un capitolo della guida | autore |
+| 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- BOZZA 2026-10-11, da rivedere | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
