@@ -426,6 +426,8 @@ help/         -- Plain-text help files for the HELP command (one .txt per word)
 test/         -- Test suite (CORE-TESTS.f, FLOATING-TESTS.f, ...)
 demo/         -- Example programs and games
 tutorial/     -- Guided tutorials
+bas2f/        -- NextBASIC listings of the basic-to-vforth guide (tokenised +3DOS
+                 .bas, one per listing: NN-chapter-MM.bas); SD payload, binary in git
 doc/          -- PDF reference manual
 util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py);
                  obs-ws-shot.py (PNG of the real Next's video output via the OBS WebSocket server, port 4455,
