@@ -1,11 +1,14 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 4). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 6). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
-> righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), entrambi
+> righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
+> 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe) e il
+> cap. 5 (`05-read-data-restore.md`, 51 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2) sono da provare dall'autore su MAME o CSpect
-> e da salvare in `bas2f/`. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5) sono da provare
+> dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
+> dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
 > 2026-10-12 e scaricati in `bas2f/`. **Fase 1 chiusa il 2026-10-12 per la
 > parte che si fa senza la macchina**: `situation/BASIC-vs-vForth-matrix.md`
@@ -221,7 +224,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12), si riparte dal cap. 4 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4 e 5 (2026-10-13), si riparte dal cap. 6 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -357,6 +360,33 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
   secondi, `HIT?` (collisione fra sprite), `FCOPY`, `ZLEN`.
 - In emulatore non si provano `DIR`, `CD`, `PWD`, `IDE_RTC` (chiamate non
   emulate): negli spezzoni dei cap. 17 e 19 vanno sotto `no-test`.
+
+**Emerso scrivendo il cap. 4 (2026-10-13).**
+
+- `3 AREA .` con un argomento in meno non si ferma in `AREA`: moltiplica
+  per quello che sta sotto lo stack e l'errore lo dà la parola dopo
+  (`.? Stack is empty.`). Usato in "What changes".
+- `GCD` esiste già in `lib/GCD.f` (stessa definizione, con `TUCK`): il
+  capitolo la cita.
+- Trappola dei locali, provata in emulatore: dopo il `;` di una parola con
+  `{ }` `CONTEXT` resta su `DEFLOCALS` fino al prossimo `:`, quindi un locale
+  con lo stesso nome di una parola la nasconde anche dal prompt (con un
+  locale `AREA`, `3 4 AREA .` stampa 0 e lascia 3 e 4 sullo stack; dopo un
+  `:` qualsiasi torna a dare 12). `lib/LOCALS.f` la chiama "harmless", ma
+  vale solo se i nomi non coincidono. Nel capitolo i locali di `RECT` si
+  chiamano `SURFACE` e `PERIM`, e la trappola è in "What changes".
+- Un locale di lavoro che non sia né argomento né risultato non ha forma
+  con `{ }`: la riga della matrice `LOCAL v=valore` -> locale di uscita vale
+  solo quando il valore è anche il risultato. Messo in "No equivalent".
+
+**Emerso scrivendo il cap. 5 (2026-10-13).**
+
+- Il conteggio `HERE tab - 2 /` vale solo subito dopo l'ultima virgola: la
+  prima stesura lo metteva dopo altre definizioni e dava 58 invece di 6.
+  Il capitolo lo dice.
+- Per l'elenco di stringhe il capitolo usa una tabella di indirizzi (una
+  `CREATE` con `,"` per stringa), non lo heap con `H"`: resta tutto nel
+  core, senza `NEEDS`.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
