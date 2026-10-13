@@ -251,7 +251,7 @@ edizione; le pagine sono quelle del PDF.
 | `a$(n)` (un carattere) | cap. 7, p. 49 | `a$ n + C@` | A | 009 | In una stringa contata l'indice da 1 coincide con l'offset, perché il byte 0 è la lunghezza. | emu |
 | assegnare a una sottostringa | cap. 7, p. 50 | `CMOVE` sulla zona | B | 009 | È sempre "procustea": si copiano esattamente i byte chiesti, la lunghezza non cambia. | emu |
 | `a$ = "..."` con lunghezza diversa | cap. 7, p. 50 | `CMOVE` e poi riscrivere il byte di lunghezza | B | 009 | Manca una parola che lo faccia in un colpo (omonimo: `PLACE` nel core è una variabile utente). Candidata D-inc. | emu |
-| concatenazione `+` | cap. 7, p. 50 | accodare in un buffer: `CMOVE` e somma delle lunghezze; nello heap `+"` -- `NEEDS +"` | B | 009 | Provata solo la via del buffer. Da verificare `+"`: in emulatore `H" abc" +" def"` dà una stringa sbagliata. | emu |
+| concatenazione `+` | cap. 7, p. 50 | accodare in un buffer: `CMOVE` e somma delle lunghezze; nello heap `+"` -- `NEEDS +"` | B | 009 | La guida usa la via del buffer (`$+!`, cap. 7). `+"` estende solo l'ultima stringa creata nello heap; il difetto che dava una stringa sbagliata è stato corretto il 2026-10-13 (`TODO.md`). | emu |
 | `a$*n` (ripetizione) | cap. 7, p. 50 | ciclo: `0 ?DO 2DUP TYPE LOOP 2DROP` | B | - | Si stampa n volte, non si costruisce una stringa nuova. | emu |
 | `a$*-1` (rovesciata) | cap. 7, p. 51 | ciclo all'indietro con `C@ EMIT` | B | - |  | emu |
 | `[+]` (maiuscole) | cap. 7, p. 51 | `UPPER ( c -- c2 )` su ogni carattere | B | 016 | Solo un carattere alla volta. | emu |

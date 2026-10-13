@@ -2,6 +2,41 @@
 
 > Resolved entries are moved to TODO-DONE.md.
 
+# +" corrupted the string it extended; +C has the same flaw in the tail
+**2026-10-13**
+Found while writing chapter 7 of the BASIC-to-vForth guide: on the headless
+emulator `H" abc" +" def" FAR COUNT TYPE` printed `bcjdef`. Two errors in
+`inc/+~.f`: the new text was copied at `HP@`, i.e. four bytes past the end
+of the string (after the zero cell and the back pointer that `HEAP` lays
+down after every block), and the last line stored `HP` at `ha` -- on the
+length byte and the first character -- instead of in the forward pointer at
+`ha - 2`.
+
+Fixed the same day: `+"` now appends right after the old text, moves `HP`
+by the number of characters added, updates the length byte and lays the
+tail (zero cell, back pointer) and the forward pointer down again. Checked
+on the headless emulator only: `H" abc" +" def"` gives `abcdef`, length 6;
+a second `+"  ghi jkl"` gives `abcdef ghi jkl`, length 14; after each step
+the forward pointer equals `HP@` and the back pointer at `HP@ - 2` points
+to the block; `H"` and `S"` used afterwards still work.
+
+Still open:
+- **Author's check on CSpect or the real machine**, then move this entry to
+  TODO-DONE.md.
+- **`+C` (`inc/+c.f`)** keeps the string right but leaves the tail behind:
+  it adds 1 to the forward pointer and to `HP` without moving the zero cell
+  and the back pointer, and the new character overwrites the first byte of
+  the zero cell. Nothing reads the back pointer today (only `HEAP` writes
+  it), so there is no visible effect; fix it the same way as `+"`.
+- Both words work only on the **last** block created on the heap, check
+  neither the 8K page boundary nor the 255-character limit, and have no
+  test in `test/`. `help/+~.txt` does not say any of this, and `+C` has no
+  help page.
+- `+" "` (an empty text) does not append nothing: `WORD` skips the leading
+  delimiter and takes the rest of the line. Same behaviour as before the
+  fix.
+
+
 # VS Code extension: colorize known words in the help files too
 **2026-10-05**
 A small enhancement wished for the VS Code extension: highlight/colorize the

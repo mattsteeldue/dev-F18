@@ -1,13 +1,14 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 7). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 8). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
-> cap. 5 (`05-read-data-restore.md`, 51 righe) e il cap. 6
-> (`06-expressions.md`, 90 righe), tutti
+> cap. 5 (`05-read-data-restore.md`, 51 righe), il cap. 6
+> (`06-expressions.md`, 90 righe) e il cap. 7 (`07-strings.md`, 80
+> righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -225,7 +226,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5 e 6 (2026-10-13), si riparte dal cap. 7 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6 e 7 (2026-10-13), si riparte dal cap. 8 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -409,6 +410,30 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
   `PRINT %(f<<7)|(b<<6)|(p<<3)|i` (atteso 79) e `PRINT % SGN {a/2}` con
   `%a=50000` (atteso -7768); il testo afferma anche che
   `PRINT %30000*20/100` dà 101 come in Forth.
+
+**Emerso scrivendo il cap. 7 (2026-10-13).**
+
+- Il capitolo definisce da sé le parole che mancano, tutte provate:
+  `$!` (assegna a una stringa contata), `$+!` (accoda), `/STRING`,
+  `SLICE`, `-LEADING`, `UPCASE`, `LOWER` e `LOWCASE`, `TIMES`,
+  `BACKWARDS`. Sono le prime candidate D-inc da promuovere in `inc/`
+  (`/STRING` per prima, poi `$!` e `$+!` con il nome da decidere: `PLACE`
+  nel core è già una variabile utente).
+- `+"` resta fuori dal capitolo: in emulatore `H" abc" +" def"` seguito da
+  `FAR COUNT TYPE` stampava `bcjdef`. Era un difetto di `inc/+~.f`,
+  corretto lo stesso giorno e provato in emulatore (voce in `TODO.md`, con
+  quel che resta: prova dell'autore, `+C`, test). Il capitolo la nomina
+  soltanto, in "No equivalent": estende solo l'ultima stringa dello heap.
+- `S"` funziona anche dal prompt e lascia un indirizzo nella finestra
+  MMU7 (`$ED29` nella prova). Il capitolo dice di usare la coppia subito
+  o di copiarla, e di non scriverci dentro; gli esempi tengono i
+  letterali dentro una definizione (`: PLANET S" Spectrum" ;`).
+- `COMPARE` all'avvio non distingue maiuscole e minuscole
+  (`S" next" S" NEXT" COMPARE` dà 0): mostrato qui, con rimando al cap. 13
+  per `CASEON`.
+- `a$( TO n)` è solo `n MIN` sulla lunghezza, e l'assegnazione a una
+  sottostringa è `CMOVE` (o `FILL`): la regola "procustea" di BASIC è il
+  comportamento naturale.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
