@@ -3,7 +3,7 @@
 A migration guide for programmers who know NextBASIC and want to move to
 vForth, the Forth system for the ZX Spectrum Next.
 
-> **Draft.** Chapters 1 to 7 are written. Chapter 3 (Looping) was the pilot:
+> **Draft.** Chapters 1 to 8 are written. Chapter 3 (Looping) was the pilot:
 > it fixes the form and the tone of every other chapter; the plan is in
 > `planners/BASIC-TO-FORTH-PLAN.md`.
 
@@ -47,7 +47,7 @@ A chapter without a link is not written yet.
 5. [READ, DATA, RESTORE](05-read-data-restore.md)
 6. [Expressions](06-expressions.md)
 7. [Strings](07-strings.md)
-8. Functions
+8. [Functions](08-functions.md)
 9. Mathematical Functions
 10. Random Numbers
 11. Arrays

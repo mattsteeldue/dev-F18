@@ -74,7 +74,9 @@ NAME$ C@ .                      \ => 8
 
 `CMOVE` copies bytes: from, to, how many. `$!` is to strings what `!` is
 to numbers. `LET b$=a$` is `A$ COUNT B$ $!`, and the empty string is a
-zero in the length byte: `0 NAME$ C!`.
+zero in the length byte: `0 NAME$ C!`. Do not try to write an empty
+literal: `S" "` is not the empty string, it swallows the rest of the
+line.
 
 **Nothing checks the room.** `$!` copies as many characters as it is
 given. Forty characters sent to `NAME$` overwrite whatever comes after it

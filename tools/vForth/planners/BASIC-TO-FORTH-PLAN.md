@@ -1,14 +1,14 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 8). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 9). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
 > cap. 5 (`05-read-data-restore.md`, 51 righe), il cap. 6
-> (`06-expressions.md`, 90 righe) e il cap. 7 (`07-strings.md`, 80
-> righe), tutti
+> (`06-expressions.md`, 90 righe), il cap. 7 (`07-strings.md`, 80
+> righe) e il cap. 8 (`08-functions.md`, 85 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -226,7 +226,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6 e 7 (2026-10-13), si riparte dal cap. 8 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7 e 8 (2026-10-13), si riparte dal cap. 9 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -434,6 +434,27 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
 - `a$( TO n)` è solo `n MIN` sulla lunghezza, e l'assegnazione a una
   sottostringa è `CMOVE` (o `FILL`): la regola "procustea" di BASIC è il
   comportamento naturale.
+
+**Emerso scrivendo il cap. 8 (2026-10-13).**
+
+- `S" "` non dà la stringa vuota: `WORD` salta il delimitatore iniziale e
+  si prende il resto della riga (`: T6 S" " VAL . ;` non definisce `T6`).
+  È lo stesso comportamento di `+" "` annotato in `TODO.md`. Aggiunto un
+  avviso al cap. 7.
+- `SQRT` prende una cella senza segno, non un doppio: `help/sqrt.txt` e il
+  commento di `inc/SQRT.f` dicevano `d -- n`, corretti in `u -- n`.
+  `-4 SQRT` dà 255, senza errore.
+- `>NUMBER` non riconosce il segno (`S" -5"` dà 0): la `VAL` del capitolo
+  vale per i numeri senza segno, e il testo lo dice. Per il resto c'è
+  `EVALUATE`.
+- La stringa di `<# ... #>` dura fino alla prossima conversione:
+  `12 STR$ 34 STR$ TYPE TYPE` stampa `3434`. Mostrato nel capitolo.
+- Definite e provate nel capitolo: `SGN`, `STR$`, `BASE$`, `VAL`,
+  `ROUND/`, `POS` (ricerca di un carattere), `LEFT$`, `RIGHT$`, `MID$`,
+  `TL$`. `/STRING` è ridefinita qui perché ogni capitolo si prova da
+  solo: un motivo in più per portarla in `inc/`.
+- `7 REG@` in emulatore dà 3 (28 MHz): la riga è nel capitolo senza
+  uscita dichiarata, perché sulla macchina dipende dalla velocità.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
