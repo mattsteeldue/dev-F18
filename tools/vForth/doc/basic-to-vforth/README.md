@@ -3,8 +3,8 @@
 A migration guide for programmers who know NextBASIC and want to move to
 vForth, the Forth system for the ZX Spectrum Next.
 
-> **Draft.** Only the pilot chapter (Chapter 3, Looping) is written. It fixes
-> the form and the tone of every other chapter; the plan is in
+> **Draft.** Chapters 1 to 3 are written. Chapter 3 (Looping) was the pilot:
+> it fixes the form and the tone of every other chapter; the plan is in
 > `planners/BASIC-TO-FORTH-PLAN.md`.
 
 ## How to read this guide
@@ -40,8 +40,8 @@ Conventions used in the listings:
 
 A chapter without a link is not written yet.
 
-1. Basic Programming Concepts
-2. Decisions
+1. [Basic Programming Concepts](01-basic-programming-concepts.md)
+2. [Decisions](02-decisions.md)
 3. [Looping](03-looping.md)
 4. Procedures and Subroutines
 5. READ, DATA, RESTORE

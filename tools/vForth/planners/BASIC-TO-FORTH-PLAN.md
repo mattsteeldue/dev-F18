@@ -1,7 +1,11 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, guida cap. 1-14, in mano a un'altra
-> sessione). Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
+> Stato: IN CORSO (ripresa da: fase 3, cap. 4). Fase 3 avviata il
+> 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
+> righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), entrambi
+> con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
+> (5 nel cap. 1, 4 nel cap. 2) sono da provare dall'autore su MAME o CSpect
+> e da salvare in `bas2f/`. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
 > 2026-10-12 e scaricati in `bas2f/`. **Fase 1 chiusa il 2026-10-12 per la
 > parte che si fa senza la macchina**: `situation/BASIC-vs-vForth-matrix.md`
@@ -217,7 +221,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12), si riparte dal cap. 4 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
