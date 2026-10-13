@@ -1,14 +1,16 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 9). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 10). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
 > cap. 5 (`05-read-data-restore.md`, 51 righe), il cap. 6
 > (`06-expressions.md`, 90 righe), il cap. 7 (`07-strings.md`, 80
-> righe) e il cap. 8 (`08-functions.md`, 85 righe), tutti
+> righe), il cap. 8 (`08-functions.md`, 85 righe) e il cap. 9
+> (`09-mathematical-functions.md`, 29 righe: la virgola mobile è
+> `no-test`), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -226,7 +228,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7 e 8 (2026-10-13), si riparte dal cap. 9 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8 e 9 (2026-10-13), si riparte dal cap. 10 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -455,6 +457,36 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
   solo: un motivo in più per portarla in `inc/`.
 - `7 REG@` in emulatore dà 3 (28 MHz): la riga è nel capitolo senza
   uscita dichiarata, perché sulla macchina dipende dalla velocità.
+
+**Emerso scrivendo il cap. 9 (2026-10-13).**
+
+- Il capitolo ha due metà. La virgola mobile (`lib/floating.f`) è
+  descritta dal sorgente e dal tutorial 024, in otto spezzoni `no-test`:
+  l'emulatore non ha il calcolatore della ROM. Le alternative intere
+  (`**`, `YEARS` con `*/`, 355/113, `DSQRT` riscalata, tabella di seni)
+  sono provate: 29 righe, 0 errori.
+- **Da provare dall'autore su CSpect o sulla macchina**, perché scritto
+  senza poterlo eseguire: (a) le uscite di `F.` dichiarate negli spezzoni
+  (`3.5000e0`, `3.1416e0`, `1.4142e0`, `2.7183e0`, `0.5000e0`, `6.3000e1`,
+  `1.0240e3`, `1.5708e1`, `1.9635e1`), ricavate dalla forma di `F>PAD`;
+  (b) che fra `FLOATING` e `INTEGER` un numero senza punto resti un
+  intero a una cella (dedotto da `FNUMBER`, che lascia `DPL` a -1, e dal
+  tutorial 024 che dà `2 PLACES` in quel modo); (c) la forma `1.5E3`;
+  (d) le definizioni `SAVINGS`, `CIRC`, `AREA`, `HEIGHT` con letterali in
+  virgola mobile compilati.
+- `F>PAD` ricava l'esponente da `FLN 10 FLN F/ F>D`: per le potenze
+  esatte di 10 un logaritmo appena sotto l'intero darebbe una mantissa
+  `10.0000`. Gli esempi del capitolo le evitano; è da guardare quando si
+  prova la libreria.
+- `FIX` in `lib/floating.f` ha il commento `( fp -- a n )` ma è
+  `F>D DROP`, cioè `( fp -- n )`; lo ripete il tutorial 024. Da
+  correggere insieme al resto della libreria.
+- **Il capitolo va riletto quando `FLOATING` passa a 5 byte**
+  (`planners/FLOATING-5BYTE-PLAN.md`): "due celle", `2DUP`/`2SWAP`,
+  `2VARIABLE` e "circa sette cifre" descrivono il modulo di oggi.
+- `1000 10 YEARS` dà 1623 contro 1628,89; con la somma in decimi
+  (`10000 10 YEARS`) 16284: l'esempio mostra il rimedio di portarsi dietro
+  una cifra in più.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
