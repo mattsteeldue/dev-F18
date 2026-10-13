@@ -1,12 +1,13 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 6). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 7). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
-> 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe) e il
-> cap. 5 (`05-read-data-restore.md`, 51 righe), tutti
+> 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
+> cap. 5 (`05-read-data-restore.md`, 51 righe) e il cap. 6
+> (`06-expressions.md`, 90 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -224,7 +225,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4 e 5 (2026-10-13), si riparte dal cap. 6 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5 e 6 (2026-10-13), si riparte dal cap. 7 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -387,6 +388,27 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
 - Per l'elenco di stringhe il capitolo usa una tabella di indirizzi (una
   `CREATE` con `,"` per stringa), non lo heap con `H"`: resta tutto nel
   core, senza `NEEDS`.
+
+**Emerso scrivendo il cap. 6 (2026-10-13).**
+
+- `3.5 .` non stampa solo 0: lascia 35 sullo stack, e il `.` successivo lo
+  trova. Il capitolo lo mostra così (due `.` di fila), ed è il modo più
+  breve di far vedere che un doppio occupa due celle.
+- `0<>` non esiste (`0<>? is undefined.`): il flag ben formato si ottiene
+  con `0= 0=`. `NOT` del core è il NOT logico, uguale a `0=`.
+- `1 0 /` e `7 0 MOD` danno -1. Anche un quoziente che non sta in una cella
+  dà -1 senza avviso (`1000000. 7 M/`, `1000000. 7 UM/MOD`): non è nel
+  capitolo, va nel cap. 9 o nel tutorial 015.
+- La virgola mobile nel cap. 6 è solo prosa (`NEEDS FLOATING`, `FLOATING`,
+  `INTEGER`, le quattro operazioni): nessuno spezzone, perché in emulatore
+  non si prova. Gli spezzoni, `no-test`, vanno nel cap. 9.
+- Il decimale senza virgola mobile è mostrato con un intero scalato e
+  `<# # 46 HOLD #S #>` (`.TENTHS`, 98.6 da 37 gradi): è la risposta
+  consigliata prima della libreria.
+- Nei listati BASIC del cap. 6 è da controllare sulla macchina soprattutto
+  `PRINT %(f<<7)|(b<<6)|(p<<3)|i` (atteso 79) e `PRINT % SGN {a/2}` con
+  `%a=50000` (atteso -7768); il testo afferma anche che
+  `PRINT %30000*20/100` dà 101 come in Forth.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
