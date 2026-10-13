@@ -300,3 +300,10 @@ items would be a table of their addresses, like `COLOURS`.
 - `HELP CREATE`, `HELP ,`, `HELP C,`, `HELP ,"`, `HELP CELLS`,
   `HELP BOUNDS`, `HELP DOES>`, `HELP ALLOT`, `HELP HERE`, `HELP COUNT`.
 - vForth manual, sections 2.12.6 "Memory" and 2.12.9 "Definition related".
+
+<!-- nav -->
+---
+
+Previous: [Chapter 4 - Procedures and Subroutines](04-procedures-and-subroutines.md) |
+[Contents](README.md) |
+Next: [Chapter 6 - Expressions](06-expressions.md)

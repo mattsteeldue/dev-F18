@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 10). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 11). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -8,9 +8,9 @@
 > (`06-expressions.md`, 90 righe), il cap. 7 (`07-strings.md`, 80
 > righe), il cap. 8 (`08-functions.md`, 85 righe) e il cap. 9
 > (`09-mathematical-functions.md`, 29 righe: la virgola mobile è
-> `no-test`), tutti
+> `no-test`) e il cap. 10 (`10-random-numbers.md`, 31 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -180,6 +180,14 @@ guida e li riesegue: la guida resta allineata al core come i test.
   `# Chapter N - Title`, poi il link di ritorno a `README.md`; le sei parti
   sono intestazioni `##`;
 - le appendici come `app-a-...md`, l'indice inverso come `keyword-index.md`.
+- **piede di navigazione** (chiesto dall'autore il 2026-10-13): ogni
+  capitolo finisce con la riga `<!-- nav -->`, una linea e i link a
+  capitolo precedente, indice e capitolo successivo. Lo scrive
+  `python util/guide-nav.py` (ordine dei nomi di file, titoli dalla prima
+  intestazione); va rilanciato a ogni capitolo nuovo, perché cambia anche
+  il piede del precedente. L'ultimo capitolo scritto nomina il successivo
+  senza link ("not written yet"). `--check` esce con 1 se un piede è
+  vecchio; `emu/test_basic_guide.py` segnala il capitolo che non ce l'ha.
 
 I link fra i file restano nella forma `.md` (`[Looping](03-looping.md)`), che
 è quella che funziona nel repo; l'eventuale conversione per la wiki è compito
@@ -228,7 +236,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8 e 9 (2026-10-13), si riparte dal cap. 10 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8, 9 e 10 (2026-10-13), si riparte dal cap. 11 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -478,15 +486,48 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
   esatte di 10 un logaritmo appena sotto l'intero darebbe una mantissa
   `10.0000`. Gli esempi del capitolo le evitano; è da guardare quando si
   prova la libreria.
-- `FIX` in `lib/floating.f` ha il commento `( fp -- a n )` ma è
-  `F>D DROP`, cioè `( fp -- n )`; lo ripete il tutorial 024. Da
-  correggere insieme al resto della libreria.
+- `FIX` in `lib/floating.f` aveva il commento `( fp -- a n )` ma è
+  `F>D DROP`, cioè `( fp -- n )`; lo ripeteva il tutorial 024 (due
+  righe). Corretti il 2026-10-13. Il sospetto su `F.` qui sopra è
+  tracciato in `TODO.md`.
 - **Il capitolo va riletto quando `FLOATING` passa a 5 byte**
   (`planners/FLOATING-5BYTE-PLAN.md`): "due celle", `2DUP`/`2SWAP`,
   `2VARIABLE` e "circa sette cifre" descrivono il modulo di oggi.
 - `1000 10 YEARS` dà 1623 contro 1628,89; con la somma in decimi
   (`10000 10 YEARS`) 16284: l'esempio mostra il rimedio di portarsi dietro
   una cifra in più.
+
+**Emerso scrivendo il cap. 10 (2026-10-13).**
+
+- `RND` non aveva una pagina di help: scritta `help/rnd.txt`.
+- `RND` non passa dalla ROM: `inc/RND.f` rifà in Z80N la formula di BASIC
+  (`75*(n+1) MOD 65537 - 1`) sulla stessa variabile SEED (23670). Dopo
+  `1 RANDOMIZE`, `100 RND` dà 0 17 87 58 53.
+- `NEEDS RND` non carica `WITHIN`: gli spezzoni che la usano danno
+  `NEEDS WITHIN`.
+- Gli esempi cominciano con `1 RANDOMIZE` per avere uscite dichiarabili
+  (`THROW` 1 2 e 6 4; `100 HEADS` 45; `600 THROWS` 88 94 112 88 114 104).
+- `23672 @ RANDOMIZE` (seme da FRAMES) è `no-test`: in emulatore FRAMES
+  resta a 0. Resta da vedere su CSpect se `%RND` e `RND (n)` di BASIC
+  seguono la stessa sequenza: il capitolo afferma solo formula e variabile
+  comuni con `RND`.
+- Il candidato 1 della sez. 9 (tutorial sui numeri casuali) resta valido:
+  "Further reading" dice che non ce n'è ancora uno.
+
+**Rilettura dell'autore (2026-10-13).** Nel core c'è `NOT`, uguale a
+`0=`: aggiunto al cap. 2 (paragrafo, tabella, rimandi) e al cap. 6.
+
+**Le due direzioni di lettura (autore, 2026-10-14).** Concetto che vale
+per ogni Forth e che la guida usava senza dirlo: il sorgente si esegue da
+sinistra a destra, ma una parola prende i valori da sinistra (lo stack) e
+i nomi da destra (il testo che segue), quindi certe frasi si leggono al
+contrario dell'inglese. L'esempio emblematico è `DEFER PONG` (guarda a
+destra) contro `' PONG2 IS PONG` (si legge da destra: "PONG is PONG2").
+Messo in quattro punti: paragrafo "Left for the value, right for the
+name" nel cap. 1, dopo `VALUE`/`TO`/`CONSTANT`; commento a `DEFER`/`IS`
+nel cap. 4; rimando nel cap. 6; una riga in "How to read this guide" del
+`README.md`. Da riprendere dove torna utile: cap. 11 (`CREATE nome`),
+cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

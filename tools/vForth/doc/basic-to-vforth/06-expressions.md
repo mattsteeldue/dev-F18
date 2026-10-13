@@ -31,6 +31,12 @@ each word acts as soon as it is read.
 The operands keep the order they have in BASIC: `10-3` is `10 3 -`, the
 number you take away is the second one.
 
+Everything in this chapter takes its arguments from the left, from the
+stack. The words that also read something from the right, such as
+`VARIABLE` and `TO`, are the ones that need a *name*: see "Left for the
+value, right for the name" in
+[Chapter 1](01-basic-programming-concepts.md).
+
 **There is no priority and there are no parentheses.** In `2+3*4` BASIC
 multiplies first, because `*` binds tighter than `+`. Forth has no such
 rule: the order in which you write the words is the order in which they are
@@ -225,8 +231,8 @@ not:
 
 1 and 2 are both "true" for `IF`, yet they have no bit in common. When a
 number, not a comparison, stands for a condition, make it a proper flag
-first with `0= 0=`. Logical `NOT` is `0=`; the bitwise one, BASIC's `!`, is
-`INVERT`. More in Chapter 12.
+first with `0= 0=`. Logical `NOT` is `NOT`, which is the same word as
+`0=`; the bitwise one, BASIC's `!`, is `INVERT`. More in Chapter 12.
 
 **The signs have other jobs.** Three characters of this chapter are Forth
 words that do something else, and none of them complains when misused:
@@ -328,7 +334,7 @@ SAY                             \ => She said "hi"
 | `a<<n` `a>>n` | `a n LSHIFT` `a n RSHIFT` | By one place: `2*`, `2/` (`2/` keeps the sign). |
 | `a&b` `a\|b` `a^\|b` | `a b AND` `a b OR` `a b XOR` | |
 | `a AND b`, `a OR b` | `a b AND`, `a b OR` | The same words: bitwise, logical only on -1 and 0. |
-| `NOT a` | `a 0=` | |
+| `NOT a` | `a NOT` or `a 0=` | Logical: zero gives -1, anything else 0. |
 | true = 1 | true = -1 | `NEGATE` or `1 AND` to get 1. |
 | `$E3` | `$E3` | Or `HEX E3 DECIMAL`. |
 | `@11100011`, `BIN 11100011` | `%11100011` | Or `BINARY` ... `DECIMAL`, with `NEEDS BINARY`. `@` is "fetch". |
@@ -504,3 +510,10 @@ the programmer's job.
 - vForth manual, sections 2.12.5 "Integer Arithmetics" and 2.12.11
   "Numbers & strings"; sections 4.2 and 4.3 for how single and double
   numbers are stored; section 3.9 "Floating-Point Option".
+
+<!-- nav -->
+---
+
+Previous: [Chapter 5 - READ, DATA, RESTORE](05-read-data-restore.md) |
+[Contents](README.md) |
+Next: [Chapter 7 - Strings](07-strings.md)

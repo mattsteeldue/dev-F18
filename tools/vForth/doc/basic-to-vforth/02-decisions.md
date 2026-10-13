@@ -75,6 +75,21 @@ with `0=`, which turns true into false and false into true.
 That is `5<=5` and `6<=5`. With whole numbers there is often a shorter way:
 `s>=90` is `s 89 >`.
 
+**`NOT` is there, and it is the same word as `0=`.** The core has a word
+`NOT` that does exactly what `0=` does: zero becomes true, anything else
+becomes false. Write whichever reads better. `0=` asks "is this number
+zero?"; `NOT` reverses a condition, as it does in BASIC, only after it
+instead of before.
+
+```forth
+5 5 > NOT .                     \ => -1
+0 NOT .                         \ => -1
+7 NOT .                         \ => 0
+```
+
+It is the logical NOT: it does not invert the bits of a number. That is
+`INVERT`, in Chapter 6.
+
 **Comparing with zero has words of its own.** `0=`, `0<` and `0>` test the
 number on top of the stack against zero. They are shorter and faster than
 `0 =`, and they are what a Forth programmer writes by habit.
@@ -128,11 +143,11 @@ Strings are the subject of Chapter 7.
 | `IF c THEN STOP`, `RETURN`, `ENDPROC` | `c IF EXIT THEN` | Leaves the definition. |
 | `a=b` `a<b` `a>b` | `a b =` `a b <` `a b >` | True is -1. |
 | `a<>b` | `a b <>` | `NEEDS <>`. |
-| `a<=b` | `a b > 0=` | No word of its own. |
+| `a<=b` | `a b > 0=` | No word of its own. Or `a b > NOT`. |
 | `a>=b` | `a b < 0=` | No word of its own. |
 | `a=0` `a<0` `a>0` | `a 0=` `a 0<` `a 0>` | |
 | `a<>0` | `a` | Any non-zero number is true for `IF`. |
-| `NOT c` | `c 0=` | See Chapter 12 for `AND` and `OR`. |
+| `NOT c` | `c NOT` or `c 0=` | The same word under two names. See Chapter 12 for `AND` and `OR`. |
 | `a>=lo AND a<hi` | `a lo hi WITHIN` | `NEEDS WITHIN`. The upper limit is excluded. |
 | `ON n: s0: s1: s2` | `n CASE 0 OF` ... `ENDOF` ... `ENDCASE` | `NEEDS CASE`. Any values, not only 0, 1, 2. |
 | the same, as a jump table | `n EXEC: w0 w1 w2 ;` | `NEEDS EXEC:`. No check on `n`. |
@@ -287,6 +302,13 @@ gives the last value. Tables are the subject of Chapters 5 and 11.
 - Tutorial `013` -- `CASE`, `OF`, `ENDOF`, `ENDCASE`.
 - Tutorial `010` -- tables built with `CREATE` and `,`.
 - Tutorial `009` -- strings, for `COMPARE`.
-- `HELP IF`, `HELP ELSE`, `HELP THEN`, `HELP 0=`, `HELP <>`, `HELP WITHIN`,
-  `HELP CASE`, `HELP EXEC:`, `HELP COMPARE`.
+- `HELP IF`, `HELP ELSE`, `HELP THEN`, `HELP 0=`, `HELP NOT`, `HELP <>`,
+  `HELP WITHIN`, `HELP CASE`, `HELP EXEC:`, `HELP COMPARE`.
 - vForth manual, sections 2.12.3 "Comparison" and 2.12.7 "Flow control".
+
+<!-- nav -->
+---
+
+Previous: [Chapter 1 - Basic Programming Concepts](01-basic-programming-concepts.md) |
+[Contents](README.md) |
+Next: [Chapter 3 - Looping](03-looping.md)

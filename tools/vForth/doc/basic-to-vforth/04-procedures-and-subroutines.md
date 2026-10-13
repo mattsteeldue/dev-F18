@@ -61,6 +61,17 @@ DEFER PONG
 3 PING                          \ => ping pong ping
 ```
 
+These two lines are read in opposite directions. `DEFER PONG` looks to the
+right: `DEFER` takes the name that follows it. `' PONG2 IS PONG` has to be
+read from the right, "`PONG` is `PONG2`": English puts the name first and
+what it stands for after, and Forth writes them the other way round,
+because what is assigned is a value and must already be on the stack when
+`IS` runs. `'` ("tick") looks to the right too: it reads the name `PONG2`
+and leaves on the stack the address of that word, which is what `IS` then
+stores into `PONG`. This reading in two directions is found all over
+Forth: see "Left for the value, right for the name" in
+[Chapter 1](01-basic-programming-concepts.md).
+
 **Parameters have no names.** `DEFPROC area(w,h)` names its parameters, and
 `PROC area(3,4)` fills them in. A Forth word just finds its arguments on the
 stack, where the caller left them, in the order they were written. The list
@@ -499,3 +510,10 @@ word that may fail, as `ON ERROR` is: it is in the word that calls it.
   `HELP DEPTH`, `HELP .S`, `HELP BOUNDS`, `HELP CATCH`, `HELP THROW`.
 - vForth manual, sections 2.12.2 "Stack manipulation" and 2.12.9
   "Definition related".
+
+<!-- nav -->
+---
+
+Previous: [Chapter 3 - Looping](03-looping.md) |
+[Contents](README.md) |
+Next: [Chapter 5 - READ, DATA, RESTORE](05-read-data-restore.md)

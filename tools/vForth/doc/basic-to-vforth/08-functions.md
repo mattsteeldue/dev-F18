@@ -436,3 +436,10 @@ so they are safe on an empty string as well.
   `HELP EVALUATE`, `HELP RECURSE`, `HELP FM/MOD`.
 - vForth manual, sections 2.12.5 "Integer Arithmetics", 2.12.9
   "Definition related" and 2.12.11 "Numbers & strings".
+
+<!-- nav -->
+---
+
+Previous: [Chapter 7 - Strings](07-strings.md) |
+[Contents](README.md) |
+Next: [Chapter 9 - Mathematical Functions](09-mathematical-functions.md)

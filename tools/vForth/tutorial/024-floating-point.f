@@ -25,7 +25,7 @@
 \ Key words loaded by NEEDS FLOATING:
 \   Arithmetic: F+  F-  F*  F/  FNEGATE  FABS  F**  FMOD
 \   Comparison: F0<  F0>  F<  F>
-\   Conversion: FLOAT (n->fp)  FIX (fp->addr n)  F>D  D>F
+\   Conversion: FLOAT (n->fp)  FIX (fp->n)  F>D  D>F
 \   Output:     F.  F.R  PLACES
 \   Constants:  PI  DEG>RAD  RAD>DEG
 \   Trig:       FSIN  FCOS  FTAN  FEXP  FSQRT
@@ -119,7 +119,7 @@ CR
 \ ===========================================================================
 \
 \ FLOAT ( n -- fp )    convert single integer to fp
-\ FIX   ( fp -- a n ) convert fp to integer pair (for output / rounding)
+\ FIX   ( fp -- n )   convert fp to single integer (truncates)
 \ D>F   ( d -- fp )   convert double to fp
 \ F>D   ( fp -- d )   convert fp to double (truncates)
 \

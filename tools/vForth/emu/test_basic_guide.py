@@ -21,6 +21,9 @@ Conventions the guide follows (see "How to read this guide" in README.md):
   * lines are 80 bytes or fewer, 7-bit ASCII, no TAB;
   * links between the files keep the .md form, [text](NN-title.md), and
     must point to a file that exists.
+  * every chapter ends with the navigation footer (previous chapter,
+    contents, next chapter) written by util/guide-nav.py after the line
+    <!-- nav -->; run that script again whenever a chapter is added.
 
 Run from the repo root:
 
@@ -43,6 +46,7 @@ sys.path.insert(0, EMU_DIR)
 
 GUIDE_DIR = os.path.join(ROOT, "doc", "basic-to-vforth")
 NO_TEST = "<!-- no-test -->"
+NAV = "<!-- nav -->"
 CLAIM = re.compile(r"\\ => (.*)$")
 CHAPTER = re.compile(r"^# (?:Chapter|Appendix) (\w+)")
 LINK = re.compile(r"\]\(([^)#\s]+\.md)(?:#[^)]*)?\)")
@@ -107,6 +111,9 @@ def parse(path):
         elif line.strip():
             last_text = line.strip()
         i += 1
+    if name != "README.md" and NAV not in lines:
+        complaints.append(
+            f"{name}: no navigation footer (run util/guide-nav.py)")
     return blocks, complaints
 
 

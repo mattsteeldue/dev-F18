@@ -421,3 +421,10 @@ Forth: a new string is made only when it has to be kept.
 - vForth manual, sections 2.12.6 "Memory" and 2.12.11 "Numbers &
   strings"; the "Heap memory facility" section for where `S"` keeps its
   text.
+
+<!-- nav -->
+---
+
+Previous: [Chapter 6 - Expressions](06-expressions.md) |
+[Contents](README.md) |
+Next: [Chapter 8 - Functions](08-functions.md)

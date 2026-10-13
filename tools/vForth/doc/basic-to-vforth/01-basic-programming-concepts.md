@@ -83,6 +83,32 @@ B .                             \ => 25
 
 A number that never changes is a `CONSTANT` (`25 CONSTANT ROWS`).
 
+**Left for the value, right for the name.** A line is always carried out
+from left to right, one word at a time. But a word can take what it needs
+from two sides. From the left, that is from the stack, come *values*: what
+the words before it have left there. From the right, that is from the text
+that follows, come *names* and texts: `VARIABLE A` and `: GREET` read the
+word written after them, `." Hello"` reads up to the closing quote. A name
+that does not exist yet cannot be put on the stack, so it has to come from
+the text. Many words take from both sides at once: in `15 VALUE B`,
+`20 TO B` and `25 CONSTANT ROWS` the value is on the left and the name on
+the right.
+
+So a Forth phrase is not always read in one direction. `20 TO B` reads as
+in English, "20 to B". But `25 CONSTANT ROWS` makes sense read from the
+right, "ROWS is the constant 25", and so does `15 VALUE B`:
+
+```forth
+25 CONSTANT ROWS
+ROWS .                          \ => 25
+```
+
+The best-known case is in [Chapter 4](04-procedures-and-subroutines.md):
+`' PONG2 IS PONG` means "PONG is PONG2", which English writes the other way
+round. When a line puzzles you, ask of each word which side it takes its
+arguments from. Its stack comment shows what comes from the left, and its
+`HELP` page says whether it reads a name from the right.
+
 **Most values need no name at all.** A BASIC program names every
 intermediate result. In Forth the result of one word is simply left on the
 stack for the next one, and a word that needs a number takes it from there.
@@ -429,3 +455,9 @@ Note where the test is: in BASIC the division itself raises the report and
   `HELP CATCH`, `HELP THROW`, `HELP MESSAGE`.
 - vForth manual, sections 2.12.4 "Output", 2.12.6 "Memory" and 2.12.9
   "Definition related".
+
+<!-- nav -->
+---
+
+[Contents](README.md) |
+Next: [Chapter 2 - Decisions](02-decisions.md)

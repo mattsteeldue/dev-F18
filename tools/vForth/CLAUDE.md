@@ -429,7 +429,7 @@ tutorial/     -- Guided tutorials
 bas2f/        -- NextBASIC listings of the basic-to-vforth guide (tokenised +3DOS
                  .bas, one per listing: NN-chapter-MM.bas); SD payload, binary in git
 doc/          -- PDF reference manual
-util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py);
+util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py, guide-nav.py);
                  obs-ws-shot.py (PNG of the real Next's video output via the OBS WebSocket server, port 4455,
                  password in %USERPROFILE%\.obs-ws-password: Claude reads the screen through it; -l lists sources);
                  obs-shot.ps1 (fallback with the server off: capture of the whole OBS window)

@@ -343,3 +343,10 @@ this one by symmetry. Tutorial 065 draws a whole picture this way.
 - `HELP FLOATING`, `HELP */`, `HELP SQRT`, `HELP DSQRT`, `HELP 2VARIABLE`.
 - vForth manual, section 3.9 "Floating-Point Option"; section 4.4 for
   how a floating-point number is stored in two cells.
+
+<!-- nav -->
+---
+
+Previous: [Chapter 8 - Functions](08-functions.md) |
+[Contents](README.md) |
+Next: [Chapter 10 - Random Numbers](10-random-numbers.md)

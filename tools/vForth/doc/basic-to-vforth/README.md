@@ -3,7 +3,7 @@
 A migration guide for programmers who know NextBASIC and want to move to
 vForth, the Forth system for the ZX Spectrum Next.
 
-> **Draft.** Chapters 1 to 9 are written. Chapter 3 (Looping) was the pilot:
+> **Draft.** Chapters 1 to 10 are written. Chapter 3 (Looping) was the pilot:
 > it fixes the form and the tone of every other chapter; the plan is in
 > `planners/BASIC-TO-FORTH-PLAN.md`.
 
@@ -35,6 +35,11 @@ Conventions used in the listings:
   `emu/test_basic_guide.py`, except those that wait for a key, never end,
   or need a part of the machine the emulator does not have (floating
   point, graphics, sound).
+- A Forth line is carried out from left to right, but it is not always
+  read that way: a word takes values from its left (the stack) and may
+  take a name from its right (the text that follows). `20 TO B` reads
+  forwards, `' NEW IS OLD` backwards ("OLD is NEW").
+  [Chapter 1](01-basic-programming-concepts.md) explains it.
 - Type the Forth listings of a chapter in order: later ones may use earlier
   definitions.
 
@@ -51,7 +56,7 @@ A chapter without a link is not written yet.
 7. [Strings](07-strings.md)
 8. [Functions](08-functions.md)
 9. [Mathematical Functions](09-mathematical-functions.md)
-10. Random Numbers
+10. [Random Numbers](10-random-numbers.md)
 11. Arrays
 12. Conditions
 13. The Character Set

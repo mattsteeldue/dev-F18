@@ -2,7 +2,7 @@
 
 > Resolved entries are moved to TODO-DONE.md.
 
-# +" corrupted the string it extended; +C has the same flaw in the tail
+# +" corrupted the string it extended
 **2026-10-13**
 Found while writing chapter 7 of the BASIC-to-vForth guide: on the headless
 emulator `H" abc" +" def" FAR COUNT TYPE` printed `bcjdef`. Two errors in
@@ -23,18 +23,87 @@ to the block; `H"` and `S"` used afterwards still work.
 Still open:
 - **Author's check on CSpect or the real machine**, then move this entry to
   TODO-DONE.md.
-- **`+C` (`inc/+c.f`)** keeps the string right but leaves the tail behind:
-  it adds 1 to the forward pointer and to `HP` without moving the zero cell
-  and the back pointer, and the new character overwrites the first byte of
-  the zero cell. Nothing reads the back pointer today (only `HEAP` writes
-  it), so there is no visible effect; fix it the same way as `+"`.
-- Both words work only on the **last** block created on the heap, check
-  neither the 8K page boundary nor the 255-character limit, and have no
-  test in `test/`. `help/+~.txt` does not say any of this, and `+C` has no
-  help page.
-- `+" "` (an empty text) does not append nothing: `WORD` skips the leading
-  delimiter and takes the rest of the line. Same behaviour as before the
-  fix.
+- `+"` works only on the **last** block created on the heap and checks
+  neither the 8K page boundary nor the 255-character limit; it has no test
+  in `test/`, and `help/+~.txt` says none of this.
+- `+C` and the empty text `+" "` have entries of their own, below.
+
+
+# +C leaves the tail of its heap block behind
+**2026-10-13**
+Found by reading `inc/+c.f` while fixing `+"` (entry above); **not yet
+reproduced**, because today it has no visible effect. A block made by
+`HEAP` is: forward pointer, data, a zero cell, a back pointer, and `HP`
+points just after it. `+C` appends one character to the counted string at
+`ha`: it adds 1 to the forward pointer at `ha - 2`, to the length byte and
+to `HP`, and stores the character -- but it does not move the tail. So
+after one `+C`:
+- the new character lies on the first byte of the zero cell;
+- the back pointer is still where it was, one byte before the place
+  `HP@ - 2` where it should be, and the byte at `HP@ - 1` is whatever was
+  there;
+- the forward pointer and `HP` are right, so the next `HEAP` starts in
+  the right place and the string itself reads back correctly.
+Nothing reads the back pointer or the zero cell today (only `HEAP` writes
+them), hence no symptom. It becomes a real bug the day something walks
+the list backwards or relies on the zero terminator after a string.
+To do: lay the tail down again after the store, as `+"` now does
+(`0` at `HP@ - 4`, `ha - 2` at `HP@ - 2`); add the page-boundary and
+255-character checks, or document their absence; write `help/+c.txt`
+(there is none) and a test covering `H"`, `+"` and `+C` together. Like
+`+"`, `+C` is valid only on the last block created.
+
+
+# Empty text after S" and +" takes the rest of the line
+**2026-10-13**
+Seen on the headless emulator while writing chapters 7 and 8 of the
+BASIC-to-vForth guide; to be looked at again before deciding it is a bug.
+- `: T6  S" " VAL . ;` does not define `T6`: the next line answers
+  `T6? is undefined.` The text of `S"` was not empty, it ran on past the
+  closing quote.
+- `+" " FAR COUNT TYPE` printed nothing: the words after the quote were
+  appended to the string instead of being executed.
+Likely cause, from the sources and not yet proved: both parse with
+`[CHAR] " WORD` (`S"` through `H"`), and `WORD` skips leading delimiters.
+In `S" "` the character after the blank that ends the name is the closing
+quote itself, so it is skipped as a leading delimiter and the text runs to
+the next quote, or to the end of the line.
+To check, on the emulator and on the machine:
+- that this is indeed what happens (dump the string that was stored);
+- which other words share it: `."`, `.(`, `,"`, `H"`, `C"`, `PAD"`,
+  `ABORT"`, each with an empty text;
+- what the core `."` does, since it is the reference for the others.
+Then decide: either parse with a word that does not skip leading
+delimiters (the standard `PARSE` behaviour), so that an empty text is an
+empty string, or keep it and say so in the help pages. For now the guide
+warns about it (chapter 7: the empty string is `0 A$ C!`, not `S" "`).
+
+
+# F. may print a two-digit mantissa at exact powers of ten (suspected)
+**2026-10-13**
+A suspicion from reading the code, **never observed**: the headless
+emulator has no ROM calculator, so `lib/floating.f` cannot be run there.
+`F>PAD` (the word behind `F.` and `F.R`) gets the decimal exponent as
+
+    FLN 10 0 FLN F/ F>D
+
+i.e. the logarithm in base 10, truncated towards zero. For an exact power
+of ten the quotient of the two logarithms may come out a hair below the
+whole number (2.9999999 for 1000): `F>D` then gives 2 instead of 3, and
+the mantissa is scaled by 10^2, so `1000.0 F.` would print `10.0000e2`
+instead of `1.0000e3`. The value shown would still be right; only the
+form would be off. The same could happen just below a power of ten, the
+other way round, if the mantissa rounds up to `10.0000` after the scaling
+(e.g. 9.99996 with 4 places).
+To do: on CSpect or the real machine print `F.` of 10.0, 100.0, 1000.0,
+0.1, 0.01, 0.001 and of 9.99996; if any comes out wrong, correct the
+exponent after the scaling (when the mantissa is >= 10 divide it by 10
+and add 1 to the exponent; when it is < 1 and not zero do the opposite)
+instead of trusting the logarithm. Note also that for numbers below 1
+`F>D` truncates towards zero, so 0.5 prints as `0.5000e0` and 0.05 as
+`0.5000e-1`, not normalised: decide whether that is wanted. Related:
+`planners/FLOATING-5BYTE-PLAN.md` (option A, rounding in `W>`, applied on
+2026-10-12 and not yet tried on CSpect) may change the outcome.
 
 
 # VS Code extension: colorize known words in the help files too
