@@ -322,4 +322,4 @@ prints it.
 
 Previous: [Chapter 10 - Random Numbers](10-random-numbers.md) |
 [Contents](README.md) |
-Next: Chapter 12 - Conditions (not written yet)
+Next: [Chapter 12 - Conditions](12-conditions.md)

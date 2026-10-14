@@ -94,7 +94,7 @@ it, it is one definition: `: RAND  RANDOMIZE ;`.
 | `RND (n)`, `%RND n` | `n RND` | `NEEDS RND`. From 0 to `n-1`. |
 | `INT (RND*n)` | `n RND` | |
 | `1+INT (RND*6)` | `6 RND 1+` | |
-| `a+INT (RND*(b-a+1))` | `a b BETWEEN` | Defined below. From `a` to `b`, both included. |
+| `a+INT (RND*(b-a+1))` | `a b RND-IN` | Defined below. From `a` to `b`, both included. |
 | `RND` (a fraction) | -- | Ask for a scaled integer: `1000 RND`. |
 | `RANDOMIZE n` | `n RANDOMIZE` | `NEEDS RANDOMIZE`. |
 | `RANDOMIZE`, `RANDOMIZE 0` | `23672 @ RANDOMIZE` | The seed taken from FRAMES, by hand. |
@@ -130,12 +130,12 @@ THROW                           \ => 6 4
 ```
 
 ```forth
-: BETWEEN  ( lo hi -- n )  OVER - 1+ RND + ;
+: RND-IN  ( lo hi -- n )  OVER - 1+ RND + ;
 1 RANDOMIZE
-10 20 BETWEEN . 10 20 BETWEEN . 10 20 BETWEEN .     \ => 10 11 19
+10 20 RND-IN . 10 20 RND-IN . 10 20 RND-IN .        \ => 10 11 19
 ```
 
-`BETWEEN` works out how many values there are, `hi-lo+1`, asks `RND` for
+`RND-IN` works out how many values there are, `hi-lo+1`, asks `RND` for
 one of them and adds the lower limit. In BASIC that sum has to be done in
 your head each time, and written as 11.
 

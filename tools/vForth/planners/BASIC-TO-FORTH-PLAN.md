@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 12). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 13). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -9,9 +9,10 @@
 > righe), il cap. 8 (`08-functions.md`, 85 righe) e il cap. 9
 > (`09-mathematical-functions.md`, 29 righe: la virgola mobile è
 > `no-test`) e il cap. 10 (`10-random-numbers.md`, 31 righe), e il
-> 2026-10-14 il cap. 11 (`11-arrays.md`, 63 righe), tutti
+> 2026-10-14 il cap. 11 (`11-arrays.md`, 63 righe) e il cap. 12
+> (`12-conditions.md`, 63 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -237,7 +238,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8, 9 e 10 (2026-10-13) e il cap. 11 (2026-10-14), si riparte dal cap. 12 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8, 9 e 10 (2026-10-13) e i cap. 11 e 12 (2026-10-14), si riparte dal cap. 13 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -549,6 +550,28 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
 - Listati BASIC nuovi: 3 (medie, tabellina in matrice, mesi). Da provare
   su MAME/CSpect: `PRINT "Spring: ";m$(3);m$(4);m$(5)` stampa i mesi con
   gli spazi di riempimento (come `SPRING`).
+
+**Emerso scrivendo il cap. 12 (2026-10-14).**
+
+- Conflitto di nomi fra capitoli: il cap. 10 definiva `BETWEEN ( lo hi --
+  n )` (numero casuale), mentre `inc/between.f` è `( n a b -- f )`. Chi
+  digita i capitoli in fila si sarebbe tenuto la prima, e `NEEDS BETWEEN`
+  del cap. 12 non avrebbe caricato niente. Quella del cap. 10 si chiama
+  ora `RND-IN` (riprovato: 31 righe, 0 errori). Regola per i capitoli
+  futuri: una parola definita nella guida non usa il nome di un file di
+  `inc/` o `lib/`.
+- Senza priorità, `p OR q AND r` di BASIC è `p q r AND OR`: l'ordine di
+  scrittura fa da parentesi. Mostrato con due righe che danno -1 e 0.
+- Il flag -1 è una maschera, quindi `x f AND` di BASIC si traduce alla
+  lettera, e anche `a u f AND` (stringa o stringa vuota, usato per il
+  plurale). L'`OR` di BASIC ("1 se y, altrimenti x") non ha forma: il
+  capitolo lo rende con `IF`, oppure come addizione mascherata (IVA).
+- `0<>` manca: il capitolo la definisce (`0= 0=`) col nome dello
+  standard. Candidata D-inc.
+- `COMPARE` senza `CASEON` mette `apple` prima di `Pear`, al contrario di
+  BASIC: è in "Side by side" (`T3`), con rimando al cap. 13.
+- Listati BASIC nuovi: 6. Da provare su MAME/CSpect soprattutto
+  `PRINT n*(1.15 OR v$="y")` e `PRINT n;" item";("s" AND n<>1)`.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
