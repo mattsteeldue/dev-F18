@@ -155,15 +155,17 @@ there is no clearing of variables either: the dictionary, the variables and
 the stack all stay as they are from one command to the next.
 
 **`PRINT` falls apart into small words.** `.` prints a number followed by one
-space and removes it from the stack. `." text"` prints text, and works only
-inside a definition. `CR` starts a new line, and it is never automatic: two
-consecutive outputs stay on the same line unless you say otherwise. So the
+space and removes it from the stack. `." text"` prints text, inside a
+definition or typed at the prompt. `CR` starts a new line, and it is
+never automatic: two consecutive outputs stay on the same line unless
+you say otherwise. So the
 `;` of `PRINT` is the normal behaviour, the apostrophe is `CR`, and the
 comma is `n .TAB`, which moves to column `n` (there is no automatic half
 screen). To print a number in a column of its own width use `.R`:
 `n w .R` prints `n` right-aligned in `w` places, with no space after it.
 
 ```forth
+." Hello"                       \ => Hello
 : SHOW  ( -- )
     ." in" CR
     12 . ." inches" CR
@@ -271,7 +273,7 @@ the system itself reports, and what an uncaught `THROW` ends up in.
 | `v -= e` | `e NEGATE v +!` | |
 | `v *= e` and the others | `v @ e * v !` | Only addition has a word of its own. |
 | `PRINT e` | `e .` | Prints one space after the number; no new line. |
-| `PRINT "text"` | `." text"` | Inside a definition. |
+| `PRINT "text"` | `." text"` | Inside a definition or at the prompt. |
 | `PRINT` alone, `'` | `CR` | |
 | `PRINT a;b` | `a . b .` | Staying on the line is the default. |
 | `PRINT a,b` | `a . n .TAB b .` | `NEEDS .TAB`; `n` is the column. |

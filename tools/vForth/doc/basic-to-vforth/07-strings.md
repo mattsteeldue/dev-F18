@@ -37,8 +37,8 @@ takes two places on the stack, the stack words for it are the double ones:
 `2DUP`, `2DROP`, `2SWAP`, `2OVER`.
 
 **There are three ways to write a text.** `." text"` prints it and leaves
-nothing; it works only inside a definition. `S" text"` leaves `a n` and
-prints nothing; it works everywhere. `," text"` stores the text in the
+nothing. `S" text"` leaves `a n` and prints nothing. Both work inside
+a definition and at the prompt. `," text"` stores the text in the
 dictionary, after a `CREATE`, as in [Chapter 5](05-read-data-restore.md).
 
 The text of an `S"` is kept in the heap, a part of memory that vForth
@@ -195,7 +195,7 @@ there for long.
 | NextBASIC | vForth | Note |
 |---|---|---|
 | `"text"` | `S" text"` | `NEEDS S"`. Leaves `a n`. |
-| `PRINT "text"` | `." text"` | Inside a definition. |
+| `PRINT "text"` | `." text"` | Inside a definition or at the prompt. |
 | `PRINT a$` | `a n TYPE` | |
 | `a$` (a variable) | `CREATE A$ 32 ALLOT` | Counted string: length byte, then the text. Fixed room. |
 | the value of `a$` | `A$ COUNT` | Leaves `a n`. |

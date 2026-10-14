@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 4, cap. 16; la fase 3 è scritta). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 4, cap. 17; la fase 3 è scritta). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -13,9 +13,10 @@
 > (`12-conditions.md`, 63 righe), il cap. 13
 > (`13-the-character-set.md`, 46 righe) e il cap. 14
 > (`14-more-about-print-and-input.md`, 24 righe); fase 4: il cap. 15
-> (`15-colours.md`, 13 righe, il resto `no-test`), tutti
+> (`15-colours.md`, 13 righe, il resto `no-test`) e il 2026-10-15 il cap. 16
+> (`16-graphics.md`, 24 righe, il resto `no-test` ma provato a parte), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -242,7 +243,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
-| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatto il cap. 15 (2026-10-14), si riparte dal cap. 16 | guida, seconda parte | emulatore + CSpect |
+| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14) e il cap. 16 (2026-10-15), si riparte dal cap. 17 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
@@ -656,9 +657,9 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   altrimenti?).
 - In emulatore `.INK` e `.PAPER` danno `NextZXOS DOS call error` (passano
   da `IDE_MODE@`); `.BORDER`, `.OVER`, `.BRIGHT` girano. Provati solo
-  `ATTR-ADDR` (22691 per riga 5, colonna 3), `ATTRIB` (177) e `RGB8`
+  `ATTR-ADDR` (22691 per riga 5, colonna 3), `ATTR-BYTE` (177, prima `ATTRIB`, rinominata scrivendo il cap. 16) e `RGB8`
   (arancio 7 3 0 = 236).
-- Definite nel capitolo, candidate D-inc: `ATTR`, `ATTR-ADDR`, `ATTRIB`,
+- Definite nel capitolo, candidate D-inc: `ATTR`, `ATTR-ADDR`, `ATTR-BYTE`,
   `RGB8`, `LAYER-OVER`.
 - `1 .BORDER` lascia in BORDCR (23624) 14, non il 15 di BASIC: l'inchiostro
   della parte bassa è calcolato in un altro modo. Senza conseguenze in
@@ -669,6 +670,57 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   `CLAUDE.md`, "Character Encoding").
 - Listati BASIC nuovi: 4. Da provare su MAME/CSpect soprattutto
   `LAYER PALETTE 0,2,BIN 111011000` sullo schermo ULA standard.
+
+**Emerso scrivendo il cap. 16 (2026-10-15).**
+
+- **Gli spezzoni grafici si provano lo stesso.** `NEEDS GRAPHICS` in
+  emulatore finisce in `NextZXOS DOS call error` su `SETUP`, ma le
+  definizioni sono già compilate; anche `LAYER0` dà l'errore, però il suo
+  `DOES>` ha già puntato tutte le parole differite prima di chiamare
+  `IDE_MODE!`. Da lì `PLOT`, `POINT`, `DRAW-LINE`, `CIRCLE` lavorano sulla
+  memoria video a `$4000` e `POINT` rilegge i pixel. Così sono provati,
+  fuori dallo script (lo script non regge la riga d'errore), `B>XY`, le
+  parole di penna (`MOVE-TO`, `LINE-TO`, `LINE-BY`), `CURVE`, `WAVE`,
+  `XLINE` (due volte = niente: 128 0 0, poi 0 128 128, poi 128 0 0), `UNSET` in `PLOTOP`, `FILL-RECT`
+  (bordi compresi), `CIRCLE`, `CLIP-L2`. Il caricamento di `GRAPHICS`
+  chiede soglie alzate in `repl.py` (`IDLE_INSTRS` 3M, `STEP_CAP` 3G) e
+  circa 45 minuti sul Raspberry Pi.
+- **`LAYER22-GRAPHICS` e `LAYER24-GRAPHICS` scrivevano `0 $1C REG!`**, che
+  non azzera nessun indice di clip (servono i bit 0-3). Corretti in
+  `1 $1C REG!` (bit 0, Layer 2). Funzionava solo perché ogni scrittura
+  della finestra è di quattro valori, che riportano l'indice a 0. **Da
+  provare su CSpect**; non spiega, probabilmente, lo spostamento di
+  LAYER24.
+- **`PAINT` non è in `GRAPHICS`**: serve `NEEDS PAINT` dopo la libreria
+  (in `lib/GRAPHICS.f` la riga è commentata). Il tutorial 038 non lo
+  diceva e descriveva ancora il vecchio algoritmo (`PAINT-HITX`, rischio
+  per lo stack di ritorno): commento corretto. La matrice diceva
+  `NEEDS GRAPHICS`: corretta.
+- **Conflitto di nomi col cap. 15**: la sua `ATTRIB ( flash bright paper
+  ink -- b )` copriva, o era coperta da, il `VALUE ATTRIB` di `GRAPHICS`.
+  Rinominata `ATTR-BYTE`; la regola dei nomi del cap. 12 vale anche per
+  le parole delle librerie, non solo per i nomi dei file.
+- `L0-RES` (`PLOT INVERSE 1`) esiste solo in `lib/GRAPHICS.f`, non nei
+  moduli `LAYERxx-GRAPHICS`: il capitolo definisce `UNSET`
+  (`SWAP INVERT AND`), che vale con entrambi.
+- `POINT` dà 128 (non 1) sui layer a un bit e -1 fuori schermo su
+  LoRes e Layer 2; `PLOT` sui layer ad attributi scrive tutto `ATTRIB`
+  nella cella, carta compresa (BASIC di norma solo l'inchiostro).
+- Seno senza tabella: il cerchio di Minsky (`TURN`, passo 201/8192 di
+  radiante, valori tenuti a 100 volte i pixel), entro due pixel dal seno
+  vero; il capitolo lo propone anche per gli archi di `DRAW x,y,a`.
+- `SQR(n/64)` diventa `SQRT(100*n)`: l'algebra che toglie la frazione.
+- Senza voce di help: `POINT`, `PAINT` (già nell'elenco della matrice).
+- Correzione al cap. 1 e al cap. 7 (segnalata dall'autore il
+  2026-10-15): `." testo"` funziona anche dal prompt (`.C` guarda
+  `STATE`), non solo dentro una definizione.
+- Listati BASIC nuovi: 4 (parabola, seno, linee casuali, linea in OVER).
+- Correzione al cap. 2 (segnalata dall'autore il 2026-10-15): la parola
+  di "Side by side" si chiamava `SIGN` e copriva quella del core, che
+  `<# ... #>` usa per il meno (lo `STR$` del cap. 8, digitato nella
+  stessa sessione, avrebbe stampato "negative"). Ora è `?SGN`; non
+  `SGN`, che il cap. 8 definisce come funzione. Il capitolo spiega il
+  perché del nome.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

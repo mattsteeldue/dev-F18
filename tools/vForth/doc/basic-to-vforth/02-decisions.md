@@ -47,7 +47,7 @@ inside it, another `IF` included.
 **`IF` uses up the condition.** The flag is taken off the stack and is gone.
 More often than not the number that was tested is gone too, because the
 comparison consumed it. When it is needed afterwards, `DUP` it before the
-test (`SIGN` in "Side by side" does it).
+test (`?SGN` in "Side by side" does it).
 
 **True is -1, and anything that is not zero counts as true.** A BASIC
 comparison gives 1 or 0. A Forth comparison gives -1 (all sixteen bits set)
@@ -166,33 +166,36 @@ Strings are the subject of Chapter 7.
 20 IF n<0 THEN PRINT "negative": ELSE IF n>0 THEN PRINT "positive": ELSE PRINT "zero"
 ```
 
+The name is not `SIGN`: that one is in the core, and the number
+formatting of [Chapter 8](08-functions.md) uses it to put the minus in
+front. Not `SGN` either, which Chapter 8 defines as BASIC's function.
 The literal translation nests the second `IF` in the `ELSE` part of the
 first. `0<` consumes the number, hence the `DUP`; each branch then has to
 dispose of the copy, by using it or by dropping it.
 
 ```forth
-: SIGN  ( n -- )
+: ?SGN  ( n -- )
     DUP 0< IF
         DROP ." negative"
     ELSE
         0> IF  ." positive"  ELSE  ." zero"  THEN
     THEN ;
--7 SIGN                         \ => negative
-7 SIGN                          \ => positive
-0 SIGN                          \ => zero
+-7 ?SGN                        \ => negative
+7 ?SGN                         \ => positive
+0 ?SGN                         \ => zero
 ```
 
 The same word with one case per line. Each case that applies does its work
 and leaves; what is still running at the last line is the case left over.
 
 ```forth
-: SIGN  ( n -- )
+: ?SGN  ( n -- )
     DUP 0< IF  DROP ." negative"  EXIT THEN
         0> IF       ." positive"  EXIT THEN
     ." zero" ;
--7 SIGN                         \ => negative
-7 SIGN                          \ => positive
-0 SIGN                          \ => zero
+-7 ?SGN                        \ => negative
+7 ?SGN                         \ => positive
+0 ?SGN                         \ => zero
 ```
 
 **Ranges.** A score from 0 to 100.

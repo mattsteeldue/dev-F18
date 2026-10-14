@@ -456,12 +456,12 @@ edizione; le pagine sono quelle del PDF.
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
 | `LAYER CLEAR` | cap. 15, p. 105; App. B | - | D-inc | - | Riporta ai valori iniziali banchi, modo, scorrimento e ordine dei layer: non trovata. Il manuale la presenta nel cap. 15. |  |
-| `PLOT x,y` | cap. 16, p. 113; App. B | `x y PLOT` -- `NEEDS GRAPHICS` | A | 036, 038 | Attenzione alle coordinate: in vForth x è verticale (dall'alto) e y orizzontale; colore in `ATTRIB`. |  |
-| `DRAW x,y` | cap. 16, p. 113; App. B | `x2 y2 x1 y1 DRAW-LINE` -- `NEEDS GRAPHICS` | B | 036 | Coordinate assolute dei due estremi: non c'è una "posizione corrente". |  |
+| `PLOT x,y` | cap. 16, p. 113; App. B | `x y PLOT` -- `NEEDS GRAPHICS` | A | 036, 038 | Attenzione alle coordinate: in vForth x è verticale (dall'alto) e y orizzontale; colore in `ATTRIB`. | emu (2026-10-15, `LAYER0` degradato) |
+| `DRAW x,y` | cap. 16, p. 113; App. B | `x2 y2 x1 y1 DRAW-LINE` -- `NEEDS GRAPHICS` | B | 036 | Coordinate assolute dei due estremi: non c'è una "posizione corrente". | emu (2026-10-15, `LAYER0` degradato) |
 | `DRAW x,y,z` (arco) | cap. 16 | - | D-inc | - | Non trovato. |  |
-| `CIRCLE x,y,r` | cap. 16, p. 113; App. B | `x y r CIRCLE` -- `NEEDS GRAPHICS` | A | 036 |  |  |
-| `POINT (x,y)`, `POINT x,y TO v` | cap. 16, p. 113; App. B | `x y POINT` -- `NEEDS GRAPHICS` | A | 038 | Restituisce il colore, non solo 0/1. |  |
-| riempimento di un'area | cap. 16 | `x y PAINT` -- `NEEDS GRAPHICS` | B | 038 | Non è una keyword di BASIC: in più rispetto al manuale. |  |
+| `CIRCLE x,y,r` | cap. 16, p. 113; App. B | `x y r CIRCLE` -- `NEEDS GRAPHICS` | A | 036 |  | emu (2026-10-15, `LAYER0` degradato) |
+| `POINT (x,y)`, `POINT x,y TO v` | cap. 16, p. 113; App. B | `x y POINT` -- `NEEDS GRAPHICS` | A | 038 | Sui layer a un bit dà 128 o 0 (non 1 o 0); su LoRes e Layer 2 l'indice di palette, -1 fuori schermo. | emu (2026-10-15, `LAYER0` degradato) |
+| riempimento di un'area | cap. 16 | `x y PAINT` -- `NEEDS PAINT` (dopo `GRAPHICS`) | B | 038 | Non è una keyword di BASIC: in più rispetto al manuale. `GRAPHICS` non la carica (riga commentata). |  |
 | `LAYER DIM x1,y1,x2,y2` | cap. 16, p. 119; App. B | `REG!` su `$18` (Layer 2), `$1A` (ULA) | B | - | Esiste solo dentro LAYER22/LAYER24. |  |
 | `LAYER ERASE x,y,w,h[,f]` | cap. 16, p. 118; App. B | - | D-inc | - | Riempimento di un rettangolo: non trovato. |  |
 | `TILE ...`, `TILE BANK n`, `TILE DIM ...` | cap. 16, p. 113; App. B | - | D-lib | 058 | Tiling software su Layer 1/2: non c'è. `lib/layer3.f` e `lib/TILE80.f` sono la tilemap hardware, un'altra cosa. |  |
@@ -469,7 +469,7 @@ edizione; le pagine sono quelle del PDF.
 | posizione corrente (`PLOT` position) | cap. 16, p. 114 | - | C | 036 | Non esiste: `DRAW-LINE` prende i due estremi. Per il tracciato "a penna" si tiene l'ultimo punto in due `VALUE`. |  |
 | colore dentro l'istruzione (`PLOT INK c;x,y`) | cap. 16, p. 115 | `c TO ATTRIB` prima di disegnare -- `NEEDS GRAPHICS` | B | 036, 038 | Resta in vigore finché non si cambia. |  |
 | `PLOT OVER 1` (inverte il pixel) | cap. 16, p. 117 | `x y XPLOT` -- `NEEDS GRAPHICS` | A | 038 | Su LoRes e Layer 2 inverte il valore del pixel. |  |
-| `PLOT INVERSE 1` (cancella il pixel) | cap. 16, p. 117 | `' L0-RES IS PLOTOP` prima di `PLOT`, poi `' L0-SET IS PLOTOP` -- `NEEDS GRAPHICS` | B | - | L'operatore di `PLOT` è la parola differita `PLOTOP` (di norma `L0-SET`). Vale per Layer 0 e Layer 1 a un bit per pixel; nessun tutorial lo mostra. Dai sorgenti, non provato. |  |
+| `PLOT INVERSE 1` (cancella il pixel) | cap. 16, p. 117 | `' L0-RES IS PLOTOP` prima di `PLOT`, poi `' L0-SET IS PLOTOP` -- `NEEDS GRAPHICS` | B | - | L'operatore di `PLOT` è la parola differita `PLOTOP` (di norma `L0-SET`). Vale per Layer 0 e Layer 1 a un bit per pixel; nessun tutorial lo mostra. `L0-RES` c'è solo in `lib/GRAPHICS.f`; il cap. 16 della guida definisce `UNSET` (`SWAP INVERT AND`), provata. | emu (2026-10-15) |
 | punti fuori schermo (errore su Layer 0, ammessi altrove) | cap. 16, p. 114 | nessun errore: `PLOT` chiama da sé `COORD-CHECK ( x y -- x y f )` e scarta il punto | C | - | Un punto fuori dallo schermo viene ignorato in silenzio, su tutti i layer. Dai sorgenti (`L0-PLOT` in `lib/GRAPHICS.f`). |  |
 | grafico di una funzione (`PLOT n,88+80*SIN (n/128*PI)`) | cap. 16, p. 113 | tabella di seni e `*/`, oppure `FLOATING` -- `NEEDS GRAPHICS` | B | 065 | Vedi cap. 9: in virgola mobile è lento. |  |
 | tratteggi con un UDG a scacchiera | cap. 16, p. 118 | UDG come nel cap. 13 | B | - |  |  |

@@ -92,10 +92,14 @@ times the paper, plus the ink. Building one is a multiplication and three
 additions, or the shifts and masks of [Chapter 6](06-expressions.md):
 
 ```forth
-: ATTRIB  ( flash bright paper ink -- b )
+: ATTR-BYTE  ( flash bright paper ink -- b )
     SWAP 8 * +  SWAP 64 * +  SWAP 128 * + ;
-1 0 6 1 ATTRIB .                \ => 177
+1 0 6 1 ATTR-BYTE .             \ => 177
 ```
+
+The name is not `ATTRIB` on purpose: that one belongs to the graphics
+library of [Chapter 16](16-graphics.md), where it holds the colour
+the drawing words use.
 
 And `b row col ATTR-ADDR C!` colours a cell without printing anything in
 it, faster than any `PRINT AT`.
@@ -270,4 +274,4 @@ change the red paper write entry 18 as well.
 
 Previous: [Chapter 14 - More about PRINT and INPUT](14-more-about-print-and-input.md) |
 [Contents](README.md) |
-Next: Chapter 16 - Graphics (not written yet)
+Next: [Chapter 16 - Graphics](16-graphics.md)
