@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 14). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 4, cap. 15; la fase 3 è scritta). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -10,10 +10,11 @@
 > (`09-mathematical-functions.md`, 29 righe: la virgola mobile è
 > `no-test`) e il cap. 10 (`10-random-numbers.md`, 31 righe), e il
 > 2026-10-14 il cap. 11 (`11-arrays.md`, 63 righe), il cap. 12
-> (`12-conditions.md`, 63 righe) e il cap. 13
-> (`13-the-character-set.md`, 46 righe), tutti
+> (`12-conditions.md`, 63 righe), il cap. 13
+> (`13-the-character-set.md`, 46 righe) e il cap. 14
+> (`14-more-about-print-and-input.md`, 24 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -239,7 +240,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8, 9 e 10 (2026-10-13) e i cap. 11, 12 e 13 (2026-10-14), si riparte dal cap. 14 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -609,6 +610,33 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   handler". Da riscrivere (`c --`, gli otto bit, i codici di controllo).
 - Listati BASIC nuovi: 4. Da provare su MAME/CSpect soprattutto il font
   alternativo (`DPOKE 23606,a-256`).
+
+**Emerso scrivendo il cap. 14 (2026-10-14).**
+
+- **`.TAB` mandava i due byte al contrario.** `SPLIT` lascia `( lo hi )`
+  e `EMITC EMITC` mandava prima l'alto: `16 .TAB` era `TAB 4096`, cioè
+  colonna 0 (`PO-TAB` della ROM usa il primo byte). Corretta in
+  `inc/.tab.f` (`SPLIT SWAP EMITC EMITC`) e riscritta `help/.tab.txt`.
+  **Da provare su CSpect**: `CR 16 .TAB ." x"` deve stampare a colonna
+  16; lo usa anche il tutorial 030 (`16 .TAB ." <-- here"`).
+- **Niente `scroll?`.** `(EMITC)` rimette SCR CT (23692) a 255 dopo ogni
+  carattere (`L0.asm:784`): la `POKE 23692,255` del manuale è già fatta
+  e non si può cambiare. Provato (`23692 C@ .` dà 255). Resta da vedere
+  sulla macchina che cosa fanno i layer 1 e 2, dove la richiesta è della
+  finestra (codice 26).
+- `INPUT` diventa `."` + `ACCEPT 1-` + `EVALUATE`: il capitolo definisce
+  `INPUT$ ( -- a u )` e `INPUT# ( -- n )`, che accetta anche espressioni
+  Forth (`A @ 2 +` dà 16, provato con `S"`). Candidate D-inc al posto
+  dell'`INPUT#` con `NUMBER` della matrice.
+- `INKEY$` senza attesa: `KEY-SCAN` di `inc/KEYBOARD.f` (indice 0-39,
+  255 per nessun tasto). `INPUT -n`: `GET-KEY KEY#>RM` in una
+  `2VARIABLE`, poi `KEY-PRESSED?`. Entrambi `no-test` tranne la lettura
+  a vuoto.
+- La tabella con `.R` è l'idioma consigliato al posto di `TAB`: provata,
+  e non dipende dalla posizione sullo schermo.
+- `.AT`, `.TAB`, `WIDECHAR`, i codici 29/30/26 e `P@` dei joystick: in
+  emulatore girano ma non si vedono; da guardare sulla macchina.
+- Listati BASIC nuovi: 4.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

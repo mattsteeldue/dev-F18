@@ -310,4 +310,4 @@ vForth's `COMPARE` gives 0 unless `CASEON` is on, as `E1` shows above.
 
 Previous: [Chapter 12 - Conditions](12-conditions.md) |
 [Contents](README.md) |
-Next: Chapter 14 - More about PRINT and INPUT (not written yet)
+Next: [Chapter 14 - More about PRINT and INPUT](14-more-about-print-and-input.md)
