@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 11). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 12). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -8,9 +8,10 @@
 > (`06-expressions.md`, 90 righe), il cap. 7 (`07-strings.md`, 80
 > righe), il cap. 8 (`08-functions.md`, 85 righe) e il cap. 9
 > (`09-mathematical-functions.md`, 29 righe: la virgola mobile è
-> `no-test`) e il cap. 10 (`10-random-numbers.md`, 31 righe), tutti
+> `no-test`) e il cap. 10 (`10-random-numbers.md`, 31 righe), e il
+> 2026-10-14 il cap. 11 (`11-arrays.md`, 63 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -236,7 +237,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8, 9 e 10 (2026-10-13), si riparte dal cap. 11 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8, 9 e 10 (2026-10-13) e il cap. 11 (2026-10-14), si riparte dal cap. 12 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -526,8 +527,28 @@ destra) contro `' PONG2 IS PONG` (si legge da destra: "PONG is PONG2").
 Messo in quattro punti: paragrafo "Left for the value, right for the
 name" nel cap. 1, dopo `VALUE`/`TO`/`CONSTANT`; commento a `DEFER`/`IS`
 nel cap. 4; rimando nel cap. 6; una riga in "How to read this guide" del
-`README.md`. Da riprendere dove torna utile: cap. 11 (`CREATE nome`),
+`README.md`. Da riprendere dove torna utile: cap. 11 (`CREATE nome`, fatto),
 cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
+
+**Emerso scrivendo il cap. 11 (2026-10-14).**
+
+- `J` non è nel core: serve `NEEDS J` (la matrice e il cap. 3 lo dicevano
+  già; la prima stesura del cap. 11 lo aveva dimenticato).
+- `S!` non esiste nel core né in `inc/`: il nome è libero per
+  l'assegnazione procustea `( a u dest len -- )`.
+- Parole definite nel capitolo (candidate D-inc): `ARRAY`, `MATRIX` (tiene
+  colonne e righe nelle prime due celle, così `' X >BODY @` fa da funzione
+  `DIM`), `SARRAY`, `S!`, `SAFE-ARRAY` (controllo dei limiti con `U<` e
+  `ABORT"`), `BYTES`. Indici da 0; per i mesi si riserva una riga in più.
+- `S"` dal prompt alloca ogni volta una stringa nello heap e non la
+  libera: i dodici mesi caricati con `S" ..." n M!` costano heap. Per
+  una guida va bene; da ricordare se si scrive un tutorial.
+- Due direzioni: `10 ARRAY M` si legge da destra ("M is an array of
+  10"), `43 3 M !` è `LET m(3)=43` rovesciato; `' GRID` prende il nome a
+  destra.
+- Listati BASIC nuovi: 3 (medie, tabellina in matrice, mesi). Da provare
+  su MAME/CSpect: `PRINT "Spring: ";m$(3);m$(4);m$(5)` stampa i mesi con
+  gli spazi di riempimento (come `SPRING`).
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

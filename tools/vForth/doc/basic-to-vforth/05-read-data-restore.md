@@ -132,7 +132,7 @@ list of strings is built as a table of *addresses*: see "Side by side".
 memory, and `!` changes an element as easily as `@` reads it. A table whose
 values are all computed later is made with `ALLOT`, which reserves bytes
 without filling them: `CREATE SCORES 10 CELLS ALLOT`. That is the array of
-Chapter 11.
+[Chapter 11](11-arrays.md).
 
 **It works at the prompt.** A `DATA` line typed as a direct command is
 wasted. `CREATE` and `,` are ordinary words: a table can be built by hand,

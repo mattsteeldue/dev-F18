@@ -201,11 +201,11 @@ zero, which `DIM` does by itself.
 - Tutorial `051` and tutorial `056` use `RANDOM` and `CHOOSE` in
   passing; no tutorial is devoted to random numbers yet.
 - Tutorial `008` -- `@` and `!` on system variables.
-- Chapter 11 -- arrays, used here for the tally.
+- [Chapter 11](11-arrays.md) -- arrays, used here for the tally.
 
 <!-- nav -->
 ---
 
 Previous: [Chapter 9 - Mathematical Functions](09-mathematical-functions.md) |
 [Contents](README.md) |
-Next: Chapter 11 - Arrays (not written yet)
+Next: [Chapter 11 - Arrays](11-arrays.md)
