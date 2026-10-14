@@ -490,6 +490,13 @@ symbol** and may appear in Forth source that targets the machine's display direc
   (CR), and `0x7F` (copyright). **TAB (`0x09`) is forbidden**: it disrupts the Forth
   tokeniser and must be replaced with spaces.
 - When generating help `.txt` files: plain ASCII, no BOM, no smart quotes, no em-dashes.
+- **No cp1252 or UTF-8 in comments either**, not even a Greek letter or an
+  Italian accent: an editor (VS Code) may silently re-encode the file, and
+  a mixed file ends up with garbage such as U+FFFD. Write the accent after
+  the letter (`` e` ``, `` u` ``, `` a` ``: "piu` lungo"), Greek letters as Latin ones
+  or names (`b` for beta), `->` for an arrow, `^2` for a square. Decided
+  2026-10-14, when the last such bytes were removed from `inc/`, `lib/` and
+  the two current `L0.asm`.
 
 **EMIT vs EMITC:**
 - `EMIT ( c -- )` may mask to 7-bit ASCII range (0-127).

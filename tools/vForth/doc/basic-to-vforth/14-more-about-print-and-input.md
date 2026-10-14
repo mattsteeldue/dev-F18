@@ -334,4 +334,4 @@ lines, since vForth never asks `scroll?`:
 
 Previous: [Chapter 13 - The Character Set](13-the-character-set.md) |
 [Contents](README.md) |
-Next: Chapter 15 - Colours (not written yet)
+Next: [Chapter 15 - Colours](15-colours.md)

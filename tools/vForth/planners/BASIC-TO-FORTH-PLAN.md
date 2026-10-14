@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 4, cap. 15; la fase 3 è scritta). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 4, cap. 16; la fase 3 è scritta). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -12,9 +12,10 @@
 > 2026-10-14 il cap. 11 (`11-arrays.md`, 63 righe), il cap. 12
 > (`12-conditions.md`, 63 righe), il cap. 13
 > (`13-the-character-set.md`, 46 righe) e il cap. 14
-> (`14-more-about-print-and-input.md`, 24 righe), tutti
+> (`14-more-about-print-and-input.md`, 24 righe); fase 4: il cap. 15
+> (`15-colours.md`, 13 righe, il resto `no-test`), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -241,7 +242,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
-| 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
+| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatto il cap. 15 (2026-10-14), si riparte dal cap. 16 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
@@ -637,6 +638,37 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
 - `.AT`, `.TAB`, `WIDECHAR`, i codici 29/30/26 e `P@` dei joystick: in
   emulatore girano ma non si vedono; da guardare sulla macchina.
 - Listati BASIC nuovi: 4.
+
+**Emerso scrivendo il cap. 15 (2026-10-14).**
+
+- **`.INK` e `.PAPER` mascherano l'argomento** con `ATTRIB-MASK` (7 sui
+  layer ad attributi, -1 su LoRes e Layer 2), e `.BRIGHT`, `.FLASH`,
+  `.INVERSE`, `.OVER` fanno `1 AND`. Protegge da `K Invalid colour`, ma
+  i valori speciali di BASIC non passano: `9 .INK` è `1 .INK` (blu), non
+  il contrasto, e `8 .BRIGHT` è `0 .BRIGHT`. Il capitolo indica i codici
+  diretti (`16 EMITC 9 EMITC`). Ricavato dal codice; da vedere sulla
+  macchina.
+- **Colori temporanei.** Il capitolo dice che `.INK` e simili impostano i
+  colori temporanei della ROM, validi fino al prossimo cambio, e che
+  `.PERM` (ROM `$1CAD`) li rende permanenti, quelli a cui la ROM torna per
+  esempio dopo `CLS`. **Da verificare sulla macchina**: quando la ROM
+  rimette i temporanei ai permanenti mentre gira vForth (dopo `CLS`? mai
+  altrimenti?).
+- In emulatore `.INK` e `.PAPER` danno `NextZXOS DOS call error` (passano
+  da `IDE_MODE@`); `.BORDER`, `.OVER`, `.BRIGHT` girano. Provati solo
+  `ATTR-ADDR` (22691 per riga 5, colonna 3), `ATTRIB` (177) e `RGB8`
+  (arancio 7 3 0 = 236).
+- Definite nel capitolo, candidate D-inc: `ATTR`, `ATTR-ADDR`, `ATTRIB`,
+  `RGB8`, `LAYER-OVER`.
+- `1 .BORDER` lascia in BORDCR (23624) 14, non il 15 di BASIC: l'inchiostro
+  della parte bassa è calcolato in un altro modo. Senza conseguenze in
+  vForth (non c'è una parte bassa); annotato e basta.
+- I sei `inc/layer*.f` avevano un byte `0x96` (trattino cp1252) nel
+  commento d'intestazione. Corretti il 2026-10-14 insieme a tutti gli
+  altri byte oltre `$7F` dei `.f` e dei due `L0.asm` correnti (regola in
+  `CLAUDE.md`, "Character Encoding").
+- Listati BASIC nuovi: 4. Da provare su MAME/CSpect soprattutto
+  `LAYER PALETTE 0,2,BIN 111011000` sullo schermo ULA standard.
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

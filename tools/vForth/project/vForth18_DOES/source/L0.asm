@@ -922,7 +922,7 @@ C_Emit_Tab:     ld      a, COMMA_CHAR
             //  exx
             //  next
 
-C_Emit_NL       ld      a, CR_CHAR           // 0x0A --> 0x0D  à la Spectrum
+C_Emit_NL       ld      a, CR_CHAR           // 0x0A --> 0x0D  a` la Spectrum
                 jr      C_Emit_Printable
             //  push    hl
             //  exx
