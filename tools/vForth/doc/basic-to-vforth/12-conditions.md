@@ -314,4 +314,4 @@ By De Morgan, the same is `NOT (a=b OR a=c)`: `2 PICK = -ROT = OR NOT`.
 
 Previous: [Chapter 11 - Arrays](11-arrays.md) |
 [Contents](README.md) |
-Next: Chapter 13 - The Character Set (not written yet)
+Next: [Chapter 13 - The Character Set](13-the-character-set.md)

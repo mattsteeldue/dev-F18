@@ -2,7 +2,9 @@
 \ skip-hp-page.f
 \
 \ never completely fill a page, leave alone some byte to avoid page spillover
-\ reserves 257 bytes ($101) at the top of each 8K page
+\ reserves 257 bytes ($101) at the top of each 8K page: room for a header
+\ written by CREATE past the watermark, and a buffer for stray
+\ writes to BASIC's UDG area $FF58-$FFFF while MMU7 holds a heap page
 
 HEX 1EFF CONSTANT PAGE-WATERMARK
 

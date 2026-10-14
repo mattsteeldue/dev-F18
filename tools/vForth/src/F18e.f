@@ -3374,6 +3374,11 @@ CODE <far ( a n -- ha )
     hp @ ;
 
 
+\ The tail of every heap page, $1EFF-$1FFF (257 bytes), is never
+\ allocated: a header just written by CREATE may run past the
+\ watermark (36 bytes at most) without crossing the page, and a stray
+\ write to BASIC's UDG area $FF58-$FFFF (offsets $1F58-$1FFF), made
+\ while MMU7 holds a heap page, lands in this margin.
 HEX 1EFF constant page-watermark
 
 \

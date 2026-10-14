@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 3, cap. 13). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 3, cap. 14). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -9,10 +9,11 @@
 > righe), il cap. 8 (`08-functions.md`, 85 righe) e il cap. 9
 > (`09-mathematical-functions.md`, 29 righe: la virgola mobile è
 > `no-test`) e il cap. 10 (`10-random-numbers.md`, 31 righe), e il
-> 2026-10-14 il cap. 11 (`11-arrays.md`, 63 righe) e il cap. 12
-> (`12-conditions.md`, 63 righe), tutti
+> 2026-10-14 il cap. 11 (`11-arrays.md`, 63 righe), il cap. 12
+> (`12-conditions.md`, 63 righe) e il cap. 13
+> (`13-the-character-set.md`, 46 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -238,7 +239,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 0 | Decisioni D1-D5 -- FATTA 2026-10-11 | questo piano aggiornato | autore |
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
-| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8, 9 e 10 (2026-10-13) e i cap. 11 e 12 (2026-10-14), si riparte dal cap. 13 | guida, prima parte | emulatore |
+| 3 | Parte linguaggio: cap. 1-14 -- IN CORSO: fatti i cap. 1, 2 e 3 (2026-10-12) e i cap. 4, 5, 6, 7, 8, 9 e 10 (2026-10-13) e i cap. 11, 12 e 13 (2026-10-14), si riparte dal cap. 14 | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
@@ -572,6 +573,42 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   BASIC: è in "Side by side" (`T3`), con rimando al cap. 13.
 - Listati BASIC nuovi: 6. Da provare su MAME/CSpect soprattutto
   `PRINT n*(1.15 OR v$="y")` e `PRINT n;" item";("s" AND n<>1)`.
+
+**Emerso scrivendo il cap. 13 (2026-10-14).**
+
+- **Gli UDG non si scrivono all'indirizzo di BASIC.** Il loader non
+  sposta la variabile UDG (23675), che resta al valore di BASIC (di norma
+  65368, dentro `$E000-$FFFF`), e `(EMITC)` chiama `rst $10` con la
+  pagina dello heap in MMU7. Quindi `CHAR S UDG@ C!` (la `POKE USR` di
+  BASIC) finisce nella pagina dello heap montata in quel momento, e la
+  ROM disegna gli UDG con i byte di quella pagina. La scrittura non fa
+  danni: cade nella coda di 257 byte (`$1EFF-$1FFF`) che
+  `PAGE-WATERMARK` non alloca mai, e l'autore conferma (2026-10-14) che
+  quel margine è stato scelto anche per questo. Annotato in modo
+  simmetrico nel commento di `PAGE-WATERMARK` (`L1.asm` di DOES e DOT,
+  `src/F18e.f`, `inc/doc/skip-hp-page.f`, `help/page-watermark.txt`) e
+  nel cap. 13. Resta da confermare quale pagina da 8K tenga BASIC in
+  MMU7 (`PRINT REG 87` da BASIC). Il capitolo segue `demo/chomp-chomp.f`: tabella nel
+  dizionario con `C,` e `SHAPES 23675 !`. **Da verificare sulla
+  macchina**: (a) il valore di `23675 @` all'avvio di vForth; (b) che
+  `144 EMITC` senza ripuntare UDG mostri spazzatura; (c) che dopo
+  `SHAPES 23675 !` cuore e rombo appaiano giusti. Se (a) non sta sopra
+  `$E000`, il capitolo va ammorbidito. Lo stesso vale per un font
+  alternativo (CHARS, 23606), che il capitolo tiene nel dizionario.
+- **`CASEON` non è di `COMPARE`.** Agisce sulla routine di maiuscole del
+  core, che serve anche alla ricerca nel dizionario: con `CASEON` attivo
+  `dup` dà `dup? is undefined.` e le librerie scritte in minuscolo non si
+  caricano. Provato in emulatore e messo in "What changes". Va detto
+  anche in `help/caseon.txt`, che parla solo di "word matching".
+- `EMIT` toglie il bit alto: `65 EMIT 193 EMIT` stampa `AA`. Provato.
+- `UDG+` non controlla la lettera (`CHAR Z UDG+` dà 169, un token).
+- Il disegno del Sigma nel manuale è un listato: il capitolo usa forme
+  sue (cuore e rombo, su `A` e `B`) e un `.SHAPE` in ASCII che ne
+  rende le righe verificabili.
+- `help/emitc.txt` è sbagliata: dice `EMITC --` e "Internal emit
+  handler". Da riscrivere (`c --`, gli otto bit, i codici di controllo).
+- Listati BASIC nuovi: 4. Da provare su MAME/CSpect soprattutto il font
+  alternativo (`DPOKE 23606,a-256`).
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
