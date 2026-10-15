@@ -429,11 +429,12 @@ tutorial/     -- Guided tutorials
 bas2f/        -- NextBASIC listings of the basic-to-vforth guide (tokenised +3DOS
                  .bas, one per listing: NN-chapter-MM.bas); SD payload, binary in git
   txt/        -- their ASCII sources, extracted from the guide's untagged ```
-                 blocks, headed '#program NN-chapter-MM'; converted with txt2bas
+                 blocks by util/guide-listings.py (--check: exit 1 if out of
+                 date), headed '#program NN-chapter-MM'; converted with txt2bas
                  (bundled in Remy Sharp's NextBASIC VS Code extension) or with
                  .TXT2BAS on the Next. Chapter 3's .bas were typed on MAME instead
 doc/          -- PDF reference manual
-util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py, guide-nav.py);
+util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py, guide-nav.py, guide-listings.py);
                  obs-ws-shot.py (PNG of the real Next's video output via the OBS WebSocket server, port 4455,
                  password in %USERPROFILE%\.obs-ws-password: Claude reads the screen through it; -l lists sources);
                  obs-shot.ps1 (fallback with the server off: capture of the whole OBS window)

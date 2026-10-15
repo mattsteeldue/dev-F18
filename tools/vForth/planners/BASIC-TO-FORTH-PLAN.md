@@ -52,8 +52,9 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
   `bas2f/txt/` e `.bas` in `bas2f/` (validatore di txt2bas: 0 errori;
   `END IF` del cap. 2 corretto in `ENDIF`), ma **restano fuori da git**
   finche' l'autore non li ha rivisti: nel repo ci sono solo il cap. 3 (MAME,
-  2026-10-12), il 12-02 e i 17-01/02 (scritti dall'autore). Si rigenerano
-  dai `.md` estraendo i blocchi ``` senza linguaggio.
+  2026-10-12), il 12-02 e i 17-01/02 (scritti dall'autore). I `.txt` si
+  rigenerano dai `.md` con `python util/guide-listings.py` (`--check` per
+  sapere se sono indietro).
 - Elenco "Da provare su CSpect o sulla macchina" in fondo alla matrice.
 - Dai capitoli: virgola mobile, uscite di `F.` e letterali compilati (cap.
   9); `23675 @` sopra `$E000` e UDG con `SHAPES 23675 !`, altrimenti il

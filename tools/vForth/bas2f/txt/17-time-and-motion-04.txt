@@ -1,0 +1,5 @@
+#program 17-time-and-motion-04
+30 FOR %x=0 TO 255
+40 LAYER AT %x,%0
+50 NEXT %x
+60 LAYER AT 0,0

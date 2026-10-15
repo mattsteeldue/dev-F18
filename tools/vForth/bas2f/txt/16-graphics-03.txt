@@ -1,0 +1,10 @@
+#program 16-graphics-03
+10 LAYER 1,1: BORDER 0: PAPER 0: CLS
+20 x1=0: y1=0: c=1
+30 FOR r=0 TO 9
+40   x2=INT (RND*256): y2=INT (RND*192)
+50   DRAW INK c;x2-x1,y2-y1
+60   x1=x2: y1=y2
+70   c=c+1: IF c=8 THEN c=1
+80 NEXT r
+90 PAUSE 0: LAYER 1,2

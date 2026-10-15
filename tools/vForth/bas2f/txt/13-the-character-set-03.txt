@@ -1,0 +1,4 @@
+#program 13-the-character-set-03
+10 LET a=50000
+20 FOR n=0 TO 767: POKE a+n,PEEK (15616+n): NEXT n
+30 DPOKE 23606,a-256
