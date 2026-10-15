@@ -163,7 +163,7 @@ NEEDS WITHIN
 | `x AND y` (x if y) | `x f AND` | `f` from a comparison. |
 | `x OR y` (1 if y) | `x f IF DROP 1 THEN` | `OR` sets bits: `x -1 OR` is -1. |
 | `x$ AND y` | `a u f AND` | The empty string if `f` is false. |
-| `(a AND a>=b)+(b AND a<b)` | `a b MAX` | `MIN` for the smaller. |
+| `(a AND NOT a<b)+(b AND a<b)` | `a b MAX` | `MIN` for the smaller. |
 | `a$>b$` | `COMPARE 0>` | `NEEDS COMPARE`. Ignores case until `CASEON`. |
 | `a<=x AND x<=b` | `x a b BETWEEN` | `NEEDS BETWEEN`. Both limits included. |
 | `a<=x AND x<b` | `x a b WITHIN` | `NEEDS WITHIN`. Upper limit excluded. |
@@ -186,16 +186,16 @@ character there, compared with `=`; for a whole word see the last example.
 is always 0.
 
 ```
-10 LET a=3: LET b=8
-20 PRINT (a AND a>=b)+(b AND a<b)
+10 INPUT a,b
+20 PRINT (a AND NOT a<b)+(b AND a<b)
 ```
 
 The literal translation works in Forth too, because a flag is a mask:
 
 ```forth
 : LARGER  ( a b -- n )
-    2DUP < 0=  2 PICK AND  -ROT
-    2DUP <  AND NIP  + ;
+    2DUP <  >R R@ AND
+    SWAP R> NOT AND + ;
 3 8 LARGER .  8 3 LARGER .  5 5 LARGER .        \ => 8 8 5
 ```
 

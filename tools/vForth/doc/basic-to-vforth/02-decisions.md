@@ -136,8 +136,8 @@ Strings are the subject of Chapter 7.
 |---|---|---|
 | `IF c THEN a` | `c IF a THEN` | Inside a definition. |
 | `IF c THEN a: ELSE b` | `c IF a ELSE b THEN` | |
-| `IF c` ... `ELSE` ... `END IF` (long form) | `c IF` ... `ELSE` ... `THEN` | The same construct, on any number of lines. |
-| `END IF` | `THEN` | `ENDIF` is accepted too. |
+| `IF c` ... `ELSE` ... `ENDIF` (long form) | `c IF` ... `ELSE` ... `THEN` | The same construct, on any number of lines. |
+| `ENDIF` | `THEN` | vForth accepts `ENDIF` too, with the same meaning. |
 | `ELSE IF c2` | `ELSE c2 IF` ... `THEN THEN` | One `THEN` for each `IF`. Or `EXIT`, or `CASE`. |
 | `IF c THEN GO TO n` | `c IF` ... `THEN` | Write the code in place. |
 | `IF c THEN STOP`, `RETURN`, `ENDPROC` | `c IF EXIT THEN` | Leaves the definition. |
@@ -208,7 +208,7 @@ and leaves; what is still running at the last line is the case left over.
 50   PRINT "pass"
 60 ELSE
 70   PRINT "fail"
-80 END IF
+80 ENDIF
 ```
 
 ```forth

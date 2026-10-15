@@ -238,57 +238,70 @@ another screen.
 
 ## Side by side
 
-**Testing the pause.** The manual checks `PAUSE` against `TIME`:
+**Testing the pause.** `TIME` resets the counter, and `display()` shows
+it twice, read as FRAMES and as `TIME`, before and after a `PAUSE`:
 
 ```
-10 INPUT "How many PAUSE frames? ";f
-20 TIME
-30 PROC perftest(f)
-40 PRINT '"perftest() took ";TIME;" frames against desired ";f;" frames."
-50 STOP
-60 DEFPROC perftest(frames)
-70 PAUSE frames
-80 ENDPROC
+10 INPUT "A number: ";%N
+20 TIME : ;Reset timer
+30 PROC display()
+40 PAUSE %N
+50 PROC display()
+60 STOP
+70 ;
+100 DEFPROC display()
+110 T1,T2= DPEEK 23672, TIME
+120 PRINT T1,T2
+130 ENDPROC
 ```
 
 ```forth
-: PERFTEST  ( frames -- )
-    RESET-TIMER  DUP WAIT-FRAMES  TIMER
-    CR ." took " . ." frames against desired " . ." frames." ;
+: DISPLAY  ( -- )  CR  23672 @ .  TIMER . ;
 ```
 
 <!-- no-test -->
 ```forth
-100 PERFTEST
+RESET-TIMER DISPLAY  100 WAIT-FRAMES  DISPLAY
 ```
 
 ```text
-took 100 frames against desired 100 frames.
+0 0
+100 100
 ```
 
-The number of frames is the argument, as with any word; `INPUT` would
-be Chapter 14. `TIMER` is read before anything is printed, and the two
-numbers wait on the stack until `.` takes them, the measured one first.
+In Forth the two numbers are the same by definition, since `TIMER` is
+`23672 @`. The number of frames is typed on the line, as with any word;
+`INPUT` would be Chapter 14. There is no need to define the main
+program: a line without loops or `IF` runs at the prompt as it is.
 
-**Hours, minutes, seconds.** The manual's `GetTime` slices `TIME$`:
+**Hours, minutes, seconds.** `Now()` slices `TIME$` and returns three
+numbers:
 
 ```
-160 DEFPROC GetTime()
-170 a$=TIME$
-180 h,m,s=VAL(a$(12 TO 13)),VAL(a$(15 TO 16)),VAL(a$(18 TO))
-190 ENDPROC = h,m,s
+10 T$= TIME $
+20 PRINT 't$
+30 PROC now() TO h,m,s
+40 PRINT "It's ";h;":";m
+90 STOP
+100 DEFPROC Now()
+110 T$= TIME $
+120 PRINT 't$
+130 hh= VAL (T$(12)+T$(13))
+140 mi= VAL (T$(15)+T$(16))
+150 ss= VAL (T$(18)+T$(19))
+160 ENDPROC =hh,mi,ss
 ```
 
 ```forth
 NEEDS IDE_RTC
-: GET-TIME  ( -- h m s )
+: NOW  ( -- h m s )
     IDE_RTC DROP NIP
     DUP HOURS  OVER MINUTES  ROT SECONDS ;
 ```
 
 `IDE_RTC` leaves three values; `DROP NIP` keeps the time only. The
-three results stay on the stack, as `ENDPROC = h,m,s` returns three.
-To print them in the manual's form, with two digits each:
+three results stay on the stack, as `ENDPROC =hh,mi,ss` returns three.
+To print them as `TIME$` does, with two digits each:
 
 ```forth
 : .00  ( n -- )  0 <# # # #> TYPE ;
@@ -297,7 +310,7 @@ To print them in the manual's form, with two digits each:
 16 55 32 .HMS                   \ => 16:55:32
 ```
 
-`GET-TIME .HMS` prints the time of the clock. The emulator has no
+`NOW .HMS` prints the time of the clock. The emulator has no
 clock, so the line above gives the numbers itself.
 
 **A sprite pattern.** The manual's spaceship is 16 `DATA` lines of 16

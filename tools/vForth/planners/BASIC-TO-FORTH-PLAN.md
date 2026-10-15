@@ -48,7 +48,12 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
 **Prove dell'autore.**
 
 - Listati BASIC dei cap. 1-2 e 4-18 (79 in tutto) da provare su MAME o
-  CSpect e da salvare in `bas2f/`: oggi ci sono solo gli 8 del cap. 3.
+  CSpect. Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
+  `bas2f/txt/` e `.bas` in `bas2f/` (validatore di txt2bas: 0 errori;
+  `END IF` del cap. 2 corretto in `ENDIF`), ma **restano fuori da git**
+  finche' l'autore non li ha rivisti: nel repo ci sono solo il cap. 3 (MAME,
+  2026-10-12), il 12-02 e i 17-01/02 (scritti dall'autore). Si rigenerano
+  dai `.md` estraendo i blocchi ``` senza linguaggio.
 - Elenco "Da provare su CSpect o sulla macchina" in fondo alla matrice.
 - Dai capitoli: virgola mobile, uscite di `F.` e letterali compilati (cap.
   9); `23675 @` sopra `$E000` e UDG con `SHAPES 23675 !`, altrimenti il
@@ -76,6 +81,13 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
   | sprite sul seno con tabella (372) | tutorial 053, `TEST` | sprite che cammina, stesso slot, pattern 0/1 alternati, `PAUSE 4`, poi nascosto; `FLY` diventa una camminata (utile per la trappola slot/pattern) |
   | `LAYER AT` orizzontale sul Layer 2 (458) | tutorial 045, `SPLIT-SCROLL-DEMO` | scorrimento verticale `FOR y=0 TO 191: LAYER AT 0,y`, poi `LAYER AT 0,0`; `ROLL-L2` passa a `$17`, salvando e rimettendo il registro |
   | Copper che cambia la palette a una riga (479) | tutorial 045, `BUILD-COPPER-LIST` | tre fasce con tre spostamenti `$17` via `REG 96` (WAIT 0, 64, 128 -> MOVE `$17`, HALT `$FFFF`) |
+
+  **Fatti i primi due (2026-10-15)**, ma diversi dalla proposta: l'autore
+  li ha scritti e provati su MAME (`17-time-and-motion-01/02.bas`, PROC
+  `display()` e `Now()`); nel capitolo le parole Forth sono diventate
+  `DISPLAY` (era `PERFTEST`) e `NOW` (era `GET-TIME`). Attenzione:
+  `inc/DISPLAY.f` definisce un altro `DISPLAY ( n -- )`, non caricato
+  dalla guida. Restano gli ultimi tre (sprite, `LAYER AT`, Copper).
 
   Il listato Copper va codificato a mano con cura (WAIT: bit 15 a 1, riga
   nei bit 8-0; MOVE: registro nei bit 14-8, valore nei bit 7-0) ed è il

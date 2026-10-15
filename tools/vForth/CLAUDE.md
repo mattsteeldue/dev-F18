@@ -428,6 +428,10 @@ demo/         -- Example programs and games
 tutorial/     -- Guided tutorials
 bas2f/        -- NextBASIC listings of the basic-to-vforth guide (tokenised +3DOS
                  .bas, one per listing: NN-chapter-MM.bas); SD payload, binary in git
+  txt/        -- their ASCII sources, extracted from the guide's untagged ```
+                 blocks, headed '#program NN-chapter-MM'; converted with txt2bas
+                 (bundled in Remy Sharp's NextBASIC VS Code extension) or with
+                 .TXT2BAS on the Next. Chapter 3's .bas were typed on MAME instead
 doc/          -- PDF reference manual
 util/         -- Perl scripts (blocks2txt.pl, putscr.pl); Python tools (cmp-f18e.py, gen-dict-structure.py, odt-hygiene.py, guide-nav.py);
                  obs-ws-shot.py (PNG of the real Next's video output via the OBS WebSocket server, port 4455,

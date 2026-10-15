@@ -149,7 +149,7 @@ edizione; le pagine sono quelle del PDF.
 | `<=`, `>=` | cap. 2, p. 17 | `> 0=`, `< 0=` | B | 006 | Non ci sono come parole: candidate D-inc. | emu |
 | confronto con zero | cap. 2 | `0=` `0<` `0>` | A | 006 | In più rispetto a BASIC: più corte e più veloci di `0 =`. | emu |
 | `IF c THEN GO TO n` | cap. 2, p. 17 | - | C | 006 | Niente righe: il ramo si scrive fra `IF` e `THEN`. |  |
-| `IF` lungo ... `END IF` (su più righe) | cap. 2, p. 18 | `IF ... ELSE ... THEN`, su quante righe si vuole | A | 006 | In Forth la forma è una sola. | emu |
+| `IF` lungo ... `ENDIF` (su più righe) | cap. 2, p. 18 | `IF ... ELSE ... THEN`, su quante righe si vuole | A | 006 | In Forth la forma è una sola. | emu |
 | `ELSE IF` in catena | cap. 2, p. 17 | `IF` annidati, un `THEN` per ogni `IF`; oppure `EXIT` alla fine di ogni caso; oppure `CASE` -- `NEEDS CASE` | B | 006, 013 |  | emu |
 | confronto fra stringhe | cap. 2, p. 16 | `a1 n1 a2 n2 COMPARE` -- `NEEDS COMPARE` | B | 009 | Dà -1, 0 o 1: 0 vuol dire "uguali", il contrario di un flag. | emu |
 | operatore di selezione `n?(e0,e1,...)` | cap. 2, p. 19 | tabella: `CREATE t e0 , e1 , ...` e `n max MIN CELLS t + @` | B | 010 | Non è in App. B. Il `MIN` riproduce "oltre la fine vale l'ultima". | emu |
@@ -359,7 +359,7 @@ edizione; le pagine sono quelle del PDF.
 | `x AND y` (x se y, altrimenti 0) | cap. 12, p. 72 | `x f AND`, con f flag di un confronto | A | 011 | Più diretto che in BASIC: il flag -1 è una maschera di tutti 1. `7 5 3 > AND` dà 7, `7 3 5 > AND` dà 0. | emu |
 | `x OR y` (1 se y, altrimenti x) | cap. 12, p. 72 | `IF DROP 1 THEN` | B | 006 | `OR` bit a bit non fa questo: `115 -1 OR` dà -1. | emu |
 | `AND`, `OR` fra numeri che non sono flag | cap. 12, p. 72 | prima si normalizza: `0= 0=` | C | 011 | Trappola: `1 2 AND` dà 0 anche se entrambi sono "veri"; `1 0= 0= 2 0= 0= AND` dà -1. | emu |
-| il maggiore di due: `(a AND a>=b)+(b AND a<b)` | cap. 12, p. 72 | `MAX`; il minore `MIN` | A | 001 |  | emu |
+| il maggiore di due: `(a AND NOT a<b)+(b AND a<b)` | cap. 12, p. 72 | `MAX`; il minore `MIN` | A | 001 |  | emu |
 | `x$ AND y` (la stringa se y, altrimenti vuota) | cap. 12, p. 73 | `a u f AND` | A | 009 | Il flag maschera la lunghezza: resta `a 0`, la stringa vuota. | emu |
 | ordinare due stringhe (`a$>b$`) | cap. 12, p. 73 | `COMPARE 0>` -- `NEEDS COMPARE` | B | 009 | `COMPARE` dà -1, 0 o 1 (cap. 2). | emu |
 | "a diverso sia da b sia da c" (esercizio) | cap. 12, p. 73 | `a b <> a c <> AND` | A | 006 | Stessa logica di BASIC. | emu |

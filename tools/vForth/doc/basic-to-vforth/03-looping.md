@@ -268,6 +268,8 @@ a given number.
 60 NEXT a
 70 PRINT "none"
 80 REM continue here
+90 PRINT a
+100 PRINT b
 ```
 
 ```forth
@@ -291,6 +293,10 @@ NEEDS UNLOOP
 after BASIC's second `EXIT` was for: skipping the "none". Note the two
 `UNLOOP`s, one for each loop left behind, and the `DROP` on both ways out so
 that `p` does not stay on the stack.
+
+Lines 90 and 100 show that after the two `EXIT`s the control variables keep
+the values they had: `a` is 6 and `b` is 7. A Forth loop index exists only
+inside its loop, which is why `FACTORS` prints `J` and `I` before leaving.
 
 **Test at the bottom.** How many times can 1000 be halved before it
 reaches zero?
