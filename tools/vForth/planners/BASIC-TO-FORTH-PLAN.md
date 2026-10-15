@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 4, cap. 17; la fase 3 è scritta). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 4, cap. 18; la fase 3 è scritta). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -14,9 +14,10 @@
 > (`13-the-character-set.md`, 46 righe) e il cap. 14
 > (`14-more-about-print-and-input.md`, 24 righe); fase 4: il cap. 15
 > (`15-colours.md`, 13 righe, il resto `no-test`) e il 2026-10-15 il cap. 16
-> (`16-graphics.md`, 24 righe, il resto `no-test` ma provato a parte), tutti
+> (`16-graphics.md`, 24 righe, il resto `no-test` ma provato a parte) e il cap. 17
+> (`17-time-and-motion.md`, 68 righe, il resto `no-test` ma compilato), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -243,7 +244,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
-| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14) e il cap. 16 (2026-10-15), si riparte dal cap. 17 | guida, seconda parte | emulatore + CSpect |
+| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14), il cap. 16 e il cap. 17 (2026-10-15), si riparte dal cap. 18 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
@@ -720,7 +721,39 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   `<# ... #>` usa per il meno (lo `STR$` del cap. 8, digitato nella
   stessa sessione, avrebbe stampato "negative"). Ora è `?SGN`; non
   `SGN`, che il cap. 8 definisce come funzione. Il capitolo spiega il
-  perché del nome.
+  perché del nome. Prova finale del cap. 2: 65 righe, 0 errori.
+
+**Emerso scrivendo il cap. 17 (2026-10-15).**
+
+- **Il manuale è nel repo**, in `doc/zx-spectrum-next-manual-3rd-ed.md`:
+  i listati BASIC del cap. 17 sono presi da lì (accorciati i `REM`), non
+  ricostruiti a memoria.
+- **In emulatore**: `5 REG@ 4 AND` dà 4, cioè 60 Hz (il capitolo non
+  dichiara il valore di `HZ`); l'RTC *risponde* (al boot `.NOW` stampa
+  2045-01-07 00:14), quindi la nota "`IDE_RTC` non emulata" della matrice
+  è da correggere: è emulato, con valori senza senso; FRAMES invece resta
+  a 0, perché l'`HALT` dell'emulatore non esegue l'interrupt della ROM.
+  `1FRAME`, `ms`, `KEY-SCAN`, `NEEDS SPRITE`, `NEEDS COPPER` funzionano.
+- Parole del capitolo, provate: `WAIT-FRAMES`, `PAUSE` (interrotta da
+  `KEY-SCAN`), `RESET-TIMER`, `TIMER`, `HZ`, `HOURS`/`MINUTES`/`SECONDS`
+  (34544 -> 16 55 32), `GET-TIME`, `.00`, `.HMS`, `ROW!`/`ROW,` (la nave
+  del manuale scritta come 16 righe di numeri), `HIT?`, `CLIP-SPRITES`.
+  Compilate ma non provabili senza video: `PATTERN!`, `FLY` (sprite sul
+  seno di Minsky del cap. 16, niente tabella), `MOVE-ALL`, `ROLL-L2`,
+  `SKY` (la lista del Copper del manuale), `PERFTEST`.
+- `PAUSE` è definita anche nel tutorial 053, con lo stesso significato:
+  non è in `inc/` né in `lib/`, quindi la regola dei nomi è rispettata.
+- `SPRITE-OB` è 9 byte. `SPRITES-ON` lascia `$43` sulla palette degli
+  sprite: chi scrive `$40`/`$41` dopo (il Copper di `SKY`) deve rimettere
+  `0 $43 REG!`. Il capitolo lo dice.
+- **Da provare su CSpect**: `FLY`, `PATTERN!` con la nave, `SKY` (si vede
+  con la palette ULA che vForth mostra?), `ROLL-L2`, e `CLIP-SPRITES`:
+  ordine delle scritture (x1 x2 y1 y2) e coordinate (dentro lo schermo,
+  256x192?) sono dalla documentazione dei registri, non provati.
+- Senza voce di help: `SPRITE`, `SPRITES-ON`, `SPRITE-UPDATE`,
+  `SPRITE-HIDE`, `SPRITE-INIT`, `IDE_RTC`, `.NOW`, `COP-NOOP`.
+- Listati BASIC: 5, tutti estratti del manuale (prova di `PAUSE` con
+  `TIME`, `GetTime`, sprite sul seno, `LAYER AT`, Copper).
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

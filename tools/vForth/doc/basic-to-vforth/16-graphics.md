@@ -410,4 +410,4 @@ columns first.
 
 Previous: [Chapter 15 - Colours](15-colours.md) |
 [Contents](README.md) |
-Next: Chapter 17 - Time and Motion (not written yet)
+Next: [Chapter 17 - Time and Motion](17-time-and-motion.md)

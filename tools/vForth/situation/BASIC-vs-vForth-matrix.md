@@ -62,8 +62,10 @@ edizione; le pagine sono quelle del PDF.
   `F_CLOSE`), `DUMP`, `CALL#` e una parola `CODE`. Non si provano qui:
   `NEEDS GRAPHICS` si carica ma `SETUP` e `LAYER0` finiscono in `NextZXOS DOS
   call error` (la chiamata `IDE_MODE` non è emulata); `DIR` dà `NextZXOS Read
-  error`; le chiamate che passano da `M_P3DOS` (`CD`, `PWD`, `IDE_RTC`), il
+  error`; le chiamate che passano da `M_P3DOS` (`CD`, `PWD`), il
   suono, gli sprite, il Copper e `SELECT` (la routine della ROM è uno stub).
+  `IDE_RTC` invece risponde (2026-10-15: al boot `.NOW` stampa
+  2045-01-07 00:14, valori senza senso ma nessun errore); FRAMES resta a 0.
   Per queste righe la colonna vForth viene dai sorgenti, letti uno per uno.
 - **Registri**: i numeri dei NextReg citati nei cap. 15-25 sono stati
   ricontrollati sull'elenco del cap. 22 del manuale (pp. 234-242).
@@ -91,7 +93,7 @@ edizione; le pagine sono quelle del PDF.
 | 14 | More about PRINT and INPUT | 21 | fatto | fatto | emu (4 righe); posizione e colori solo sulla macchina |
 | 15 | Colours | 35 | fatto | fatto, teoria del colore compresa (pp. 95-103) | non provabile in emulatore: da fare su CSpect |
 | 16 | Graphics | 19 | fatto | fatto | non provabile in emulatore (`GRAPHICS` non si inizializza): da fare su CSpect |
-| 17 | Time and Motion | 44 | fatto | fatto | emu (5 righe: tempo e orologio); sprite, Copper e RTC su CSpect |
+| 17 | Time and Motion | 44 | fatto | fatto | emu (5 righe: tempo e orologio); guida: 68 righe (2026-10-15); sprite, Copper e RTC su CSpect |
 | 18 | Sound and Music | 21 | fatto | fatto | emu (2 righe: solo il calcolo); il suono su CSpect |
 | 19 | NextZXOS and alternatives | 61 | fatto | fatto (Browser, menu NMI, CP/M ed esxDOS solo scorsi: fuori dal linguaggio) | emu (3 righe: salvare, caricare, copiare); catalogo e cartelle su CSpect |
 | 20 | Channels, Streams, Drivers and Windows | 29 | fatto | fatto | emu (9 righe: file con handle); `SELECT` e finestre sulla macchina |
