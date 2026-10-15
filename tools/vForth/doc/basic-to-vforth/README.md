@@ -3,7 +3,7 @@
 A migration guide for programmers who know NextBASIC and want to move to
 vForth, the Forth system for the ZX Spectrum Next.
 
-> **Draft.** Chapters 1 to 17 are written. Chapter 3 (Looping) was the pilot:
+> **Draft.** Chapters 1 to 18 are written. Chapter 3 (Looping) was the pilot:
 > it fixes the form and the tone of every other chapter; the plan is in
 > `planners/BASIC-TO-FORTH-PLAN.md`.
 
@@ -64,7 +64,7 @@ A chapter without a link is not written yet.
 15. [Colours](15-colours.md)
 16. [Graphics](16-graphics.md)
 17. [Time and Motion](17-time-and-motion.md)
-18. Sound and Music
+18. [Sound and Music](18-sound-and-music.md)
 19. NextZXOS and alternatives
 20. Channels, Streams, Drivers and Windows
 21. Optional Features

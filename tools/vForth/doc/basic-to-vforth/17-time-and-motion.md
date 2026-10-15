@@ -547,4 +547,4 @@ selects, and `SPRITES-ON` points it at the sprites: after it,
 
 Previous: [Chapter 16 - Graphics](16-graphics.md) |
 [Contents](README.md) |
-Next: Chapter 18 - Sound and Music (not written yet)
+Next: [Chapter 18 - Sound and Music](18-sound-and-music.md)

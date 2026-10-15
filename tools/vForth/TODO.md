@@ -2,6 +2,79 @@
 
 > Resolved entries are moved to TODO-DONE.md.
 
+# KEY could click like BASIC, honouring PIP (23609)
+**2026-10-15**
+Proposal, not started. Found while writing chapter 18 of the BASIC-to-vForth
+guide: BASIC makes a key click whose length is the system variable PIP
+(23609), so `POKE 23609,n` changes it. vForth's `KEY` makes no click at all
+(the `CLICK` code in `L0.asm` near `KEY` is commented out) and never reads
+PIP, so the guide says that `POKE 23609` has no effect in vForth.
+Idea: in `KEY` (`project/vForth18_DOES/source/L0.asm`, `New_Def KEY`), after
+`res 5,(iy+1)`, do what the ROM does when it reads a key: call `BEEPER`
+(`$03B5`) with `DE` = PIP and `HL` = `$00C8`. Estimated 25-35 bytes of Z80:
+- save `BC` (already done), `DE` (return stack) and `IX`, which `BEEPER`
+  uses for its timing loop (`lib/bleep.f` does the same);
+- `BEEPER` is timed for 3.5 MHz: drop the speed (NextReg 7) for the click
+  and restore it, as `BEEP` does, or the click is 8 times shorter and
+  higher at 28 MHz;
+- DOT variant: `rst $18` instead of `call` (`lib/bleep.f` already picks
+  one of the two).
+`ACCEPT` calls `KEY` directly, so a `KEY` redefined in `inc/` would not
+click at the prompt: it has to be done in the core (or `KEY` made
+vectored, a larger change).
+To decide first: the default behaviour. BASIC starts with PIP = 0, which
+is a short click, not silence: copied as is, vForth would start clicking
+on every key for everybody. Alternative: click only when PIP is not zero
+(2-3 bytes more), so silence stays the default and `POKE 23609,n` turns
+the click on.
+Costs beyond the bytes: a new build (`/bump-build`, DOES and DOT,
+`src/F18e.f` aligned and `/check-f18e` on CSpect, `/regen-doc-dict-structure`,
+the boot address table in `CLAUDE.md`); a `RET` stub for `$03B5` in
+`install_rom_stubs` of the headless emulator, or the first key typed in
+`emu/repl.py` and in every test derails into low memory; with a large PIP
+the click slows typing down. Best done together with the next core change,
+not as a build of its own. When done, update chapter 18 of the guide
+(`doc/basic-to-vforth/18-sound-and-music.md`, "The keyboard does not
+click" and "No equivalent").
+
+
+# BEEP misbehaves at the edges of its range, and from pitch 48 up
+**2026-10-15**
+Found while writing chapter 18 of the BASIC-to-vForth guide; measured on
+the headless emulator (the arithmetic only: the sound goes through the ROM
+and is not emulated). BASIC's `BEEP` stops with `B Integer out of range`
+when it cannot play a pitch; `lib/bleep.f` checks nothing, and three
+things go wrong silently.
+- **Pitch 48 to 57: the note lasts seconds instead of the duration
+  asked.** `BLEEP-CALC` computes the number of cycles as `R@ 8000 */`,
+  i.e. ms * hz8 / 8000 with *signed* arithmetic. From pitch 48 (C, 4186
+  Hz) `hz8` is above 32767 and `*/` takes it as negative: `500 48
+  BEEP-PITCH BLEEP-CALC DROP U.` gives 63533 cycles, about 15 seconds,
+  where pitch 47 gives the right 1975 (0.5 s at 3951 Hz). At pitch 57 it
+  is 64960 cycles, about 9 seconds. So the useful range today is -27 to
+  47, not up to 57.
+  Proposed fix: unsigned arithmetic, `R@ UM* 8000 UM/MOD NIP` in place of
+  `R@ 8000 */`. The cycle count must still fit in 16 bits: ms * Hz / 1000
+  <= 65535, i.e. about 9 seconds at the top pitch, more below; BASIC
+  limits the duration to 10 seconds.
+- **Above pitch 57 the pitch folds back.** `BEEP-PITCH` starts from
+  `57 SWAP - ABS`, so 58 gives the frequency of 56, 69 that of 45:
+  `58 BEEP-PITCH 56 BEEP-PITCH =` is true. BASIC goes on rising (to about
+  69) and then gives the error.
+- **Below pitch -27 the note comes out too high.** -27 is the A at 55 Hz
+  (`hz8` 440). One step lower `hz8` is 415 and `28000.000 hz8 UM/MOD`
+  overflows 16 bits: `500 415 BLEEP-CALC` leaves 8162 as timing value
+  where 8404 is right, and lower pitches are worse.
+To do: fix the signed `*/`; then either check the pitch (-27 to 57, or a
+wider table) and the duration with `?ERROR`, or state the limits in
+`help/beep.txt`, `help/bleep.txt` and in the header of `lib/bleep.f`. Hear
+it on CSpect or the real machine before and after (`500 47 BEEP` and
+`500 48 BEEP` should last the same). Then correct chapter 18 of the guide,
+which today gives the useful range as -27 to 47 and explains why.
+Related: the entry on `lib/` help coverage below already notes that
+tutorial 033 and the header of `lib/bleep.f` give the two `BLEEP`
+arguments in the wrong order.
+
 # +" corrupted the string it extended
 **2026-10-13**
 Found while writing chapter 7 of the BASIC-to-vForth guide: on the headless
