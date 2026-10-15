@@ -32,6 +32,43 @@
 > partire. Dal 2026-10-12 la guida è una cartella, `doc/basic-to-vforth/`,
 > un file per capitolo (D2 rivista).
 
+## 0. Cosa resta (riepilogo al 2026-10-15)
+
+Raccolta dei punti aperti sparsi nelle sezioni 6.1, 7 e 10, per riprendere
+senza rileggere tutto. Il dettaglio resta nelle voci "Emerso scrivendo il
+cap. N" della sez. 10. Va aggiornato a fine sessione insieme alla riga di stato.
+
+**Scrittura (Claude).** Fase 4: cap. 18-25, si riparte dal cap. 18 (Sound
+and Music: `PLAY` e WAV/MOD/PT3 classe D, AY e `BEEP` diretti, tutorial 033,
+034, 050, 055; trappola già nota: nel registro 7 dell'AY il bit a 0 accende).
+Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
+9), fase 7 (righe "Coming from BASIC" nei tutorial 001-029).
+
+**Prove dell'autore.**
+
+- Listati BASIC dei cap. 1-2 e 4-17 (75 in tutto) da provare su MAME o
+  CSpect e da salvare in `bas2f/`: oggi ci sono solo gli 8 del cap. 3.
+- Elenco "Da provare su CSpect o sulla macchina" in fondo alla matrice.
+- Dai capitoli: virgola mobile, uscite di `F.` e letterali compilati (cap.
+  9); `23675 @` sopra `$E000` e UDG con `SHAPES 23675 !`, altrimenti il
+  capitolo va ammorbidito (cap. 13); `.TAB` corretta (cap. 14); `.INK` e
+  `.PAPER` mascherati, quando la ROM rimette i temporanei ai permanenti
+  (cap. 15); `1 $1C REG!` in LAYER22/LAYER24 (cap. 16); `FLY`, `PATTERN!`,
+  `SKY`, `ROLL-L2`, `CLIP-SPRITES` (cap. 17).
+
+**Correzioni e aggiunte nel repo.**
+
+- Matrice: `IDE_RTC` è emulato (con valori senza senso), non "non emulato".
+- Help: `help/emitc.txt` da riscrivere (`c --`, otto bit, codici di
+  controllo); `help/caseon.txt` deve dire che `CASEON` tocca anche la
+  ricerca nel dizionario; voci mancanti per `POINT`, `PAINT`, `SPRITE`,
+  `SPRITES-ON`, `SPRITE-UPDATE`, `SPRITE-HIDE`, `SPRITE-INIT`, `IDE_RTC`,
+  `.NOW`, `COP-NOOP`.
+- Candidate D-inc per `inc/`: `/STRING` per prima, poi `$!`/`$+!` (nome da
+  decidere), `0<>`, `PAUSE`, `TIME`, `HIT?`, `ARRAY`/`MATRIX`/`SARRAY`,
+  `INPUT$`/`INPUT#`, `SGN`, `UDG!`, `FCOPY`.
+- Cap. 9 da rileggere quando `FLOATING` passa a 5 byte.
+
 ## 1. Obiettivo
 
 Un documento per chi conosce NextBASIC e vuole passare a vForth. Segue l'indice
