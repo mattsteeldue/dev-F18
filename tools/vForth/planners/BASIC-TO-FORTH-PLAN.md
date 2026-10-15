@@ -64,7 +64,24 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
 - **Licenza, cap. 17**: le note dicono che i 5 listati BASIC del cap. 17
   sono presi dal manuale ("accorciati i `REM`"). È contro D1 (manuale CC
   BY-NC-SA, guida MIT, listati scritti da noi): vanno riscritti. Segnalato
-  all'autore il 2026-10-15.
+  all'autore il 2026-10-15. **Proposta concordata in parte (2026-10-15,
+  non ancora applicata, in attesa del via dell'autore)**: tradurre
+  "all'indietro" in BASIC esempi Forth che il repo ha già, così i listati
+  sono nostri e gli spezzoni Forth cambiano poco.
+
+  | Listato del manuale (riga del cap. 17) | Spunto | Listato nuovo |
+  |---|---|---|
+  | `perftest`, `PAUSE` misurata con `TIME` (244) | tutorial 032, `STOPWATCH` | cronometro: `TIME` azzera, poi `INT (TIME/50)` stampato fino a un tasto; Forth: `RESET-TIMER`/`TIMER` già nel capitolo |
+  | `GetTime`, ritaglio di `TIME$` (276) | `.NOW` nel banner (`lib/AUTOEXEC.f`) | `PRINT "It is ";TIME$`; Forth: `.NOW` o `GET-TIME .HMS` |
+  | sprite sul seno con tabella (372) | tutorial 053, `TEST` | sprite che cammina, stesso slot, pattern 0/1 alternati, `PAUSE 4`, poi nascosto; `FLY` diventa una camminata (utile per la trappola slot/pattern) |
+  | `LAYER AT` orizzontale sul Layer 2 (458) | tutorial 045, `SPLIT-SCROLL-DEMO` | scorrimento verticale `FOR y=0 TO 191: LAYER AT 0,y`, poi `LAYER AT 0,0`; `ROLL-L2` passa a `$17`, salvando e rimettendo il registro |
+  | Copper che cambia la palette a una riga (479) | tutorial 045, `BUILD-COPPER-LIST` | tre fasce con tre spostamenti `$17` via `REG 96` (WAIT 0, 64, 128 -> MOVE `$17`, HALT `$FFFF`) |
+
+  Il listato Copper va codificato a mano con cura (WAIT: bit 15 a 1, riga
+  nei bit 8-0; MOVE: registro nei bit 14-8, valore nei bit 7-0) ed è il
+  primo da provare su CSpect. Dopo la riscrittura: rilanciare
+  `emu/test_basic_guide.py --chapter 17` e togliere dalle note del cap. 17
+  la frase sui listati presi dal manuale.
 
 - Matrice: `IDE_RTC` è emulato (con valori senza senso), non "non emulato".
 - Help: `help/emitc.txt` da riscrivere (`c --`, otto bit, codici di
