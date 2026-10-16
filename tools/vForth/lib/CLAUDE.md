@@ -37,6 +37,26 @@ patched core in an inconsistent state.
 decimal literals (e.g. `3.14`) are parsed as floating-point values. `NO-FLOATING` undoes
 this patch, restoring `NUMBER` in `INTERPRET`.
 
+**Loading FLOATING does not switch it on.** `FNUMBER` tests the user variable `NMODE`
+and, while it is 0, just calls `NUMBER`. `COLD` sets `NMODE` to 0 and loading the library
+leaves it there, so after `NEEDS FLOATING` every literal is still read as an integer
+(`2.5` is the double 25, `1E3` and `1.E3` are undefined). Only `FLOATING` (`1 NMODE !`)
+turns the dot into a decimal point; `INTEGER` (`0 NMODE !`) turns it back. Why loading
+leaves `NMODE` at 0 is an open design question, not yet decided. Once on, `FNUMBER`
+accepts only `.` as decimal point and `E` for the exponent (`1E3` and `1.E3` both
+work); the other double-number marks of `NUMBER` (`,` `/` `-` `:`) and a second dot are
+an error. Any source or tutorial that uses floating literals must say `FLOATING`
+explicitly after `NEEDS FLOATING`. Verified 2026-10-16 on the headless emulator with
+a real 48K ROM loaded at `$0000` (see below).
+
+**Testing FLOATING in the headless emulator.** The emulator normally has no ROM, so
+`FP-INTERFACE` (`RST $28`, `CALL $2AB6`, `CALL $2BF1`) cannot run. It works if a 48K
+ROM image (e.g. `D:\zx\Fuse\roms\48.rom`) is copied to `memory[0:0x4000]` after the
+binaries are loaded, `install_rom_stubs()` is called again, and the calculator system
+variables are set: `MEM` (`$5C68`) = `$5C92`, `STKBOT` (`$5C63`) and `STKEND`
+(`$5C65`) = `$5D00`. Only the DOES variant: the DOT crash (TODO.md) is not reproduced
+this way.
+
 **ASSEMBLER** is a `VOCABULARY`. It patches `;CODE` in the core by replacing the `NOOP`
 placeholder left intentionally in the core for this purpose. The patch installs the
 ASSEMBLER vocabulary so that words after `;CODE` are looked up in the assembler word-set.

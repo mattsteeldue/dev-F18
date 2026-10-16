@@ -509,6 +509,17 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
 - La virgola mobile nel cap. 6 è solo prosa (`NEEDS FLOATING`, `FLOATING`,
   `INTEGER`, le quattro operazioni): nessuno spezzone, perché in emulatore
   non si prova. Gli spezzoni, `no-test`, vanno nel cap. 9.
+- (2026-10-16) Il paragrafo sul punto è esteso: `NUMBER` (tabelle
+  `pdom^`/`pcdm^` in `src/F18e.f`) tratta `,` `/` `-` `:` come il punto,
+  anche ripetuti (`1,000,000` `2026-10-16` `12:30` `1.2.3`, provati).
+  Con `FLOATING` invece `FNUMBER` riconosce solo `.` e `E`: `1E3` e
+  `1.E3` sono accettati entrambi, `1,5` e `1.2.3` danno errore. Ma solo
+  dopo la parola `FLOATING`: `NEEDS FLOATING` lascia `NMODE` a 0 e
+  `FNUMBER` passa la mano a `NUMBER` (`2.5` resta il doppio 25, `1E3` e
+  `1.E3` restano indefiniti) -- osservazione dell'autore. Provato in
+  emulatore con una ROM 48K vera a `$0000` (ricetta in `lib/CLAUDE.md`) e
+  scritto nel cap. 6, blocco `no-test`. Resta: dirlo anche nel cap. 9
+  ("only the dot"); decidere se il caricamento debba lasciare `NMODE` a 0.
 - Il decimale senza virgola mobile è mostrato con un intero scalato e
   `<# # 46 HOLD #S #>` (`.TENTHS`, 98.6 da 37 gradi): è la risposta
   consigliata prima della libreria.

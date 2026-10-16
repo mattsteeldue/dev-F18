@@ -2,6 +2,124 @@
 
 > Resolved entries are moved to TODO-DONE.md.
 
+# Headless emulator: run the 48K ROM FP calculator (option --rom)
+**2026-10-16**
+Idea, not started; feasibility already proved. With a real 48K ROM image
+copied to `$0000` the FP calculator runs as is: `NEEDS FLOATING`,
+`FLOATING`, `F.`, `F/` and the reading of `1E3`/`1.E3` all worked on the
+first try (recipe in `lib/CLAUDE.md`, "Testing FLOATING in the headless
+emulator"). Running the real ROM, not a Python rewrite of the calculator
+(a stack machine of some 60 operations on 5-byte numbers: much work, and
+never bit-exact in its rounding as the original is).
+Points to take care of:
+- **ROM errors**: the calculator reports an error (e.g. `Number too big`
+  on overflow) with `RST $08` + error code. Today the emulator traps every
+  `RST $08` as a NextZXOS call and would read the code as a function: when
+  `RST $08` comes from the ROM (PC below `$4000`) it must be reported as a
+  BASIC error instead.
+- **System variables**: `MEM` (`$5C68`) = `$5C92`, `STKBOT` (`$5C63`) and
+  `STKEND` (`$5C65`) = `$5D00`, `IY` = `$5C3A` (already set); the MEMBOT
+  area must not overlap anything else.
+- **Keep the `RET` stubs** of `install_rom_stubs` (`CHAN-OPEN` `$1601`,
+  `CL-ALL` `$0DAF`) after copying the ROM: run for real they would need
+  the BASIC channels, which are not modelled.
+- **Licence**: Amstrad allows distributing the ROM with emulators, but the
+  repo is public (MIT): do not commit it. An option `--rom PATH` (or an
+  environment variable) in `emu/emulator.py`/`emu/repl.py`, with the FP
+  tests skipped when it is absent. Local copies: `D:\zx\Fuse\roms\48.rom`,
+  `D:\zx\Next\SD\machines\next\48.rom`.
+- **Speed**: `FLN`, `FSIN`, `F**` run thousands of ROM instructions in the
+  Python emulator; acceptable in the trial.
+- **DOES only**: the DOT crash of FLOATING (entry below) depends on the ROM
+  paging of a dot-command, not modelled, and is not reproduced this way.
+Gains: `test/FLOATING-TESTS.f` on the emulator; the floating snippets of
+the BASIC-to-vForth guide (chapters 6 and 9) moved from `<!-- no-test -->`
+to a marker such as `<!-- needs-rom -->` in `emu/test_basic_guide.py`;
+the `F.` powers-of-ten suspicion (entry below) checkable at once. With the
+ROM present `BEEPER` (`$03B5`) would also be available for the PIP click
+entry, though without a speaker it is only `OUT $FE` loops.
+
+# FLOATING crashes the DOT variant (.vforth)
+**2026-10-16**
+Bug reported by the author: `NEEDS FLOATING` (`lib/floating.f`) works on
+the DOES variant but crashes the dot-command `.vforth`. Not yet analysed
+on the machine; the headless emulator cannot help, since it has no ROM
+calculator and runs only the DOES binaries.
+Likely cause, from the sources: `lib/FP-INTERFACE.f`, loaded by
+`floating.f`, reaches ROM 3 directly in three places, which is right only
+when ROM 3 is paged in at `$0000`, as it is in the DOES variant:
+- `FOP`: `RST $28` (`$EF`), the FP calculator, followed by two inline
+  bytes (the operation, patched at each call, and `$38` end-calc);
+- `>W`: `CALL $2AB6` (STK-STORE);
+- `W>`: `CALL $2BF1` (STK-FETCH).
+In a dot-command the low 16K is the DivMMC/NextZXOS ROM, so `RST $28` and
+those `CALL`s land in the wrong code. `FP-INIT` already runs some of them
+at load time (`PI` and `1/2` are computed between `[` and `]`), so the
+crash may happen during `NEEDS FLOATING`, before `FLOATING` is even typed.
+`lib/bleep.f` shows how the DOT case is handled for a plain call: test
+`0 +ORIGIN 2000 -` and compile `RST $18` + address (`$DF`) instead of
+`CALL` (`$CD`). That fixes `>W` and `W>`. `FOP` is harder: through
+`RST $18` the calculator would look for its inline bytes after the
+`RST $18` handler's return address, not after our code. Idea to try: put
+`RST $28 / op / $38 / RET` in a small routine in the dictionary (main RAM,
+visible in both variants) and enter it through a ROM 3 `JP (HL)`, e.g.
+`LD HL,routine` then `RST $18` / `DW $162C` (CALL-JUMP), so that ROM 3
+stays paged while the calculator runs.
+To do: reproduce on CSpect with `.vforth` and see whether it crashes at
+load or at the first operation; fix `FP-INTERFACE.f` choosing the code at
+load time like `bleep.f`; check that `NO-FLOATING` and the `COLD`
+redefinition behave in DOT; then the floating parts of the tutorials and of
+chapter 9 of the BASIC-to-vForth guide can be tried on both variants.
+Other modules calling ROM 3 directly may share the bug: worth a grep of
+`lib/` and `inc/` for `RST $28`, `$EF C,` and `$CD C,` with a ROM address.
+
+# Headless emulator: serve ROM BEEPER, so the PIP key click can be heard
+**2026-10-16**
+Idea, not started. Companion of the next entry (KEY honouring PIP). Today
+`emu/emulator.py` (`install_rom_stubs`) puts a bare `RET` on every ROM
+entry point the core calls, and `_port_out` in `emu/z80_instructions.py`
+ignores writes to the ULA port `$FE`: the emulator is silent and cannot
+show whether a click happens, nor how long it is.
+Proposal: instead of a `RET` stub at `BEEPER` (`$03B5`), a Python handler
+(the same trap style as `handle_nextzxos_call`) that reads `DE` (cycles)
+and `HL` (period, `$00C8` for the key click) and either logs the event
+(enough for a regression test: "one click per key, length = PIP") or
+synthesises the square wave (e.g. `winsound`/a WAV buffer). Optionally, a
+port `$FE` bit 4 (speaker) trace for code that toggles the speaker by
+itself -- which is exactly what the old quick'n'dirty click did: see the
+commented-out `CLICK` in `src/F18e.f` (around line 1424) and in
+`project/vForth18_DOES/source/L0.asm` (`New_Def CLICK`): `BORDCR` border
+colour OR `$18`, `OUT ($FE)`, a 256-turn `DJNZ`, `XOR $18`, `OUT ($FE)` --
+a single fixed "pop", roughly what BASIC makes with PIP = 0.
+Usefulness: the handler must exist anyway as soon as `KEY` calls `$03B5`
+(otherwise every key typed in `emu/repl.py` derails into low memory), so
+doing it "properly" costs little more than the stub and makes the click
+testable without CSpect. `BEEP`/`lib/bleep.f` would benefit from the same
+handler.
+
+# Manipulating .MDR cartridge images on the Next itself
+**2026-10-16**
+Idea, not started. `mdr.pl` (Perl, outside this repo: `\zx\mdr\mdr.pl`,
+rev. 2022-12-01, ~1400 lines; used by `util/mdr2txt.bat`) already does
+everything on the PC: catalogue (`-l`, free/bad sectors), `get=`/`put=`,
+`dump`/`text`, rename/copy/erase, label, autorun on/off, bad-sector fix,
+`.MDR` <-> `.TAP`. It would be nice to have the same on the Next, as
+natively as possible, e.g. to recover old vForth `!Blocks` screens from
+`.MDR` images (`M2.mdr`..`M8.mdr`, `Forth1.mdr`, ...) straight onto the SD.
+Routes to evaluate:
+- **Raspberry Pi Zero accelerator**: the Pi runs Linux with Perl, so
+  `mdr.pl` could run unchanged there; the open question is the transport
+  (UART between Next and Pi, the NextPi `.pisend`/`.pi*` dot-commands, and
+  how files on the Next SD reach the Pi and back). Lowest porting cost.
+- **A vForth `lib/` module** (e.g. `lib/MDR.f`): the `.MDR` format is
+  simple (254 sectors of 543 bytes: header + record + data + checksum, plus
+  the write-protect byte), so catalogue and `get` are within reach in Forth
+  with `F_OPEN`/`F_READ`/`F_SEEK`; a sector buffer in heap/MMU7 page. Fully
+  native, but a rewrite.
+- A NextZXOS dot-command in Z80: most native, most work.
+First step: decide the minimal feature set (probably catalogue + get, i.e.
+read-only) and check what the NextPi distribution offers today.
+
 # KEY could click like BASIC, honouring PIP (23609)
 **2026-10-15**
 Proposal, not started. Found while writing chapter 18 of the BASIC-to-vForth

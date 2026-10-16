@@ -191,6 +191,24 @@ double. That is where the numbers BASIC holds exactly, up to 2^32-1, go.
 -5 S>D D.                       \ => -5
 ```
 
+**The dot is not even special.** Four other marks do the same job: `,`,
+`/`, `-` and `:`. There may be more than one, anywhere after the first
+digit, and each says only "this is a double". Where the last one stands is
+kept in `DPL`, the count of the digits after it, and the number itself
+forgets it. A thousands separator, a date, a time all read as one double
+integer:
+
+```forth
+1,000,000 D.                    \ => 1000000
+2026-10-16 D.                   \ => 20261016
+12:30 D.                        \ => 1230
+1.2.3 D.                        \ => 123
+```
+
+So `3.5` is not three and a half written badly: nothing in the language
+reads it as a fraction. Out of the box vForth has no floating-point
+numbers at all, only integers one or two cells long.
+
 **Floating point is a library.** `NEEDS FLOATING` loads it and the word
 `FLOATING` switches it on: from then on a number with a dot is a floating
 point number, and `F+`, `F-`, `F*`, `F/` and `F.` work on it. The word
@@ -199,6 +217,26 @@ either:
 
 ```forth
 1E3                             \ => 1E3? is undefined.
+```
+
+Loading the library is not enough: it is the word `FLOATING` that turns
+the dot into a decimal point. After `NEEDS FLOATING` the user variable
+`NMODE` is still 0, and every number is read as before, so `2.5` is still
+the double 25 and `1E3` is still undefined. `FLOATING` sets `NMODE` to 1,
+`INTEGER` back to 0. Once it is on, only the dot is a decimal point: the
+other four marks are an error, and so is a second dot. An exponent may
+follow, with or without the dot before it.
+
+<!-- no-test -->
+```forth
+NEEDS FLOATING
+2.5 D.                          \ => 25
+FLOATING
+2.5 F.                          \ => 2.5000e0
+1E3 F.                          \ => 1.0000e3
+1.E3 F.                         \ => 1.0000e3
+1,5 F.                          \ => 1,5? is undefined.
+INTEGER
 ```
 
 Conversions are never automatic: there is no casting, and `INT {...}`
