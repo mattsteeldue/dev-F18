@@ -143,7 +143,7 @@ tried, and thrown away with `FORGET`.
 | NextBASIC | vForth | Note |
 |---|---|---|
 | `DATA n1,n2,n3` | `CREATE t  n1 , n2 , n3 ,` | A comma after every number. |
-| `DATA` with expressions | the same: `8 8 * ,` | Worked out once, when the table is built. |
+| `DATA` with expressions | the same: `8 8 * ,` | Worked out once, when the table is built. To work them out at each `READ`, see "No equivalent". |
 | `READ v` (element `i`) | `t i CELLS + @` | `i` counts from 0. Any order. |
 | `READ a,b,c` | one fetch for each | |
 | `READ` in a `FOR` loop | `t n CELLS BOUNDS DO  I @` ... `2 +LOOP` | `I` is the address of each element. |
@@ -276,6 +276,62 @@ that shape, and that knowledge is all there is in place of BASIC's types:
 the price is at the address itself, the name one cell further on. A list of
 items would be a table of their addresses, like `COLOURS`.
 
+**Data worked out when it is read.** An item of `DATA` may be any
+expression, and BASIC works it out at the moment of `READ`, with the values
+the variables have then.
+
+```
+10 LET x=5
+20 READ a,b,c: PRINT a;" ";b;" ";c
+30 LET x=10: RESTORE
+40 READ a,b,c: PRINT a;" ";b;" ";c
+50 DATA x,x*2,x*x
+```
+
+A table cannot do this: it holds numbers, not expressions. What can hold an
+expression is text, and the natural place for text in Forth is a Screen of
+the block file. Here each line of Screen 10 (the one left free for the
+user: pick any Screen you do not use, since the example writes over it) is
+one item, kept as Forth source:
+
+```forth
+NEEDS EVALUATE
+NEEDS S"
+10 CONSTANT DATA-SCR
+: DATA-LINE  ( n -- a )  8 /MOD  DATA-SCR 2* +  BLOCK  SWAP 64 * + ;
+: LINE!  ( a u n -- )  DATA-LINE  DUP 64 BLANK  SWAP CMOVE  UPDATE ;
+VARIABLE DATA#
+: RESTORE-LINE  ( n -- )  DATA# ! ;
+: READ-LINE  ( -- ? )
+    DATA# @ DATA-LINE  PAD 64 CMOVE  PAD 64 EVALUATE
+    1 DATA# +! ;
+VARIABLE X
+S" X @" 0 LINE!
+S" X @ 2 *" 1 LINE!
+S" X @ DUP *" 2 LINE!
+5 X !  0 RESTORE-LINE
+READ-LINE . READ-LINE . READ-LINE .     \ => 5 10 25
+10 X !  0 RESTORE-LINE
+READ-LINE . READ-LINE . READ-LINE .     \ => 10 20 100
+```
+
+A Screen is 16 lines of 64 characters, kept in two 512-byte blocks:
+`DATA-LINE` finds the block of line `n` and the place of the line in it.
+`LINE!` writes a line and marks the block with `UPDATE`, so that vForth
+saves it to the file; `FLUSH` saves it at once. On the machine the lines
+are usually typed with `EDIT` rather than with `LINE!`. `READ-LINE` copies
+the line to `PAD` and hands it to `EVALUATE`, the interpreter itself, which
+runs it with the value `X` has at that moment. `RESTORE-LINE` is
+`RESTORE n`, with a line number in place of a BASIC line number.
+
+A line may leave more than one value, like a `DATA` line with several
+items, but they all arrive together, the last one on top. Any word can
+appear in a line, not only arithmetic: what BASIC limits to an expression,
+the interpreter takes as a whole program. And the data outlives the
+program: it stays in the block file between sessions, and can be changed
+with `EDIT` without compiling anything again. `10 LOAD` interprets the
+whole Screen in one go, and leaves all its values at once.
+
 ## No equivalent
 
 - **One `DATA` list for the whole program.** Lines of `DATA` anywhere in a
@@ -286,6 +342,12 @@ items would be a table of their addresses, like `COLOURS`.
 - **`DATA` as a function**, which tells whether the next item is a number,
   a string or missing. A table carries no types. If the kind of each item
   really varies, store a byte in front of it that says so.
+- **Expressions worked out at `READ` time.** A `DATA` item may be any
+  expression, and it is worked out when it is read, with the variables as
+  they are then. A table only holds what was worked out when it was built.
+  The nearest thing is data kept as text, one item per line of a Screen,
+  and read with `EVALUATE`: see "Data worked out when it is read" in "Side
+  by side". It goes further than `DATA`, since a line may hold any Forth.
 - **`READ` into a list of variables.** Each fetch is written out, and its
   result stays on the stack unless you store it.
 - **`BANK n RESTORE`**, data kept in a memory bank: see Chapter 23.

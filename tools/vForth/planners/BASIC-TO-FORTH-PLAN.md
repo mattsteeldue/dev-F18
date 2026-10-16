@@ -18,7 +18,7 @@
 > (`17-time-and-motion.md`, 68 righe, il resto `no-test` ma compilato) e il cap. 18
 > (`18-sound-and-music.md`, 37 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 5 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -47,7 +47,7 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
 
 **Prove dell'autore.**
 
-- Listati BASIC dei cap. 1-2 e 4-18 (79 in tutto) da provare su MAME o
+- Listati BASIC dei cap. 1-2 e 4-18 (80 in tutto) da provare su MAME o
   CSpect. Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
   `bas2f/txt/` e `.bas` in `bas2f/` (validatore di txt2bas: 0 errori;
   `END IF` del cap. 2 corretto in `ENDIF`), ma **restano fuori da git**
@@ -486,6 +486,15 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
 - Per l'elenco di stringhe il capitolo usa una tabella di indirizzi (una
   `CREATE` con `,"` per stringa), non lo heap con `H"`: resta tutto nel
   core, senza `NEEDS`.
+- Aggiunta dell'autore (2026-10-16): in BASIC un item di `DATA` puo` essere
+  un'espressione qualunque, calcolata al momento di `READ`. Nuova voce in
+  "No equivalent" e nuovo esempio in "Side by side" ("Data worked out when
+  it is read", listato 06): un item per riga di uno Screen (il 10),
+  `READ-LINE` copia la riga in `PAD` e la passa a `EVALUATE`; `LINE!` la
+  scrive con `UPDATE`, sulla macchina si usa `EDIT`. Serve `NEEDS S"`
+  oltre a `NEEDS EVALUATE`. Riprovato: 69 righe, 0 errori; il file dei
+  blocchi del repo non cambia (nessun `FLUSH`). Il `.bas` del listato 06 e`
+  da generare con txt2bas e da provare.
 
 **Emerso scrivendo il cap. 6 (2026-10-13).**
 
