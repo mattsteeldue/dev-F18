@@ -267,7 +267,7 @@ change the red paper write entry 18 as well.
 - Tutorial `052` -- the graphics libraries, one per layer.
 - `HELP .INK`, `HELP .PAPER`, `HELP .PERM`, `HELP .BORDER`, `HELP .OVER`,
   `HELP LAYER12`, `HELP REG!`.
-- Chapter 22 -- the Next registers.
+- [Chapter 22](22-in-out-and-the-next-registers.md) -- the Next registers.
 
 <!-- nav -->
 ---

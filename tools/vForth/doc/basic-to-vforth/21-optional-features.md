@@ -166,4 +166,4 @@ length. `SH` sends a line and drops the answer.
 
 Previous: [Chapter 20 - Channels, Streams, Drivers and Windows](20-channels-streams-drivers-and-windows.md) |
 [Contents](README.md) |
-Next: Chapter 22 - IN, OUT and the Next Registers (not written yet)
+Next: [Chapter 22 - IN, OUT and the Next Registers](22-in-out-and-the-next-registers.md)

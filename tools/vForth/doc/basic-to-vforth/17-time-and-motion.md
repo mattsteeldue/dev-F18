@@ -552,7 +552,8 @@ selects, and `SPRITES-ON` points it at the sprites: after it,
 - `HELP 1FRAME`, `HELP ms`, `HELP WAIT-KEY`, `HELP KEY-SCAN`,
   `HELP M_GETDATE`, `HELP COPPER`, `HELP COP-WAIT`, `HELP COP-MOVE`,
   `HELP REG!`.
-- Chapter 22 -- the Next registers, sprite ports included.
+- [Chapter 22](22-in-out-and-the-next-registers.md) -- the Next registers,
+  sprite ports included.
 - Chapter 23 -- memory pages, for frames kept in memory.
 
 <!-- nav -->

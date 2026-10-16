@@ -239,7 +239,7 @@ numbers, the doubled and quadrupled quotes of `VAL$` are not needed.
 that searches a string. Looking for one character is a short loop, shown
 in "Side by side"; looking for a substring, backwards, or with a wildcard
 are longer ones. The other `IN` of BASIC, the one that reads a port, is
-`P@`: Chapter 22.
+`P@`: [Chapter 22](22-in-out-and-the-next-registers.md).
 
 **The integer functions are the ordinary ones.** NextBASIC has fast
 integer forms of some functions, marked with `%`. In Forth those are the
@@ -281,7 +281,7 @@ to 3.
 | `INT (x+0.5)` | add half the divisor before dividing | `ROUND/` is defined here. |
 | `SQR x` | `x SQRT` | `NEEDS SQRT`. Integer root, rounded down. |
 | `%ABS`, `%PEEK`, `%DPEEK` | `ABS`, `C@`, `@` | The ordinary words. |
-| `%REG n`, `%IN n` | `n REG@`, `n P@` | Chapter 22. |
+| `%REG n`, `%IN n` | `n REG@`, `n P@` | [Chapter 22](22-in-out-and-the-next-registers.md). |
 | `%RND n` | `n RND` | `NEEDS RND`. Chapter 10. |
 | `BIN 1010` | `%1010` | |
 | `USR`, `USR$` | -- | Chapter 25. |

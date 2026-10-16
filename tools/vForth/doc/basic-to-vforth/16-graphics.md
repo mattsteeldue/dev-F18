@@ -403,7 +403,8 @@ columns first.
 - `HELP GRAPHICS`, `HELP PLOT`, `HELP DRAW-LINE`, `HELP CIRCLE`,
   `HELP XPLOT`, `HELP ATTRIB`, `HELP COORD-CHECK`, `HELP H-RANGE`,
   `HELP LAYER22-GRAPHICS`.
-- Chapter 22 -- the Next registers, clipping windows included.
+- [Chapter 22](22-in-out-and-the-next-registers.md) -- the Next registers,
+  clipping windows included.
 
 <!-- nav -->
 ---
