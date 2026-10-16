@@ -2,6 +2,166 @@
 
 > Resolved entries are moved to TODO-DONE.md.
 
+# F_GETLINE writes outside its buffer unless used as F_INCLUDE uses it
+**2026-10-16**
+Found while writing chapter 20 of the BASIC-to-vForth guide; all three
+reproduced on the headless emulator (`help/rnd.txt`, lines ending in LF).
+`F_GETLINE ( a m fh -- n )` reads `m` bytes at `a+1`, finds the end of line
+with `10 ENCLOSE` and `13 ENCLOSE` starting from `a`, then moves the line
+down to `a` and blanks the rest. `F_INCLUDE` never trips on it, because it
+blanks BLOCK 1 before each call and passes `a+1` and `m-2`; any other
+caller does.
+- **At the end of the file it writes the byte before the buffer.** In
+  the `Else` branch n is 0, and `r@ + 1-` gives `a-1` as start of the
+  `BLANK`. With a buffer made by `CREATE LINEBUF 82 ALLOT`, the byte
+  before is part of `LINEBUF` itself: after the loop that reads the whole
+  file, the next use of `LINEBUF` crashed and the dictionary was lost.
+  A guard byte before the buffer went from 0 to 32.
+- **The old byte at `a` changes the result.** `ENCLOSE` starts at `a`,
+  where the new data is not. A 0 there (a buffer just `ERASE`d) makes it
+  return 1 and split the first line (1 + 16 instead of 17); a 10 there is
+  skipped as a leading delimiter.
+- **No end of line within the bytes read: `ENCLOSE` goes on past them.**
+  A line longer than `m`, or a last line without its end: n comes from
+  whatever memory follows. With `B 10` on a 16-character line n exceeded
+  `m`, `BLANK` got a negative length and the emulator hung; a last line
+  `xyz` without LF gave 79. `F_INCLUDE` has the same limit for lines over
+  about 508 characters.
+Proposed fix, in `L3.asm` (DOES and DOT) and `src/F18e.f`; tried on the
+headless emulator as `F_GETLINE2`, defined at the prompt with the same
+logic. Three changes:
+1. **NUL sentinel after the bytes read.** Read at most `m-2` bytes, not
+   `m`, and store a 0 right after them. `ENCLOSE` always stops at a NUL
+   (its comment in the core: "does not go beyond a 'nul'"), so it stays
+   inside the buffer for a line longer than the maximum and for a last
+   line without its end.
+2. **A `BL` at `a` before the two `ENCLOSE`.** The result no longer
+   depends on the byte left there (a 0 gave n = 1, a 10 was skipped).
+3. **Tail rewritten.** The `BLANK` starts at `a + max(n-1,0)`, not at
+   `a+n-1` (which was `a-1` for n = 0); the final 0 is one byte at
+   `a+m-1`, not a cell.
+Related detail: when the line is cut, n is k+1 (k = bytes read), so "n-1
+is the text length" still holds, but `F_SEEK` must advance by
+`min(n, k)`, or it skips a character never read.
+
+Forth form (`src/F18e.f` style):
+
+```forth
+.( F_GETLINE )
+\ Given an open filehandle read at most m-2 characters to get next line
+\ terminated with $0D or $0A.
+\ n is the length of line plus one (the terminator), 0 at end of file.
+\ The buffer at a must be m bytes long: the line is left at a, blank
+\ padded, with a trailing 0x00 at its m-th byte.
+decimal
+: f_getline ( a m fh -- n )
+    >r tuck                                     \ m a m         R: fh
+    r@ f_fgetpos [ 35 ] Literal ?error          \ m a m  d
+    2swap                                       \ m  d  a m
+    over 1+ swap 2-                             \ m  d  a a+1 m-2
+    r@ f_read [ 35 ] Literal ?error             \ m  d  a k
+    ?dup If \ at least 1 chr was read           \ m  d  a k
+        2dup + 1+ 0 swap c!                     \ nul sentinel after data
+        >r                                      \ m  d  a       R: fh k
+        bl over c!                              \ a non-delimiter at a
+        [ 10 ] Literal enclose                  \ m  d  a n1 b n3
+        drop nip swap                           \ m  d  b a
+        [ 13 ] Literal enclose                  \ m  d  b a n1 c n3
+        drop nip rot                            \ m  d  a c b
+        min                                     \ m  d  a n
+        dup span !
+        dup r> min >r                           \ m  d  a n     R: fh u
+        2swap r>                                \ m a n  d  u   R: fh
+        0 d+                                    \ m a n d+u
+        r> f_seek [ 36 ] Literal ?error         \ m a n
+    Else                                        \ m  d  a
+        r> 2swap                                \ m a fh  d
+        2drop drop
+        0                                       \ m a 0
+    Then
+    >r                                          \ m a           R: n
+    dup 1+ over r@ cmove                        \ m a
+    2dup + 1- 0 swap c!                         \ m a      0 at a+m-1
+    r@ 1- 0 max                                 \ m a t    t text length
+    tuck + -rot - 1-                            \ a+t m-t-1
+    blank
+    r>                                          \ n
+;
+```
+
+Assembler form (`L3.asm`, DOES and DOT); the `Else` branch is unchanged,
+the start, the `If` branch and the tail change:
+
+```
+                dw      TWO_SWAP, OVER          // 2swap over       ( m d a m a )
+                dw      ONE_PLUS, SWAP          // 1+ swap          ( m d a a+1 m )
+                dw      TWO_MINUS               // 2-               ( m d a a+1 m-2 )
+                dw      R_OP, F_READ            // r f_read         ( m d a k f )
+                dw      LIT, 35, QERROR         // 35 ?error        ( m d a k )
+                dw      QDUP                    // ?dup
+                dw      ZBRANCH
+                dw      FGetline_Else - $
+                dw          TWO_DUP, PLUS       //      2dup +           ( m d a k a+k )
+                dw          ONE_PLUS            //      1+               ( m d a k a+k+1 )
+                dw          ZERO, SWAP, CSTORE  //      0 swap c!        ( m d a k )
+                dw          TO_R                //      >r               ( m d a )        \ fh k
+                dw          BL, OVER, CSTORE    //      bl over c!       ( m d a )
+                dw          LIT, 10, ENCLOSE    //      10 enclose       ( m d a x b x )
+                dw          DROP, NIP           //      drop nip         ( m d a b )
+                dw          SWAP                //      swap             ( m d b a )
+                dw          LIT, 13, ENCLOSE    //      13 enclose       ( m d b a x c x )
+                dw          DROP, NIP           //      drop nip         ( m d b a c )
+                dw          ROT, MIN            //      rot min          ( m d a n )
+                dw          DUP, SPAN, STORE    //      dup span !       ( m d a n )
+                dw          DUP, R_TO, MIN      //      dup r> min       ( m d a n u )    \ fh
+                dw          TO_R                //      >r               ( m d a n )      \ fh u
+                dw          TWO_SWAP, R_TO      //      2swap r>         ( m a n d u )    \ fh
+                dw          ZERO, DPLUS         //      0 d+             ( m a n d+u )
+                dw          R_TO, F_SEEK        //      r> f_seek        ( m a n f )
+                dw          LIT, 36, QERROR     //      36 ?error        ( m a n )
+                dw      BRANCH
+                dw      FGetline_Endif - $
+FGetline_Else:
+                ...                             // unchanged
+FGetline_Endif:
+                dw      TO_R                    // >r                   ( m a )      \ n
+                dw      DUP, ONE_PLUS, OVER     // dup 1+ over          ( m a a+1 a )
+                dw      R_OP, CMOVE             // r cmove              ( m a )
+                dw      TWO_DUP, PLUS           // 2dup +               ( m a a+m )
+                dw      ONE_SUBTRACT            // 1-                   ( m a a+m-1 )
+                dw      ZERO, SWAP, CSTORE      // 0 swap c!            ( m a )
+                dw      R_OP, ONE_SUBTRACT      // r 1-                 ( m a n-1 )
+                dw      ZERO, MAX               // 0 max                ( m a t )
+                dw      TUCK, PLUS, DASH_ROT    // tuck + -rot          ( a+t m t )
+                dw      SUBTRACT, ONE_SUBTRACT  // - 1-                 ( a+t m-t-1 )
+                dw      BLANK                   // blank
+                dw      R_TO                    // r>                   ( n )
+                dw      EXIT                    // ;
+```
+
+Tried on the headless emulator (2026-10-16):
+
+| Case | Today | Proposed |
+|---|---|---|
+| `help/rnd.txt`, buffer just `ERASE`d | 1 16 1 39 ... (first line split) | 17 1 39 38 38 31 1 26 0 0 |
+| bytes before and after the buffer, after the end of file | the one before blanked (0 -> 32) | both untouched |
+| 16-character line, buffer of 10 | negative length, emulator hung | 9, 9, 1: two pieces of 8 plus the end, nothing lost, next buffer untouched |
+| `abc` LF `xyz`, no final LF | 4, then 79 | 4, 4, 0 |
+
+Effects:
+- `F_INCLUDE` needs no change: it still passes `a+1` and `n-2` on BLOCK
+  1, but now reads two bytes less per line, so the practical limit drops
+  by two characters, to about 506 (the source rule is 80).
+- CRLF is not addressed: a CRLF file still reads as an empty line after
+  each line, because the LF is read as a line of its own. A behaviour,
+  not a memory fault; it can be handled separately.
+- About 13 cells (some 26 bytes) more in the dictionary.
+- Then: new build (`/bump-build`), the same change in DOT and in
+  `src/F18e.f`, `/check-f18e` on CSpect, and an `INCLUDE` run
+  (`test/BLOCK1-PIN-TESTS.f`). Until then `help/f_getline.txt` warns, and
+  chapter 20 of the guide reads lines with its own `GET-LINE` built on
+  `F_READ`; once fixed, the chapter could go back to `F_GETLINE`.
+
 # Headless emulator: run the 48K ROM FP calculator (option --rom)
 **2026-10-16**
 Idea, not started; feasibility already proved. With a real 48K ROM image

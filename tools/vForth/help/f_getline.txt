@@ -1,3 +1,16 @@
-    F_GETLINE  a n fh -- n f
+    F_GETLINE  a m fh -- n
 
-Read line from file. NextZXOS specific.
+Reads the next line of file fh, up to a CR (13) or
+LF (10), into the buffer at a. n counts the end of
+line too (a line of 5 characters gives 6), and is 0
+at the end of the file.
+
+Written for F_INCLUDE, which reads into BLOCK 1 and
+blanks it first. The buffer must be blanked and have
+one spare byte before a: at the end of the file the
+byte at a-1 is overwritten, a 0 or a 10 left at a
+gives a wrong n, and a line longer than m, or a last
+line without its end, runs past the buffer. In a
+program read bytes with F_READ instead.
+
+See F_INCLUDE, F_READ.

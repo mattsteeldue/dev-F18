@@ -287,4 +287,4 @@ rest reads as the BASIC does, without quotes. Without `CD` at all,
 
 Previous: [Chapter 18 - Sound and Music](18-sound-and-music.md) |
 [Contents](README.md) |
-Next: Chapter 20 - Channels, Streams, Drivers and Windows (not written yet)
+Next: [Chapter 20 - Channels, Streams, Drivers and Windows](20-channels-streams-drivers-and-windows.md)

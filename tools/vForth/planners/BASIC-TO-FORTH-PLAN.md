@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 4, cap. 20; la fase 3 è scritta). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 4, cap. 22; la fase 3 è scritta). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -17,9 +17,11 @@
 > (`16-graphics.md`, 24 righe, il resto `no-test` ma provato a parte) e il cap. 17
 > (`17-time-and-motion.md`, 68 righe, il resto `no-test` ma compilato) e il cap. 18
 > (`18-sound-and-music.md`, 37 righe) e il 2026-10-16 il cap. 19
-> (`19-nextzxos-and-alternatives.md`, 4 righe, il resto `no-test`), tutti
+> (`19-nextzxos-and-alternatives.md`, 4 righe, il resto `no-test`) e il cap. 20
+> (`20-channels-streams-drivers-and-windows.md`, 52 righe) e il cap. 21
+> (`21-optional-features.md`, 6 righe, il resto `no-test`), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18, 3 nel cap. 19) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18, 3 nel cap. 19, 3 nel cap. 20, 1 nel cap. 21) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -34,25 +36,27 @@
 > partire. Dal 2026-10-12 la guida è una cartella, `doc/basic-to-vforth/`,
 > un file per capitolo (D2 rivista).
 
-## 0. Cosa resta (riepilogo al 2026-10-15)
+## 0. Cosa resta (riepilogo al 2026-10-16)
 
 Raccolta dei punti aperti sparsi nelle sezioni 6.1, 7 e 10, per riprendere
 senza rileggere tutto. Il dettaglio resta nelle voci "Emerso scrivendo il
 cap. N" della sez. 10. Va aggiornato a fine sessione insieme alla riga di stato.
 
-**Scrittura (Claude).** Fase 4: cap. 20-25, si riparte dal cap. 20
-(Channels, Streams, Drivers and Windows); il cap. 19 è scritto (2026-10-16).
+**Scrittura (Claude).** Fase 4: cap. 22-25, si riparte dal cap. 22
+(IN, OUT and the Next Registers); i cap. 19, 20 e 21 sono scritti
+(2026-10-16).
 Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
 9), fase 7 (righe "Coming from BASIC" nei tutorial 001-029).
 
 **Prove dell'autore.**
 
-- Listati BASIC dei cap. 1-2 e 4-19 (83 in tutto) da provare su MAME o
+- Listati BASIC dei cap. 1-2 e 4-21 (87 in tutto) da provare su MAME o
   CSpect. Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
   `bas2f/txt/` e `.bas` in `bas2f/` (validatore di txt2bas: 0 errori;
-  `END IF` del cap. 2 corretto in `ENDIF`), ma **restano fuori da git**
-  finche' l'autore non li ha rivisti: nel repo ci sono solo il cap. 3 (MAME,
-  2026-10-12), il 12-02 e i 17-01/02 (scritti dall'autore). I `.txt` si
+  `END IF` del cap. 2 corretto in `ENDIF`; il 2026-10-16 quelli dei cap. 20
+  e 21). Sono in git dal commit `b6614b0`, ma provati sulla macchina sono
+  solo il cap. 3 (MAME, 2026-10-12), il 12-02 e i 17-01/02 (scritti
+  dall'autore). I `.txt` si
   rigenerano dai `.md` con `python util/guide-listings.py` (`--check` per
   sapere se sono indietro).
 - Elenco "Da provare su CSpect o sulla macchina" in fondo alla matrice.
@@ -64,7 +68,12 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
   `SKY`, `ROLL-L2`, `CLIP-SPRITES` (cap. 17); `CHORD`, `PLUCK`, le forme
   dell'inviluppo per `W0`-`W7`, `BEEP-HZ8`, i limiti di `BEEP` (cap. 18;
   voce in `TODO.md`); la cartella con `MAKEDIR`/`CD`/`DIR` e l'intestazione
-  +3DOS fra `SAVE ... CODE` e `LOAD-BYTES` (cap. 19).
+  +3DOS fra `SAVE ... CODE` e `LOAD-BYTES` (cap. 19); `3 SELECT` sulla
+  stampante, `13 SELECT WORDS VIDEO` su uno stream aperto da BASIC,
+  `F_FSTAT` (`FSIZE` deve dare 191 per `help/rnd.txt`) e la lettura di
+  `notes.txt` scritto da Forth con `INPUT #4; LINE` (cap. 20); `RTC?`,
+  `AT?` verso l'ESP (bit 6 di `$153B` a 0, 115200 baud) e `ASK uname -m`
+  (cap. 21).
 
 **Correzioni e aggiunte nel repo.**
 
@@ -101,12 +110,16 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
 - Help: `help/emitc.txt` da riscrivere (`c --`, otto bit, codici di
   controllo); `help/caseon.txt` deve dire che `CASEON` tocca anche la
   ricerca nel dizionario; voci mancanti per `POINT`, `PAINT`, `SPRITE`,
-  `SPRITES-ON`, `SPRITE-UPDATE`, `SPRITE-HIDE`, `SPRITE-INIT`, `IDE_RTC`,
-  `.NOW`, `COP-NOOP`.
+  `SPRITES-ON`, `SPRITE-UPDATE`, `SPRITE-HIDE`, `SPRITE-INIT`,
+  `COP-NOOP` (`IDE_RTC` e `.NOW` scritte il 2026-10-16).
 - Candidate D-inc per `inc/`: `/STRING` per prima, poi `$!`/`$+!` (nome da
   decidere), `0<>`, `PAUSE`, `TIME`, `HIT?`, `ARRAY`/`MATRIX`/`SARRAY`,
   `INPUT$`/`INPUT#`, `SGN`, `UDG!`, `FCOPY`.
 - Cap. 9 da rileggere quando `FLOATING` passa a 5 byte.
+- **`F_GETLINE` del core** scrive fuori dal buffer se non la si usa come
+  `F_INCLUDE` (voce in `TODO.md`, 2026-10-16): correzione proposta, da
+  decidere dall'autore (nuova build). Corretta, il cap. 20 potrebbe
+  tornare a usarla al posto di `GET-LINE`.
 
 ## 1. Obiettivo
 
@@ -320,7 +333,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
-| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14), il cap. 16 e il cap. 17 (2026-10-15), e il cap. 18 (2026-10-15), il cap. 19 (2026-10-16), si riparte dal cap. 20 | guida, seconda parte | emulatore + CSpect |
+| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14), il cap. 16 e il cap. 17 (2026-10-15), e il cap. 18 (2026-10-15), i cap. 19, 20 e 21 (2026-10-16), si riparte dal cap. 22 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
@@ -917,6 +930,66 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   NextREG `$50`-`$57`; dev guide r3, par. 3.2.3).
 - Listati BASIC nuovi: 3, scritti da noi (tabella in un file, programma
   che parte da solo, cartella per un gioco).
+
+**Emerso scrivendo il cap. 20 (2026-10-16).**
+
+- **`F_GETLINE` non è usabile fuori da `F_INCLUDE`.** Provata in
+  emulatore su `help/rnd.txt`: a fine file azzera (con `BLANK`) il byte
+  prima del buffer, che con `CREATE LINEBUF 82 ALLOT` è dentro `LINEBUF`
+  stessa (crash alla chiamata seguente, dizionario perso); il risultato
+  dipende dal byte vecchio in `a` (0 dopo `ERASE` spezza la prima riga
+  in 1 + 16); una riga più lunga del buffer, o un'ultima riga senza fine
+  riga, fa proseguire `ENCLOSE` oltre i dati (blocco dell'emulatore, o n
+  = 79). Voce in `TODO.md` con la correzione proposta. **Decisione
+  dell'autore**: la guida non la usa; il capitolo definisce `GET-CHAR`
+  (un byte con `F_READ`, -1 a fine file), `NEXT-CHAR` (salta il LF dopo
+  un CR), `EOL?` e `GET-LINE ( a max -- n f )`: CR, LF e CRLF, riga
+  troppo lunga tagliata, ultima riga senza fine accettata (provato su
+  file di prova fuori dal repo).
+- Help riscritte: `select.txt` e `video.txt` (dicevano "layer or memory
+  page" e "set video mode"), `f_getline.txt` (effetto sullo stack e
+  avvertenza), `f_open.txt` (a2 è il buffer dell'intestazione, non il
+  nome; tabella dei modi), `f_include.txt` (`fh --`), `open{.txt`.
+- **`SELECT` dura fino al prossimo prompt**: `ACCEPT` chiama `CURS`,
+  che fa `2 SELECT`, ma l'`ok` della riga esce prima, sullo stream
+  scelto. Il capitolo consiglia di chiudere la riga con `VIDEO`. Ricavato
+  dal codice; da provare sulla macchina con la stampante o con lo stream
+  13 aperto da BASIC (`Forth18.bas` ha `OPEN # 13,"o>out.txt"` e
+  `CLOSE # 13` in due commenti).
+- `TO` non viene con `NEEDS VALUE`: serve anche `NEEDS TO`.
+- `F_SEEK` conta sempre dall'inizio (IX = 0): per la lunghezza del file
+  serve `F_FSTAT`, non emulata; `FSIZE` del capitolo è `no-test` e da
+  provare (attese 191 per `help/rnd.txt`, celle basse prima).
+- Lo spezzone di scrittura (`OPEN>`, `NOTES`) è `no-test` ma provato a
+  parte: `notes.txt` di 21 byte, righe chiuse da 13, riletto con
+  `TYPE-LINES`; un secondo `OPEN>` lo svuota senza errore. Cancellato.
+- Il validatore di txt2bas segnala `LPRINT i*i;" ";` (listato 03) come
+  errore: falso positivo (accetta il `;` solo dopo `PRINT`); il `.bas`
+  generato torna identico con bas2txt.
+- Listati BASIC nuovi: 3, scritti da noi (scrittura e lettura di
+  `notes.txt`, ritorno a una posizione, `LPRINT`).
+
+**Emerso scrivendo il cap. 21 (2026-10-16).**
+
+- Capitolo breve per D4: l'installazione resta fuori. Restano quattro
+  usi da programma: pagine oltre la 95 con `MMU7!` (rimando al cap. 23),
+  data dell'RTC, prova dell'ESP dalla UART, comandi al Pi.
+- Definite e provate: `YEAR`, `MONTH`, `DAY` (data MS-DOS; 22186 dà
+  2023 5 10), e `22186 .FAT-DATE` stampa `2023-05-10`. `no-test`:
+  `RTC?` (`M_GETDATE`, la cui chiamata `$8E` non è emulata: in
+  emulatore lascia valori a caso e flag 0), `ESP`/`REPLY`/`AT?` (bit 6
+  di `$153B` a 0 per l'ESP, a 1 per il Pi come in `RPI0-SELECT`;
+  `NEEDS RPI0` seleziona il Pi alla fine del caricamento), `ASK`.
+- `ASK` e `SH` prendono tutto il resto della riga (`THIS`): l'uso della
+  risposta va sulla riga dopo.
+- Help nuove: `ide_rtc.txt`, `.now.txt`, `.fat-date.txt`,
+  `.fat-time.txt`, `ask.txt`, `sh.txt`. Il commento di `inc/IDE_RTC.f`
+  chiama `100ths` il primo valore, il cap. 17 `hs`: la help dice
+  "secondi e centesimi, sui moduli che li danno", da confermare.
+- Il cap. 21 rimanda al cap. 23 senza link, perché il file non c'è
+  ancora (lo script di prova segnala i link verso file assenti): il
+  link va messo quando il cap. 23 è scritto.
+- Listati BASIC nuovi: 1 (`.date`, `.time` in un programma).
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi
