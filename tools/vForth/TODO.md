@@ -61,26 +61,27 @@ decimal
     over 1+ swap 2-                             \ m  d  a a+1 m-2
     r@ f_read [ 35 ] Literal ?error             \ m  d  a k
     ?dup If \ at least 1 chr was read           \ m  d  a k
-        2dup + 1+ 0 swap c!                     \ nul sentinel after data
+        2dup + 1+ 0 swap c!                     \ m  d  a k     nul sentinel after data
         >r                                      \ m  d  a       R: fh k
-        bl over c!                              \ a non-delimiter at a
+        bl over c!                              \ m  d  a       non-delimiter at a
         [ 10 ] Literal enclose                  \ m  d  a n1 b n3
         drop nip swap                           \ m  d  b a
         [ 13 ] Literal enclose                  \ m  d  b a n1 c n3
         drop nip rot                            \ m  d  a c b
         min                                     \ m  d  a n
-        dup span !
+        dup span !                              \ m  d  a n
         dup r> min >r                           \ m  d  a n     R: fh u
         2swap r>                                \ m a n  d  u   R: fh
         0 d+                                    \ m a n d+u
         r> f_seek [ 36 ] Literal ?error         \ m a n
     Else                                        \ m  d  a
         r> 2swap                                \ m a fh  d
-        2drop drop
+        2drop drop                              \ m a
         0                                       \ m a 0
-    Then
+    Then                                        \ m a n
     >r                                          \ m a           R: n
-    dup 1+ over r@ cmove                        \ m a
+    dup 1+ over r@                              \ m a a+1 a n
+    cmove                                       \ m a
     2dup + 1- 0 swap c!                         \ m a      0 at a+m-1
     r@ 1- 0 max                                 \ m a t    t text length
     tuck + -rot - 1-                            \ a+t m-t-1
@@ -148,10 +149,41 @@ Tried on the headless emulator (2026-10-16):
 | 16-character line, buffer of 10 | negative length, emulator hung | 9, 9, 1: two pieces of 8 plus the end, nothing lost, next buffer untouched |
 | `abc` LF `xyz`, no final LF | 4, then 79 | 4, 4, 0 |
 
+`INCLUDE` with the fix, tried on the headless emulator (2026-10-16) with a
+copy of `F_INCLUDE` calling `F_GETLINE2`, on three one-line files:
+
+| File | `INCLUDE` today | with the fix |
+|---|---|---|
+| `.( A-OK ) 1 2 + .` LF | ok | ok |
+| the same, no final LF | crash (no output, no `ok`) | ok |
+| the same, space + LF at the end | ok | ok |
+
+- **The "file must end with a newline" rule (`inc/CLAUDE.md`) is this
+  bug**, and the fix removes it. What does it is the NUL sentinel after
+  the bytes read, not the final 0 at `a+m-1` (that one was already
+  there, as a cell at `a+m-2`).
+- **The "space before the final newline" crash (root `CLAUDE.md`, Known
+  Bugs) is NOT reproduced** on the emulator, neither today nor with the
+  fix. It may be another bug, or something the emulator does not model:
+  try it on CSpect before touching that rule.
+
 Effects:
-- `F_INCLUDE` needs no change: it still passes `a+1` and `n-2` on BLOCK
+- `F_INCLUDE` works unchanged: it still passes `a+1` and `n-2` on BLOCK
   1, but now reads two bytes less per line, so the practical limit drops
   by two characters, to about 506 (the source rule is 80).
+- **`F_INCLUDE` can then drop its `BLANK`, if it passes the whole
+  block.** The `BL` at `a` is now written by `F_GETLINE` itself, but with
+  today's call (`a+1`, `n-2`) bytes 0 and 511 of the block lie outside
+  the buffer, and `INTERPRET` reads the block from byte 0: without the
+  `BLANK`, byte 0 would keep whatever was there (on the first `INCLUDE`
+  after boot, a byte of the block file's metadata) and be read in front
+  of the first word. Passing `1 BLOCK B/BUF` instead -- text from byte
+  0, the final 0 in byte 511 -- leaves nothing outside the buffer, so
+  `2DUP BLANK` and `SWAP 1+ SWAP CELL-` both go, and the longest line
+  grows to about 509 characters. Tried on the emulator with both files
+  above: ok. (There bytes 0 and 511 were already blanks, left by the
+  boot `INCLUDE`, so the `a+1` variant without `BLANK` passed too, by
+  luck.)
 - CRLF is not addressed: a CRLF file still reads as an empty line after
   each line, because the LF is read as a line of its own. A behaviour,
   not a memory fault; it can be handled separately.
