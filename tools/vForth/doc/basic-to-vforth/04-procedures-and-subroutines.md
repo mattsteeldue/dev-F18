@@ -461,7 +461,9 @@ adds one more number to it.
 NEEDS CATCH
 NEEDS THROW
 NEEDS [']
-: RISKY  ( -- )  -10 THROW ;
+: CHECKED/  ( a b -- q )
+    DUP 0= IF  -10 THROW  THEN  / ;
+: RISKY  ( -- )  1 0 CHECKED/ . ;
 : INNER  ( -- )
     ['] RISKY CATCH
     ?DUP IF  ." inner "  THROW  THEN ;
@@ -471,6 +473,13 @@ NEEDS [']
 OUTER                           \ => inner outer -10
 RISKY                           \ => RISKY? Division by zero.
 ```
+
+`/` does not stop on a zero divisor: `1 0 /` quietly gives -1
+([Chapter 6](06-expressions.md)). So the error that BASIC raises by itself
+is raised here by hand: `CHECKED/` tests the divisor and throws -10, the
+standard code for division by zero, before dividing. Where `SAFE/` above
+gives a substitute result, `CHECKED/` gives up and leaves the decision to
+the caller.
 
 `INNER` catches the error, says so, and throws the same number again;
 `OUTER` catches that and stops it there. Called on its own, with no `CATCH`

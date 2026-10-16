@@ -472,6 +472,11 @@ matrice, sezione "Trovato rileggendo i cap. 15 e 17-25".
 - Un locale di lavoro che non sia né argomento né risultato non ha forma
   con `{ }`: la riga della matrice `LOCAL v=valore` -> locale di uscita vale
   solo quando il valore è anche il risultato. Messo in "No equivalent".
+- Rilettura dell'autore (2026-10-16): l'ultimo esempio (`ON ERROR` con
+  `PRINT 1/0`) non era confrontabile, perché `RISKY` faceva `-10 THROW`
+  senza dividere. Ora divide con `CHECKED/`, che lancia -10 sul divisore
+  zero; il testo spiega che `/` dà -1 senza errore (cap. 6) e confronta
+  `CHECKED/` con `SAFE/`. Riprovato: 94 righe, 0 errori.
 
 **Emerso scrivendo il cap. 5 (2026-10-13).**
 
