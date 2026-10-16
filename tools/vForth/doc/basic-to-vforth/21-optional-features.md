@@ -21,7 +21,7 @@ through the UART, with `lib/RPi0.f`.
 of 768K; vForth sees the same RAM in 8K pages, mapped one at a time at
 `$E000` with `MMU7!`. A 1 MB machine has pages 0 to 95, a 2 MB one 0 to
 223. Nothing else changes: a program that needs more room maps a higher
-page. Chapter 23 is about memory.
+page. [Chapter 23](23-the-memory.md) is about memory.
 
 **The clock answers on the stack.** `.time` and `.date` print; vForth
 asks NextZXOS and gets numbers, in the format MS-DOS uses for file
@@ -65,7 +65,7 @@ and bit 6 of port `$153B` chooses which: 1 for the Pi, 0 for the ESP.
 
 | NextBASIC | vForth | Note |
 |---|---|---|
-| 1792K in the menu | pages up to 223 | `MMU7!`, Chapter 23. |
+| 1792K in the menu | pages up to 223 | `MMU7!`, [Chapter 23](23-the-memory.md). |
 | `2MBTEST` | -- | Run it from the Browser. |
 | `.uart`, `AT` commands | `ESP`, `AT?` below | `NEEDS RPI0` first. |
 | WiFi setup menu | -- | NextZXOS menu. |

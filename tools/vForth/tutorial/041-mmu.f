@@ -7,8 +7,9 @@
 \ sees a 64K address space divided into eight 8K slots (MMU0-MMU7,
 \ addresses $0000-$FFFF).  vForth uses slot 7 ($E000-$FFFF) for its
 \ dictionary (in heap).  MMU7! maps a
-\ different 8K page into that window temporarily; it is restored 
-\ automatically at Forth prompt, but at run-time is your responsibility.
+\ different 8K page into that window temporarily.  It stays there until
+\ vForth maps a page of names (compiling a definition does), even at
+\ the prompt: save and restore it in the same word (section 5).
 \
 \ Reference: sec.5.3
 \

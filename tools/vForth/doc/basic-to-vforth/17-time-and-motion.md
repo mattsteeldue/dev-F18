@@ -535,7 +535,7 @@ selects, and `SPRITES-ON` points it at the sprites: after it,
 - **4-bit sprites**, which BASIC does not use either. The hardware can
   be reached with ports and registers, but the library has no words.
 - **`BANK n LAYER`**, copying a rectangle between the screen and a
-  bank (Chapter 23).
+  bank ([Chapter 23](23-the-memory.md)).
 - **A clock string** with the seconds: `.NOW` prints without them, and
   nothing leaves the time as a string. `.HMS` above prints it.
 - **`PAUSE` interrupted by a key** as a ready word: `PAUSE` above.
@@ -554,7 +554,7 @@ selects, and `SPRITES-ON` points it at the sprites: after it,
   `HELP REG!`.
 - [Chapter 22](22-in-out-and-the-next-registers.md) -- the Next registers,
   sprite ports included.
-- Chapter 23 -- memory pages, for frames kept in memory.
+- [Chapter 23](23-the-memory.md) -- memory pages, for frames kept in memory.
 
 <!-- nav -->
 ---

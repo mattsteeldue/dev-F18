@@ -671,11 +671,11 @@ edizione; le pagine sono quelle del PDF.
 
 | BASIC | Rif. manuale | vForth | Classe | Dove si impara | Nota | Verifica |
 |---|---|---|---|---|---|---|
-| `OUT m,n` | cap. 22, p. 229; App. B | `n m P!` | A | 039, 053 | Prima il valore, poi la porta. Omonimo: `OUT` nel core è una variabile utente, un contatore dei caratteri emessi (in emulatore vale qualche migliaio dopo poche righe: non è la colonna). |  |
+| `OUT m,n` | cap. 22, p. 229; App. B | `n m P!` | A | 039, 053 | Prima il valore, poi la porta. Omonimo: `OUT` nel core è una variabile utente, un contatore dei caratteri emessi (in emulatore vale qualche migliaio dopo poche righe: non è la colonna). | emu |
 | `IN n` | cap. 22, p. 229; App. B | `n P@` | A | 066 | Omonimo: in BASIC `IN` è anche la ricerca in una stringa (cap. 8). | emu |
-| indirizzi di porta a 16 bit, decodifica parziale | cap. 22, p. 229 | `P@` e `P!` prendono la porta intera: `$FEFE P@` | A | 051 | È l'hardware: ogni porta pari risponde la ULA, e la mezza riga della tastiera sta nel byte alto. |  |
+| indirizzi di porta a 16 bit, decodifica parziale | cap. 22, p. 229 | `P@` e `P!` prendono la porta intera: `$FEFE P@` | A | 051 | È l'hardware: ogni porta pari risponde la ULA, e la mezza riga della tastiera sta nel byte alto. | emu |
 | la tabella delle porte | cap. 22, p. 230 | la stessa: è l'hardware | N | 040 | La guida rimanda al manuale Next. |  |
-| NextREG attraverso le porte `$243B` e `$253B` (`OUT 9275,n: OUT 9531,v`) | cap. 22, p. 232 | è quello che fanno `REG@` e `REG!` | A | 040 | Le due scritture stanno dentro una parola sola, senza niente in mezzo: l'avvertenza di BASIC ("sulla stessa riga") non serve. Vale invece per una routine di interrupt che usi i NextReg: deve rimettere a posto il registro selezionato. |  |
+| NextREG attraverso le porte `$243B` e `$253B` (`OUT 9275,n: OUT 9531,v`) | cap. 22, p. 232 | è quello che fanno `REG@` e `REG!` | A | 040 | Le due scritture stanno dentro una parola sola, senza niente in mezzo: l'avvertenza di BASIC ("sulla stessa riga") non serve. Vale invece per una routine di interrupt che usi i NextReg: deve rimettere a posto il registro selezionato. | emu |
 | `REG n,v` | cap. 22, p. 232; App. B | `v n REG!` | A | 040 | Prima il valore, poi il registro. | emu |
 | `REG n` (funzione) | cap. 22, p. 232 | `n REG@` | A | 040 |  | emu |
 | `RUN AT speed` | cap. 22, p. 232; App. B | `n SPEED!` (0-3); lettura `SPEED@` -- `NEEDS SPEED!`, `NEEDS SPEED@` | A | 040 | `2 SPEED! SPEED@ .` dà 2. È il NextReg 7: `7 REG@ 3 AND` legge la stessa cosa. Il manuale ne parla anche nel cap. 19 (p. 191). | emu |
@@ -685,7 +685,7 @@ edizione; le pagine sono quelle del PDF.
 | registri delle MMU (`$50`-`$57`) | cap. 22, p. 238 | `MMU7!`, `MMU7@`; `MMU0!`, `MMU1!` -- `NEEDS MMU0!`, `NEEDS MMU1!` | A | 041 | Solo MMU7 è libera: negli altri slot ci sono vForth, i suoi stack e lo schermo. Vedi cap. 23. |  |
 | interrupt (NextReg `$C0` e seguenti) | cap. 22, p. 241 | `ISR-SETUP`, `ISR-ON`, `ISR-OFF`, `ISR-SYNC` -- `NEEDS INTERRUPTS` | B | 049 | In più rispetto a BASIC, che non può scrivere una routine di interrupt. |  |
 | tastiera (`IN 65278` e le altre mezze righe) | cap. 22, p. 243 | `$FEFE P@ 1 AND` (0 se CAPS SHIFT è premuto); libreria `KEYBOARD` -- `NEEDS KEYBOARD` | A | 051 | Bit a 0 vuol dire tasto premuto, come in BASIC. L'indirizzo di una mezza riga: `: HALF-ROW ( n -- porta ) 1 SWAP LSHIFT 255 SWAP - 256 * 254 + ;` (0 dà 65278). In emulatore la porta dà sempre "nessun tasto". | emu |
-| `OUT 254,n` (bordo, altoparlante) | cap. 22, p. 243 | `n 254 P!`; il bordo: `n .BORDER` -- `NEEDS .BORDER` | A | 030, 033 | `.BORDER` passa dalla ROM e aggiorna anche la variabile di sistema; la scrittura sulla porta no. |  |
+| `OUT 254,n` (bordo, altoparlante) | cap. 22, p. 243 | `n 254 P!`; il bordo: `n .BORDER` -- `NEEDS .BORDER` | A | 030, 033 | `.BORDER` passa dalla ROM e aggiorna anche la variabile di sistema; la scrittura sulla porta no. | emu |
 | porte della paginazione (`$7FFD`, `$1FFD`, `$DFFD`) | cap. 22, p. 243 | - | N | 041 | Da non toccare: vForth usa le MMU (cap. 23). |  |
 | porte del chip AY (`$FFFD`, `$BFFD`) | cap. 22, p. 243 | `v r AY!` -- `NEEDS AY` | A | 034 | Vedi cap. 18. |  |
 | mouse Kempston | cap. 22, p. 244 | `lib/MOUSE.f` -- `NEEDS MOUSE` | B | 044 |  |  |
@@ -713,8 +713,8 @@ edizione; le pagine sono quelle del PDF.
 | `CLEAR [n]` | cap. 23, p. 259; App. B | `FORGET nome` / `MARKER`; stack: `ABORT` | C | 005, 025 | Non ci sono variabili da azzerare in blocco. RAMTOP non si sposta: la mappa di memoria di vForth è fissa. |  |
 | fare posto con `CLEAR n`, memoria esaurita | cap. 23, p. 259 | lo spazio si prende dal dizionario: `CREATE buf n ALLOT`; `UNUSED` dice quanto ne resta -- `NEEDS UNUSED` | C | 008, 025 | Niente RAMTOP da spostare. I nomi stanno a parte, nello heap (MMU7). | emu |
 | quali banchi sono liberi | cap. 23, p. 251 | - | C | 041 | vForth tiene lo heap nei banchi 16-19 (pagine 32-39); il Layer 2 sta dove dice il NextReg `$12` (di norma banchi 9-11, pagine 18-23). I banchi 0, 2 e 5 sono la memoria in cui vForth gira, 7 e 8 sono di NextZXOS. Non c'è un allocatore pubblico (vedi `BANK NEW`). |  |
-| `BANK NEW v` | cap. 23, p. 260 | - | D-inc | - | L'allocazione via `IDE_BANK` esiste solo dentro `inc/PAINT.f`. Senza, il programma sceglie le pagine a mano e NextZXOS non lo sa. |  |
-| `BANK m CLEAR` | cap. 23, p. 260 | - | D-inc | - | Come sopra. |  |
+| `BANK NEW v` | cap. 23, p. 260 | `NEW-PAGE` della guida: `1 0 0 0 $01BD M_P3DOS 40 ?ERROR 2DROP NIP 255 AND` | D-inc | - | `IDE_BANK` motivo 1, una pagina da 8K (non un banco da 16K). Prima solo dentro `inc/PAINT.f` (motivo 2, pagina 40 fissa). Non emulata (`M_P3DOS` in emulatore cade su `handle_cls`). |  |
+| `BANK m CLEAR` | cap. 23, p. 260 | `FREE-PAGE` della guida: `3 SWAP 0 0 $01BD M_P3DOS 44 ?ERROR 2DROP 2DROP` | D-inc | - | Come sopra, motivo 3. |  |
 | `BANK 1346 USR` / `FORMAT` | cap. 23, p. 261 | - | N | - | Gestione del RAMdisk. |  |
 | `BANK m POKE o,lista` / `BANK m PEEK o` | cap. 23, p. 249; App. B | `pagina MMU7!` poi `C!` / `C@` a `$E000 + o` | C | 041 | BASIC conta in banchi da 16K; `MMU7!` vuole una pagina da 8K: banco m = pagine 2m e 2m+1, e un offset oltre 8191 cade nella seconda. | emu |
 | `BANK m DPOKE` / `BANK m DPEEK` | cap. 23, p. 249 | `MMU7!` poi `!` / `@` | C | 041 | Una cella a cavallo dell'offset 8191 sta su due pagine. |  |
@@ -727,7 +727,7 @@ edizione; le pagine sono quelle del PDF.
 | `SPRITE BANK`, `TILE BANK`, `TILE DIM` | cap. 23, p. 264 | - | - | - | Vedi cap. 17 (`SPRITE-INIT`) e cap. 16 (D-lib). |  |
 | `BANK m GO TO` / `GOSUB` / `PROC` / `LINE` / `LIST` / `MERGE` / `RESTORE` | cap. 23, p. 265 | - | N | 025 | Programmi BASIC in banchi. In vForth il codice sta nel dizionario e i nomi nello heap (MMU7). |  |
 | come BASIC tiene programma e variabili | cap. 23, p. 253 | - | N | 022, 025 | Il corrispettivo è la struttura del dizionario (manuale vForth, "Dictionary memory structure"). |  |
-| cambiare pagina dal prompt | cap. 23 | sempre dentro una definizione che rimette la pagina di prima: `MMU7@ >R ... R> MMU7!` | C | 041 | Trappola: in MMU7 sta lo heap con i nomi delle parole. Cambiando pagina dal prompt l'interprete non trova più niente. | emu |
+| cambiare pagina dal prompt | cap. 23 | sempre dentro una definizione che rimette la pagina di prima: `MMU7@ >R ... R> MMU7!` | C | 041 | Corretto il 2026-10-16 (cap. 23 della guida): l'interprete non si rompe, `(FIND)` mappa da sé le pagine dei nomi e rimette quella trovata; ma la pagina messa dal prompt resta solo finché vForth non mappa una pagina di nomi (compilare una definizione lo fa), e una scrittura a `$E000` con una pagina di nomi in finestra rovina lo heap. Quindi sempre dentro una parola. | emu |
 | copiare e riempire memoria | cap. 23 | `CMOVE`, `FILL`, `ERASE`, `BLANK`; blocchi grandi `DMA-COPY`, `DMA-FILL` -- `NEEDS DMA` | A | 008, 054 |  | emu |
 | paginazione con le MMU (NextReg `$50`-`$57`) | cap. 23, p. 269 | `n MMU7!`, `MMU7@` | A | 041 | È lo schema che vForth usa. Negli altri slot ci sono la ROM, lo schermo e vForth stesso. |  |
 | Layer 2 mappato sulla ROM (porta `$123B`) | cap. 23, p. 269 | `n $123B P!`; di norma `MMU7!` sulle pagine del Layer 2 | B | 037, 041 | Le librerie grafiche di vForth passano da MMU7. La mappatura in sola scrittura sui 16K bassi lascia leggere la ROM; quella a 48K coprirebbe vForth. |  |
@@ -960,11 +960,10 @@ variabile del trasporto); `DIR` (cap. 19: stesso nome, uscita più ricca).
 
 Trovati leggendo gli help per compilare la colonna vForth; non corretti.
 
-- Testo che non corrisponde alla parola: `p!.txt` e `p@.txt` ("paged byte":
-  sono le porte di I/O), `select.txt` ("layer or memory page": sceglie lo
-  stream di uscita), `reg!.txt` e `reg@.txt` ("NextZXOS system register":
-  sono i NextReg), `video.txt` ("Set video mode": riporta l'uscita
-  sullo schermo, `2 SELECT`).
+- Testo che non corrisponde alla parola: tutte riscritte il 2026-10-16,
+  `select.txt` e `video.txt` col cap. 20, `p!.txt`, `p@.txt` ("paged
+  byte"), `reg!.txt` e `reg@.txt` ("NextZXOS system register") col
+  cap. 22.
 - Commenti nei sorgenti che non corrispondono: `inc/SQRT.f` (`( d -- n )`,
   ma prende una cella), `ACCEPT` in `src/F18e.f` ("n2 is the string length":
   è la lunghezza più uno), `help/compare.txt` (non dice che il confronto

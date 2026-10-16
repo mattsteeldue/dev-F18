@@ -144,7 +144,7 @@ and HiColour modes also use the second display file, the 8K page 11 that
 BASIC reaches with `BANK 5 POKE 8192+m`, normally at `$6000`. In vForth
 that address is taken by the dictionary itself: the page is reached
 through the MMU7 window, `11 MMU7!` and then `$E000 m +`, and that has
-its own rules (Chapter 23). The `LAYER12` and
+its own rules ([Chapter 23](23-the-memory.md)). The `LAYER12` and
 `LAYER13` libraries do it for you.
 
 ## Correspondence table
@@ -172,7 +172,7 @@ its own rules (Chapter 23). The `LAYER12` and
 | `PALETTE FORMAT n` | `n $42 REG!`, bit 0 of `$43` | |
 | `PALETTE OVER n` | `n $14 REG!` | |
 | `BANK 5 POKE m,v` | `v $4000 m + C!` | The first 6912 bytes. |
-| `BANK 5 POKE 8192+m,v` | through MMU7, page 11 | See Chapter 23. |
+| `BANK 5 POKE 8192+m,v` | through MMU7, page 11 | See [Chapter 23](23-the-memory.md). |
 
 ## Side by side
 

@@ -208,7 +208,10 @@ when a word is hard to read without, not by habit.
 
 **`PRIVATE` is a `VARIABLE`.** A value that must survive from one call to
 the next is kept in a variable defined just before the word that uses it,
-and `PRIVATE CLEAR` is a store of zero. Nothing hides it: any word defined
+and `PRIVATE CLEAR` is a store of zero. A private survives `RUN` and is
+reset only by `PRIVATE CLEAR` or by loading the program again; a Forth
+variable starts at 0, survives until you store into it, and starts at 0
+again when the source is loaded again. Nothing hides it: any word defined
 later can read it and change it. Real hiding is done with vocabularies
 (tutorial 018).
 
@@ -338,6 +341,7 @@ SIZE ? EDGE ?                   \ => 12 14
 **A value kept between calls.** Numbered tickets.
 
 ```
+5 PRIVATE CLEAR
 10 FOR i=1 TO 3: PROC ticket(): NEXT i
 20 STOP
 30 DEFPROC ticket()
@@ -504,7 +508,7 @@ word that may fail, as `ON ERROR` is: it is in the word that calls it.
 - **`PRIVATE` as real privacy.** A `VARIABLE` is visible to everything
   defined after it. Vocabularies (tutorial 018) are the way to hide names.
 - **`BANK n PROC`.** vForth words are not split over memory banks: see
-  Chapter 23.
+  [Chapter 23](23-the-memory.md).
 
 ## Further reading
 

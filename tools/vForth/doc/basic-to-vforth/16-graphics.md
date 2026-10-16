@@ -350,7 +350,7 @@ LAYER2  28 TO ATTRIB  120 100 130 140 FILL-RECT
 The colour is `ATTRIB`, as for every drawing word; 28 is a green on
 Layer 2. For speed on Layer 2, the framebuffer can be filled a row at
 a time with `FILL` once its 8K page is mapped through `MMU7!`
-(Chapter 23), or with the DMA of tutorial `054`.
+([Chapter 23](23-the-memory.md)), or with the DMA of tutorial `054`.
 
 **A clipping window.** `LAYER DIM` on Layer 2 writes four registers,
 and so does the Forth version:

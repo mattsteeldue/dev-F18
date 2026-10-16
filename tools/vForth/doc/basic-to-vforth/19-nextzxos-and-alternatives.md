@@ -84,7 +84,7 @@ Putting the page back is not a detail: the names of the dictionary live
 in that window, and the next word typed is looked up there. The second
 half of a bank comes from the same file, read on with `F_OPEN` and
 `F_READ` (tutorial `042`). Choose a bank nothing else uses: the heap of
-vForth is in banks 16 to 19 (Chapter 23).
+vForth is in banks 16 to 19 ([Chapter 23](23-the-memory.md)).
 
 **`CD` and `NEEDS` do not mix.** `NEEDS`, and `INCLUDE lib/...`, look for
 their files from the current folder, which at start is vForth's own.
@@ -280,7 +280,7 @@ rest reads as the BASIC does, without quotes. Without `CD` at all,
 - Tutorial `059` -- `ZAP`, a program that starts by itself.
 - `HELP INCLUDE`, `HELP NEEDS`, `HELP LOAD-BYTES`, `HELP SAVE-BYTES`,
   `HELP DIR`, `HELP CD`, `HELP UNLINK`, `HELP BLOCK`, `HELP FORGET`.
-- Chapter 23 -- the memory, banks and pages.
+- [Chapter 23](23-the-memory.md) -- the memory, banks and pages.
 
 <!-- nav -->
 ---

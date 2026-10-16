@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 4, cap. 22; la fase 3 è scritta). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 4, cap. 24; la fase 3 è scritta). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -19,9 +19,12 @@
 > (`18-sound-and-music.md`, 37 righe) e il 2026-10-16 il cap. 19
 > (`19-nextzxos-and-alternatives.md`, 4 righe, il resto `no-test`) e il cap. 20
 > (`20-channels-streams-drivers-and-windows.md`, 52 righe) e il cap. 21
-> (`21-optional-features.md`, 6 righe, il resto `no-test`), tutti
+> (`21-optional-features.md`, 6 righe, il resto `no-test`) e il cap. 22
+> (`22-in-out-and-the-next-registers.md`, 33 righe) e il cap. 23
+> (`23-the-memory.md`, 36 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18, 3 nel cap. 19, 3 nel cap. 20, 1 nel cap. 21) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, provati dall'autore il
+> 2026-10-16; 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18, 3 nel cap. 19, 3 nel cap. 20, 1 nel cap. 21, 3 nel cap. 22, 3 nel cap. 23) dal cap. 5 in poi sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -42,21 +45,21 @@ Raccolta dei punti aperti sparsi nelle sezioni 6.1, 7 e 10, per riprendere
 senza rileggere tutto. Il dettaglio resta nelle voci "Emerso scrivendo il
 cap. N" della sez. 10. Va aggiornato a fine sessione insieme alla riga di stato.
 
-**Scrittura (Claude).** Fase 4: cap. 22-25, si riparte dal cap. 22
-(IN, OUT and the Next Registers); i cap. 19, 20 e 21 sono scritti
-(2026-10-16).
+**Scrittura (Claude).** Fase 4: cap. 24-25, si riparte dal cap. 24
+(The System Variables); i cap. 19-23 sono scritti (2026-10-16).
 Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
 9), fase 7 (righe "Coming from BASIC" nei tutorial 001-029).
 
 **Prove dell'autore.**
 
-- Listati BASIC dei cap. 1-2 e 4-21 (87 in tutto) da provare su MAME o
-  CSpect. Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
+- Listati BASIC dei cap. 5-23 (77, di cui 74 ancora) da provare su MAME o
+  CSpect; quelli dei cap. 1-4 sono provati (cap. 1, 2 e 4 dall'autore il
+  2026-10-16). Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
   `bas2f/txt/` e `.bas` in `bas2f/` (validatore di txt2bas: 0 errori;
-  `END IF` del cap. 2 corretto in `ENDIF`; il 2026-10-16 quelli dei cap. 20
-  e 21). Sono in git dal commit `b6614b0`, ma provati sulla macchina sono
-  solo il cap. 3 (MAME, 2026-10-12), il 12-02 e i 17-01/02 (scritti
-  dall'autore). I `.txt` si
+  `END IF` del cap. 2 corretto in `ENDIF`; il 2026-10-16 quelli dei cap. 20-23).
+  Il 04-03 (con `5 PRIVATE CLEAR`, aggiunta dell'autore il 2026-10-16)
+  è provato su CSpect e riallineato dall'autore, `.txt` e `.bas`. Sono in git dal commit `b6614b0`, e oltre il cap. 4 provati sulla
+  macchina sono solo il 12-02 e i 17-01/02 (scritti dall'autore). I `.txt` si
   rigenerano dai `.md` con `python util/guide-listings.py` (`--check` per
   sapere se sono indietro).
 - Elenco "Da provare su CSpect o sulla macchina" in fondo alla matrice.
@@ -73,7 +76,12 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
   `F_FSTAT` (`FSIZE` deve dare 191 per `help/rnd.txt`) e la lettura di
   `notes.txt` scritto da Forth con `INPUT #4; LINE` (cap. 20); `RTC?`,
   `AT?` verso l'ESP (bit 6 di `$153B` a 0, 115200 baud) e `ASK uname -m`
-  (cap. 21).
+  (cap. 21); `5 REG@`, `0 REG@` e `1 REG@` sulla macchina (in emulatore
+  ogni NextReg non scritto dà 255), `STRIPES` e il listato 22-03 (il
+  `%` di `PEEK 23624>>3&7`), `WAIT-SPACE` (cap. 22); `NEW-PAGE`, `FREE-PAGE` e `TRY-PAGE` con
+  `IDE_BANK` (non emulata), i listati 23-01 e 23-02 (`BANK ... PEEK`
+  dentro `PRINT` è rifiutato dal validatore di txt2bas, passato per un
+  `LET`; `BANK a ERASE 65` con il solo valore) (cap. 23).
 
 **Correzioni e aggiunte nel repo.**
 
@@ -107,7 +115,8 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
   la frase sui listati presi dal manuale.
 
 - Matrice: `IDE_RTC` è emulato (con valori senza senso), non "non emulato".
-- Help: `help/emitc.txt` da riscrivere (`c --`, otto bit, codici di
+- Help: (`p@`, `p!`, `reg@`, `reg!` riscritte il 2026-10-16)
+  `help/emitc.txt` da riscrivere (`c --`, otto bit, codici di
   controllo); `help/caseon.txt` deve dire che `CASEON` tocca anche la
   ricerca nel dizionario; voci mancanti per `POINT`, `PAINT`, `SPRITE`,
   `SPRITES-ON`, `SPRITE-UPDATE`, `SPRITE-HIDE`, `SPRITE-INIT`,
@@ -333,7 +342,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
-| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14), il cap. 16 e il cap. 17 (2026-10-15), e il cap. 18 (2026-10-15), i cap. 19, 20 e 21 (2026-10-16), si riparte dal cap. 22 | guida, seconda parte | emulatore + CSpect |
+| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14), il cap. 16 e il cap. 17 (2026-10-15), e il cap. 18 (2026-10-15), i cap. 19-23 (2026-10-16), si riparte dal cap. 24 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
@@ -990,6 +999,69 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   ancora (lo script di prova segnala i link verso file assenti): il
   link va messo quando il cap. 23 è scritto.
 - Listati BASIC nuovi: 1 (`.date`, `.time` in un programma).
+
+**Emerso scrivendo il cap. 22 (2026-10-16).**
+
+- Capitolo quasi tutto di classe A: `P@`, `P!`, `REG@`, `REG!` nel
+  core. Le tabelle di porte e registri del manuale non si ripetono (D4).
+- In emulatore ogni NextReg mai scritto si legge 255 (`0 REG@`,
+  `1 REG@`, `5 REG@`): gli spezzoni su registri di sola lettura sono
+  `no-test`; quelli che scrivono e rileggono usano il registro utente
+  `$7F` o il 7.
+- Definite e provate: `ANY-KEY?` (`254 P@ 31 AND 31 XOR`: il byte alto
+  a 0 seleziona tutte le mezze righe; `<>` non è nel core, sta in
+  `inc/{}.f`), `MY-REG@` (le due porte a mano, stesso risultato di
+  `REG@`), `REG-BITS! ( v mask reg -- )`, `BORDER@` (BORDCR 23624 dopo
+  `.BORDER`, che `254 P!` non cambia), `HALF-ROW` (va stampato con `U.`),
+  `SLOW-REPORT`, `SPACE?`, `STRIPES`.
+- **`REG@` non è atomica rispetto a un interrupt**: select e data sono
+  due `OUT`/`IN` dentro una parola `CODE`, ma un interrupt può cadere
+  fra le due. Se la routine di `ISR-XT` usa `REG!`, il programma
+  principale può leggere il registro sbagliato. Il capitolo consiglia di
+  tenere i NextReg fuori dalla routine o di usare `ISR-DI`/`ISR-EI`.
+  La libreria `INTERRUPTS` non salva il registro selezionato.
+- `lib/INTERRUPTS.f` usa l'interrupt di frame dell'ULA (IM2 software);
+  il controller hardware (`$C0`-`$CE`) è solo in `dev/IM2-HW.f`, non
+  promosso: il capitolo lo dà come "nessuna libreria ancora".
+- Help riscritte: `p@.txt`, `p!.txt` ("paged byte"), `reg@.txt`,
+  `reg!.txt` ("NextZXOS system register").
+- Listato 22-03: `PEEK 23624/8` avrebbe portato BRIGHT e FLASH sui bit
+  MIC e altoparlante; diventato `% PEEK 23624>>3&7` (txt2bas lo accetta;
+  la precedenza fra `>>` e `&` dà lo stesso risultato in tutti e due gli
+  ordini, da provare comunque).
+- Rimandi al cap. 22 trasformati in link nei cap. 8, 15, 16 e 17.
+- Listati BASIC nuovi: 3 (velocità con `REG`, attesa di SPACE con `IN`,
+  strisce sul bordo con `OUT`).
+
+**Emerso scrivendo il cap. 23 (2026-10-16).**
+
+- **MMU7 dal prompt non rompe l'interprete** (la matrice diceva il
+  contrario, il tutorial 041 diceva che la pagina "si rimette da sola al
+  prompt": sbagliati tutti e due). Provato in emulatore: `40 MMU7!` dal
+  prompt, poi `1 2 + .` dà 3 e `MMU7@` resta 40 anche alla riga dopo,
+  perché `(FIND)` rimette la pagina che trova; ma `: FOO 1 ;` lascia in
+  finestra la pagina dei nomi (32). La regola resta "mappa, usa, rimetti
+  dentro una parola", con il motivo giusto. Corretti la riga della
+  matrice e l'intestazione del tutorial 041 (solo commento).
+- `BANK NEW` / `BANK n CLEAR`: `NEW-PAGE` / `FREE-PAGE` con `IDE_BANK`
+  ($01BD) motivi 1 e 3 via `M_P3DOS` (uscite hl de bc a f; f = 0 se ok;
+  pagina in E). `no-test`: in emulatore `M_P3DOS` (rst $08 $94 con C=7)
+  cade su `handle_cls`. Candidate D-inc.
+- `lib/LED.f`: `alloc-8k-page` e `LED-FREE1` passano a `M_P3DOS` sei
+  valori invece di cinque (`2 OVER 0 0 0`: il motivo finisce in DE e la
+  pagina in HL), e `LAST-8K-PAGE` prende n8 (A) invece di n6 (E). Codice
+  morto: la chiamata a `alloc-8k-page` in `>>FAR` è commentata, quindi
+  la mappa resta vuota e `LED-FREE1` non parte mai; `LED` usa le pagine da
+  48 in su senza prenotarle. Da segnalare all'autore, non corretto.
+- `CREATE TABLE 1000 ALLOT` costa 1007 byte di dizionario: il nome sta
+  nello heap. `S0 @` = 53492, `FIRST @` = 53732 (build 2026-09-26).
+- Definite e provate: `ZLEN`, `PEEKS`, `BANK>PAGE ( bank off -- page
+  off' )`, `PAGE-C!`, `PAGE-C@`, `PAGE-FILL`, `PAGE-COPY` (buffer da 1K
+  nel dizionario, pagine 60 e 62 in emulatore).
+- Rimandi al cap. 23 trasformati in link nei cap. 4, 5, 15, 16, 17, 19,
+  21 e 22.
+- Listati BASIC nuovi: 3 (byte in un banco, riempire e copiare, `PEEK`
+  delle variabili di sistema).
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

@@ -158,7 +158,7 @@ tried, and thrown away with `FORGET`.
 | changing an item | `n t i CELLS + !` | |
 | `DATA` (the function) | - | See "No equivalent". |
 | `Out of DATA` | - | See "No equivalent". |
-| `BANK n RESTORE` | - | Chapter 23. |
+| `BANK n RESTORE` | - | [Chapter 23](23-the-memory.md). |
 
 ## Side by side
 
@@ -350,7 +350,8 @@ whole Screen in one go, and leaves all its values at once.
   by side". It goes further than `DATA`, since a line may hold any Forth.
 - **`READ` into a list of variables.** Each fetch is written out, and its
   result stays on the stack unless you store it.
-- **`BANK n RESTORE`**, data kept in a memory bank: see Chapter 23.
+- **`BANK n RESTORE`**, data kept in a memory bank: see
+  [Chapter 23](23-the-memory.md).
 
 ## Further reading
 
