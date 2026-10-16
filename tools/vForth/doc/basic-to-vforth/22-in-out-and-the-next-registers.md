@@ -186,7 +186,7 @@ UART, CTC: registers `$C0` to `$CE`) has no library yet.
 | UART ports `133Bh`-`163Bh` | `NEEDS UART-SYS` | Tutorial `047`. |
 | DAC, SPI, I2C, CTC | `P@`, `P!` | No library. |
 | (not in BASIC) an interrupt routine | `NEEDS INTERRUPTS` | `ISR-XT`, `ISR-ON`, `ISR-OFF`. |
-| `NEXTREG` (Z80N instruction) | `REG!`, or in `CODE` | Chapter 25. |
+| `NEXTREG` (Z80N instruction) | `REG!`, or in `CODE` | [Chapter 25](25-using-machine-code.md). |
 
 ## Side by side
 

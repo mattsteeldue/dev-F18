@@ -312,4 +312,4 @@ system variables, then the same with `DUMP`.
 
 Previous: [Chapter 22 - IN, OUT and the Next Registers](22-in-out-and-the-next-registers.md) |
 [Contents](README.md) |
-Next: Chapter 24 - The System Variables (not written yet)
+Next: [Chapter 24 - The System Variables](24-the-system-variables.md)

@@ -285,6 +285,7 @@ REPEAT` is the loop of [Chapter 3](03-looping.md). `NEEDS <>` first.
 lines, since vForth never asks `scroll?`:
 
 ```
+5 POKE 23692,-1
 10 FOR n=1 TO 100
 20   PRINT n
 30   IF n/20=INT (n/20) THEN PRINT "Press a key": PAUSE 0
@@ -299,6 +300,11 @@ lines, since vForth never asks `scroll?`:
         I 20 MOD 0= IF  ." Press a key"  KEY DROP CR  THEN
     LOOP ;
 ```
+
+Without line 5, BASIC asks `scroll?` before the first "Press a key" has
+appeared: the `POKE` of SCR CT to 255 (`-1` is the same byte) keeps it
+quiet, and the program stops only where it chooses. In vForth that
+`POKE` is always done already.
 
 ## No equivalent
 

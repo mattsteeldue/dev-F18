@@ -34,7 +34,8 @@ given in [Chapter 1](01-basic-programming-concepts.md). For a string held
 as an address and a length, the first code is simply `C@` of the address.
 
 **`CODE` is a false friend.** In Forth `CODE` starts a definition written in
-machine code (Chapter 25). It has nothing to do with characters.
+machine code ([Chapter 25](25-using-machine-code.md)). It has nothing to do
+with characters.
 
 **`EMIT` keeps seven bits, `EMITC` all eight.** `EMIT` is meant for text and
 may drop the top bit, so a code from 128 up comes out as another character.
@@ -252,26 +253,38 @@ a file or a table built at run time, copy them into the table with
 
 **An alternative font.** BASIC and Forth do the same thing here: 96
 patterns of 8 bytes, codes 32 to 127, and the system variable CHARS
-pointing 256 bytes before the first, the space.
+pointing 256 bytes before the first, the space. This one is a bold copy
+of the ROM font: every byte is ORed with itself shifted one pixel to the
+right, so each stroke gets twice as thick.
 
 ```
+5 CLEAR 49999
 10 LET a=50000
-20 FOR n=0 TO 767: POKE a+n,PEEK (15616+n): NEXT n
-30 DPOKE 23606,a-256
+20 FOR n=0 TO 767
+30 v=PEEK (15616+n)
+40 POKE a+n, v|INT (v>>1)
+50 NEXT n
+60 DPOKE 23606,a-256
+70 LIST
 ```
 
 <!-- no-test -->
 ```forth
 CREATE FONT  768 ALLOT
-15616 FONT 768 CMOVE
-FONT 256 - 23606 !
+: BOLD  ( -- )
+    768 0 DO  15616 I + C@  DUP 1 RSHIFT OR  FONT I + C!  LOOP ;
+BOLD  FONT 256 - 23606 !
+WORDS
 ```
 
-Lines 10 to 30 copy the ROM font, at 15616, so that it can be changed
-before use. NextBASIC's `DPOKE` stores two bytes, a whole address: that
-is Forth's `!`. `15360 23606 !` puts the ROM font back.
-The font, like the UDGs, must stay below `$E000`; a `CREATE` in the
-dictionary always is.
+The loop reads the ROM font, at 15616, and writes the bold version:
+`v|INT (v>>1)` is `DUP 1 RSHIFT OR`. NextBASIC's `DPOKE` stores two
+bytes, a whole address: that is Forth's `!`. BASIC needs `CLEAR 49999`
+to keep its own data away from the font; `CREATE` takes the room in the
+dictionary, where nothing else will use it. `LIST` and `WORDS` then show
+the new letters. `15360 23606 !` puts the ROM font back. The font, like
+the UDGs, must stay below `$E000`; a `CREATE` in the dictionary always
+is.
 
 **Order and case.** The third exercise: which is the lesser, `"EVIL"` or
 `"evil"`?

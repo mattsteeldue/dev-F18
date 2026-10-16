@@ -2,6 +2,45 @@
 
 > Resolved entries are moved to TODO-DONE.md.
 
+# A PLAY library: NextBASIC music strings on the AY chips
+**2026-10-17**
+Proposal, not started. Found while writing chapter 18 of the BASIC-to-vForth
+guide (`doc/basic-to-vforth/18-sound-and-music.md`): NextBASIC's `PLAY`
+reads music strings and drives the three AY chips by itself, and vForth
+has no counterpart. Today the guide can only show, register by register,
+what each `PLAY` command becomes (`lib/AY.f`: `AY!`, `AY!!`, `AYSELECT`,
+`SHH`) and leaves the timing to the program (`MS` between notes). The
+chapter lists `PLAY` under "No equivalent" and calls it "a candidate for
+`lib/`".
+Idea: a `lib/PLAY.f` (`NEEDS PLAY`) with a word that takes one to three
+strings, one per channel (`a1 n1 a2 n2 a3 n3 3 PLAY`, or a `PLAY"` for a
+literal), and interprets the same language as NextBASIC:
+- notes `c`..`b` and `C`..`B`, sharps `#` and flats `$`, octave `O`,
+  rests `&`;
+- durations `1`..`12`, tied notes `_`, tempo `T`, repeats `(` `)`;
+- volume `V`, envelope `U`, `W`, `X`; mixer `M` (bits inverted, as noted
+  in the chapter); noise; `H` to stop;
+- `L`, `R`, `S` for stereo, and nine channels through `ENABLE-TURBOSOUND`
+  and `AYSELECT`.
+The register side is already there in `lib/AY.f`; what is missing is the
+parser and a table of tone periods (one octave computed from the clock,
+the others by shifting, as `PERIOD` in chapter 18 does for one note).
+MIDI (`Y`, `Z`) can be left out.
+Two ways to keep the time, to decide:
+- **Blocking**, like BASIC: `PLAY` returns when the music ends, timed
+  with `MS` or with frames. Simplest, a first step.
+- **In the background**: the strings are parsed into a buffer of
+  register writes, and the interrupt (`NEEDS INTERRUPTS`, or the frame
+  hook used by `NEEDS AFXFRAME`) plays one step per frame while the
+  program goes on. Something BASIC cannot do; check that it does not
+  clash with AFXFRAME on the same chip.
+Mind the cost in dictionary space: a parser plus a period table, so keep
+it a module loaded on demand. Test the string parsing on the headless
+emulator (the AY registers can be logged at port `$FFFD`/`$BFFD`); the
+sound on CSpect or the real machine. When done, update chapter 18 of the
+guide ("No equivalent", the correspondence table, "Side by side") and
+write the `help/` pages and a tutorial (or extend `034`).
+
 # F_GETLINE writes outside its buffer unless used as F_INCLUDE uses it
 **2026-10-16**
 Found while writing chapter 20 of the BASIC-to-vForth guide; all three

@@ -1,4 +1,9 @@
 #program 13-the-character-set-03
+5 CLEAR 49999
 10 LET a=50000
-20 FOR n=0 TO 767: POKE a+n,PEEK (15616+n): NEXT n
-30 DPOKE 23606,a-256
+20 FOR n=0 TO 767
+30 v=PEEK (15616+n)
+40 POKE a+n, v|INT (v>>1)
+50 NEXT n
+60 DPOKE 23606,a-256
+70 LIST

@@ -741,10 +741,11 @@ edizione; le pagine sono quelle del PDF.
 | variabili a due byte (`PEEK n+256*PEEK (n+1)`) | cap. 24, p. 271 | `n @`, `v n !` | A | 008 | Come `DPEEK` e `DPOKE`: la cella è già nell'ordine giusto. | emu |
 | le sigle X, N, R (da non toccare, senza effetto, routine) | cap. 24, p. 271 | lo stesso | A | - | Le routine di paginazione (23296 e seguenti) e BANKM non vanno toccate da vForth. |  |
 | quelle che usa il core di vForth | cap. 24 | FLAGS 23611, LAST K 23560, FLAGS2 23658 (tastiera), FRAMES 23672, BORDCR 23624, SCR CT 23692, RAMTOP 23730 | A | - | Dai sorgenti in `project/vForth18_DOES/source/`. Scriverci a mano cambia il comportamento del prompt. |  |
-| quelle che usano le librerie | cap. 24 | SEED 23670 (`RND`, `RANDOM`, `RANDOMIZE`), UDG 23675 (`UDG@`) | A | - | Trovate cercando gli indirizzi in `src/`, `inc/` e `lib/`. Sono le stesse di BASIC: un seme o un UDG impostati da BASIC valgono anche qui. |  |
+| quelle che usano le librerie | cap. 24 | SEED 23670 (`RND`, `RANDOM`, `RANDOMIZE`), UDG 23675 (`UDG@`), BORDCR 23624 (`.BORDER`), CHARS 23606 | A | - | Trovate cercando gli indirizzi in `src/`, `inc/` e `lib/`. Sono le stesse di BASIC: un seme o un UDG impostati da BASIC valgono anche qui. |  |
 | FRAMES 23672 | cap. 24, p. 272 | `23672 @` | A | 032 | Vedi cap. 17. |  |
 | SCR CT 23692, ATTR P 23693, BORDCR 23624, CHARS 23606, PIP 23609, RASP 23608 | cap. 24, p. 272 | `C@` / `C!`; CHARS con `@` / `!` | A | - | Vedi cap. 13, 14, 15 e 18. RASP (il ronzio dell'editor di BASIC) in vForth non ha effetto. |  |
-| le "variabili di sistema" di Forth | cap. 24 | variabili utente: `BASE`, `STATE`, `DP`, `>IN`, `BLK`, `SPAN`, `OUT`, `WARNING` | C | 022 | Sono parole, non indirizzi da ricordare: `BASE @`, `HEX`. |  |
+| le "variabili di sistema" di Forth | cap. 24 | variabili utente: `BASE`, `STATE`, `DP`, `>IN`, `BLK`, `SPAN`, `OUT`, `WARNING` | C | 004, 019 | Sono parole, non indirizzi da ricordare: `BASE @`, `HEX`. Il tutorial 022 è l'introspezione del dizionario, non le variabili utente (corretto 2026-10-16). | emu |
+| variabili che valgono ancora come in BASIC | cap. 24 | REPDEL/REPPER 23561-23562 (ripetizione dei tasti), FLAGS2 bit 3 (CAPS LOCK), S POSN 23688-23689 (posizione di stampa sul Layer 0) | A | - | Le gestisce la ROM (interrupt, stampa), che vForth usa. In emulatore si provano solo scrittura e rilettura: la ROM non gira. |  |
 
 ## Capitolo 25 - Using Machine Code
 
@@ -753,7 +754,7 @@ edizione; le pagine sono quelle del PDF.
 | linguaggio macchina e assembler | cap. 25, p. 275 | `lib/assembler.f`: mnemonici in notazione postfissa dentro `CODE nome ... C;` -- `NEEDS ASSEMBLER` | B | 027 | In più rispetto a BASIC, che non ha un assembler: quello di vForth sta nel sistema e compila direttamente nel dizionario. |  |
 | dove mettere il codice (`CLEAR n` e sopra RAMTOP) | cap. 25, p. 275 | nel dizionario: una parola `CODE nome ... C;` | C | 027 | Il codice ha un nome e si chiama come ogni altra parola; niente indirizzi da ricordare. |  |
 | scrivere il codice (byte in `DATA` e `POKE`) | cap. 25, p. 275 | i byte in esadecimale con `C,` dentro `CODE nome` ... `SMUDGE` | B | 027 | I file di `inc/` usano l'esadecimale per non dover caricare l'assembler. |  |
-| `USR a` | cap. 25, p. 276; App. B | `n a CALL#`; codice proprio: `CODE nome ... C;` -- `NEEDS CALL#` | C | 027, 057 | `CALL# ( n1 a -- n2 )` passa n1 in BC e in A, chiama l'indirizzo e restituisce BC, come `USR`; conserva lei i registri di Forth. Di norma il linguaggio macchina si scrive come parola `CODE`. Nessun tutorial su `CALL#`. In emulatore: `0 a CALL#` sui quattro byte del manuale dà 99. | emu |
+| `USR a` | cap. 25, p. 276; App. B | `n a CALL#`; codice proprio: `CODE nome ... C;` -- `NEEDS CALL#` | C | 027, 057 | `CALL# ( n1 a -- n2 )` passa n1 in BC e in A, chiama l'indirizzo e restituisce BC, come `USR`; conserva lei i registri di Forth. Di norma il linguaggio macchina si scrive come parola `CODE`. Nessun tutorial su `CALL#`. In emulatore: `0 a CALL#` sui quattro byte del manuale dà 99; con un parametro (`21 a CALL#` su `ld h,b ... ret`) dà 42. Help `call#.txt` scritta il 2026-10-17. | emu |
 | `ld bc,99: ret` come esempio | cap. 25, p. 275 | `CODE NN99 HEX 21 C, 63 C, 0 C, E5 C, DD C, E9 C, SMUDGE DECIMAL` | B | 027 | Il risultato non torna in BC ma sullo stack (`ld hl,99: push hl`), e si esce con `jp (ix)` invece di `ret`. | emu |
 | passare e ricevere valori (BC, parametri di `USR`) | cap. 25, p. 276 | lo stack dei dati: `POP HL` ... `PUSH HL` | C | 027 | Quanti parametri si vuole, in entrata e in uscita. Vanno conservati BC (puntatore di istruzione), DE (return stack) e IX; IY resta alla ROM, come in BASIC. |  |
 | `USR$ a` (codice che restituisce una stringa) | cap. 25, p. 276 | la parola `CODE` lascia indirizzo e lunghezza sullo stack | C | 027 | Una stringa è `a u` anche per il linguaggio macchina. |  |
@@ -763,7 +764,7 @@ edizione; le pagine sono quelle del PDF.
 | interrupt, registro I, stack durante la paginazione | cap. 25, p. 277 | `lib/INTERRUPTS.f` -- `NEEDS INTERRUPTS` | B | 049 | La libreria imposta il modo IM 2 (la tabella dei vettori è a `$6200`). Le avvertenze del manuale valgono per chi scrive una routine di interrupt a mano. |  |
 | chiamare NextZXOS (cambio di ROM e RAM, stack sotto `$BFE0`) | cap. 25, p. 278 | `hl de bc a indirizzo M_P3DOS ( -- hl de bc a f )` | B | 057 | La primitiva del core fa da sola il cambio di ROM, banco e stack che l'esempio del manuale scrive a mano; restano da preparare i registri e controllare il flag. Il catalogo dell'esempio (`DOS_CATALOG`, `$011E`) è già `DIR`. |  |
 | le chiamate di NextZXOS già pronte | cap. 25, p. 278 | `F_OPEN`, `F_READ`, `F_WRITE`, `F_SEEK`, `IDE_RTC`, `M_GETDATE` e le altre `F_...` | A | 042, 057 | Le più comuni sono già parole (cap. 19 e 20); per le altre `M_P3DOS`. |  |
-| istruzioni Z80N e prefissi dei codici operativi | cap. 25, p. 281 | in esadecimale (`ED C, 30 C,` è `MUL`); l'assembler ha `NEXTREG` e `NEXTREGA` | A | 027 | Esempi in `inc/RND.f`. Da verificare quali altre istruzioni Z80N conosce `lib/assembler.f`. |  |
+| istruzioni Z80N e prefissi dei codici operativi | cap. 25, p. 281 | in esadecimale (`ED C, 30 C,` è `MUL`); l'assembler ha `NEXTREG` e `NEXTREGA` | A | 027 | Esempi in `inc/RND.f`. `src/Z80N-asm.f` le conosce tutte (`MUL`, `SWAPNIB`, `LDIRX`, `PIXELAD`, `TESTN`, `PUSHN`...): verificato 2026-10-17, `MUL` provato in emulatore. | emu |
 
 ## Cosa esce dalla matrice
 
@@ -972,7 +973,7 @@ Trovati leggendo gli help per compilare la colonna vForth; non corretti.
   uno Screen del file dei blocchi, non lo schermo), i campi `_spriteid` e
   `_pattern` di `lib/SPRITE.f`.
 - Senza voce di help: `RND`, `PAINT`, `DRAW`, `DRAW-CIRCLE`, `POINT`,
-  `PIXELADD`, `PIXELATT`, `IDE_RTC`, `.NOW`, `CALL#`, `UDG+`, `F_CHMOD`,
+  `PIXELADD`, `PIXELATT`, `IDE_RTC`, `.NOW`, `UDG+`, `F_CHMOD`,
   `F_FSTAT`, `REMOUNT`, `VIEW`, `IDE_MODE!`, `PAUSEOFF`, `LAYER13`, `ZAP`, le
   parole di `lib/SPRITE.f`.
 

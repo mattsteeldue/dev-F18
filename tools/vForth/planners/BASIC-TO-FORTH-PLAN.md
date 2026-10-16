@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 4, cap. 24; la fase 3 è scritta). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 5, appendici e indice inverso; le fasi 3 e 4 sono scritte). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -21,12 +21,14 @@
 > (`20-channels-streams-drivers-and-windows.md`, 52 righe) e il cap. 21
 > (`21-optional-features.md`, 6 righe, il resto `no-test`) e il cap. 22
 > (`22-in-out-and-the-next-registers.md`, 33 righe) e il cap. 23
-> (`23-the-memory.md`, 36 righe), tutti
+> (`23-the-memory.md`, 36 righe) e il cap. 24
+> (`24-the-system-variables.md`, 11 righe, il resto `no-test`) e il
+> 2026-10-17 il cap. 25 (`25-using-machine-code.md`, 29 righe), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, provati dall'autore il
-> 2026-10-16; 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18, 3 nel cap. 19, 3 nel cap. 20, 1 nel cap. 21, 3 nel cap. 22, 3 nel cap. 23) dal cap. 5 in poi sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18, 3 nel cap. 19, 3 nel cap. 20, 1 nel cap. 21, 3 nel cap. 22, 3 nel cap. 23, 3 nel cap. 24, 3 nel cap. 25) sono provati dall'autore fino al 15-03
+> (2026-10-16 e 17); gli altri sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
-> dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
+> dall'autore il 2026-10-13, ripresa in blocco il 2026-10-16. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
 > 2026-10-12 e scaricati in `bas2f/`. **Fase 1 chiusa il 2026-10-12 per la
 > parte che si fa senza la macchina**: `situation/BASIC-vs-vForth-matrix.md`
@@ -45,21 +47,24 @@ Raccolta dei punti aperti sparsi nelle sezioni 6.1, 7 e 10, per riprendere
 senza rileggere tutto. Il dettaglio resta nelle voci "Emerso scrivendo il
 cap. N" della sez. 10. Va aggiornato a fine sessione insieme alla riga di stato.
 
-**Scrittura (Claude).** Fase 4: cap. 24-25, si riparte dal cap. 24
-(The System Variables); i cap. 19-23 sono scritti (2026-10-16).
-Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
+**Scrittura (Claude).** Fase 4 chiusa: i 25 capitoli sono scritti (il
+cap. 25 il 2026-10-17). Si riparte dalla fase 5 (appendici,
+`keyword-index.md`), poi fase 6 (tutorial mancanti, sez.
 9), fase 7 (righe "Coming from BASIC" nei tutorial 001-029).
 
 **Prove dell'autore.**
 
-- Listati BASIC dei cap. 5-23 (77, di cui 74 ancora) da provare su MAME o
-  CSpect; quelli dei cap. 1-4 sono provati (cap. 1, 2 e 4 dall'autore il
-  2026-10-16). Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
+- Listati BASIC dal 15-04 al cap. 25 (31 in tutto, esclusi i 17-01/02
+  già provati) da provare su MAME o CSpect; fino al 15-03 sono provati
+  (cap. 1, 2 e 4 dall'autore il 2026-10-16, cap. 5-14 e 15-01/02/03 il
+  2026-10-17; ritoccati sulla macchina e riallineati nella guida il
+  13-03, font in grassetto, e il 14-04, `5 POKE 23692,-1` contro lo
+  `scroll?`). Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
   `bas2f/txt/` e `.bas` in `bas2f/` (validatore di txt2bas: 0 errori;
-  `END IF` del cap. 2 corretto in `ENDIF`; il 2026-10-16 quelli dei cap. 20-23).
+  `END IF` del cap. 2 corretto in `ENDIF`; il 2026-10-16 quelli dei cap. 20-24, il 2026-10-17 quelli del cap. 25).
   Il 04-03 (con `5 PRIVATE CLEAR`, aggiunta dell'autore il 2026-10-16)
-  è provato su CSpect e riallineato dall'autore, `.txt` e `.bas`. Sono in git dal commit `b6614b0`, e oltre il cap. 4 provati sulla
-  macchina sono solo il 12-02 e i 17-01/02 (scritti dall'autore). I `.txt` si
+  è provato su CSpect e riallineato dall'autore, `.txt` e `.bas`. Sono in git dal commit `b6614b0`; oltre il 15-03 provati sulla
+  macchina sono solo i 17-01/02 (scritti dall'autore). I `.txt` si
   rigenerano dai `.md` con `python util/guide-listings.py` (`--check` per
   sapere se sono indietro).
 - Elenco "Da provare su CSpect o sulla macchina" in fondo alla matrice.
@@ -81,7 +86,10 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
   `%` di `PEEK 23624>>3&7`), `WAIT-SPACE` (cap. 22); `NEW-PAGE`, `FREE-PAGE` e `TRY-PAGE` con
   `IDE_BANK` (non emulata), i listati 23-01 e 23-02 (`BANK ... PEEK`
   dentro `PRINT` è rifiutato dal validatore di txt2bas, passato per un
-  `LET`; `BANK a ERASE 65` con il solo valore) (cap. 23).
+  `LET`; `BANK a ERASE 65` con il solo valore) (cap. 23); `COL`, `ROW`,
+  `WHERE?` (attese `5 15`), la ripetizione dei tasti con `FAST-KEYS` in
+  `ACCEPT`, CAPS LOCK con `CAPS` e il cursore `C`, `23730 @` = 25087
+  (cap. 24); i tre listati con `USR` (99, 42, 132) (cap. 25).
 
 **Correzioni e aggiunte nel repo.**
 
@@ -342,7 +350,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
-| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14), il cap. 16 e il cap. 17 (2026-10-15), e il cap. 18 (2026-10-15), i cap. 19-23 (2026-10-16), si riparte dal cap. 24 | guida, seconda parte | emulatore + CSpect |
+| 4 | Parte macchina: cap. 15-25 -- FATTA: il cap. 15 (2026-10-14), i cap. 16-18 (2026-10-15), i cap. 19-24 (2026-10-16), il cap. 25 (2026-10-17); restano i listati BASIC da provare (autore) | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
@@ -1062,6 +1070,47 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   21 e 22.
 - Listati BASIC nuovi: 3 (byte in un banco, riempire e copiare, `PEEK`
   delle variabili di sistema).
+
+**Emerso scrivendo il cap. 24 (2026-10-16).**
+
+- In emulatore le variabili di sistema valgono quasi tutte 0 (la ROM non
+  gira, BASIC non le ha inizializzate): RAMTOP, CHARS, UDG, BORDCR danno
+  0. Provati solo gli spezzoni che scrivono e rileggono (REPDEL, FLAGS2)
+  e le variabili utente (`BASE` 10, `WARNING` 1).
+- Variabili usate dal core (da `system.asm`, `L0.asm`, `L1.asm`): LAST K,
+  FLAGS bit 5 (`KEY`), FLAGS2 bit 3 e FRAMES (il cursore di `CURS`),
+  SCR CT (255 dopo ogni carattere in `(EMITC)`); dalle librerie SEED,
+  BORDCR, UDG, CHARS. COORDS (23677) non è usata da nessuna libreria
+  grafica: il `PLOT` di vForth non la aggiorna.
+- Il capitolo divide la tabella del manuale in cinque gruppi: usate da
+  vForth, valgono come in BASIC, senza significato (descrivono il
+  loader), senza effetto (PIP, RASP, SCR CT, COORDS), da non toccare
+  (X, R, BANKM, BANK678, TSTACK, RAMTOP).
+- Listato 24-03: `PRINT AT 0,0;33-PEEK 23688` avrebbe letto la posizione
+  dopo l'`AT`; letta prima in `c` e `r`.
+- Rimandi della matrice: le variabili utente si imparano nei tutorial
+  004 e 019, non nel 022 (introspezione).
+- Listati BASIC nuovi: 3 (ripetizione dei tasti, CAPS LOCK, posizione
+  del cursore).
+
+**Emerso scrivendo il cap. 25 (2026-10-17).**
+
+- L'assembler (`lib/assembler.f` -> `src/Z80N-asm.f`) conosce tutte le
+  istruzioni Z80N, non solo `NEXTREG`/`NEXTREGA`: `PUSHN`, `TESTN`,
+  `SWAPNIB`, `MIRRORA`, `LDIX`, `LDDX`, `LDIRX`, `LDDRX`, `LDWS`,
+  `LDPIRX`, `OUTINB`, `JP(C)`, `PIXELDN`, `PIXELAD`, `SETAE`, i cinque
+  scorrimenti a barile su DE, `MUL`, `ADDHL,A` e simili, `ADDHL,` con
+  costante. La domanda aperta della matrice è chiusa.
+- `NEEDS ASSEMBLER` si carica in emulatore (stampa "CODE has already
+  been defined", atteso: ridefinisce `CODE`); `TIMES` con `mul` dà 132.
+- `CALL#` sui quattro byte del manuale dà 99, e su `ld h,b: ld l,c:
+  add hl,hl: ld b,h: ld c,l: ret` con 21 dà 42: il parametro di `USR
+  (a,p)` arriva in BC come in BASIC.
+- Help nuova: `call#.txt` (era nell'elenco delle voci mancanti).
+- Rimandi al cap. 25 trasformati in link nei cap. 8, 13, 20 e 22.
+- Listati BASIC nuovi: 3, tutti con `CLEAR 65267` e `USR` (i quattro
+  byte del manuale con un ciclo `FOR` invece di `GO TO`, un parametro,
+  `MUL` della Z80N).
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

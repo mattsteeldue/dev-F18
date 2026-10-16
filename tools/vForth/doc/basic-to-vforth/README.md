@@ -3,9 +3,9 @@
 A migration guide for programmers who know NextBASIC and want to move to
 vForth, the Forth system for the ZX Spectrum Next.
 
-> **Draft.** Chapters 1 to 23 are written. Chapter 3 (Looping) was the pilot:
-> it fixes the form and the tone of every other chapter; the plan is in
-> `planners/BASIC-TO-FORTH-PLAN.md`.
+> **Draft.** Chapters 1 to 25 are written; the appendices are not.
+> Chapter 3 (Looping) was the pilot: it fixes the form and the tone of
+> every other chapter; the plan is in `planners/BASIC-TO-FORTH-PLAN.md`.
 
 ## How to read this guide
 
@@ -70,8 +70,8 @@ A chapter without a link is not written yet.
 21. [Optional Features](21-optional-features.md)
 22. [IN, OUT and the Next Registers](22-in-out-and-the-next-registers.md)
 23. [The Memory](23-the-memory.md)
-24. The System Variables
-25. Using Machine Code
+24. [The System Variables](24-the-system-variables.md)
+25. [Using Machine Code](25-using-machine-code.md)
 
 Appendices:
 

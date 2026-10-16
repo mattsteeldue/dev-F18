@@ -1,0 +1,6 @@
+#program 25-using-machine-code-01
+10 CLEAR 65267
+20 LET a=65268
+30 FOR n=0 TO 3: READ b: POKE a+n,b: NEXT n
+40 PRINT USR a
+50 DATA 1,99,0,201

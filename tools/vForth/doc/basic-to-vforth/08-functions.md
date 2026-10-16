@@ -284,7 +284,7 @@ to 3.
 | `%REG n`, `%IN n` | `n REG@`, `n P@` | [Chapter 22](22-in-out-and-the-next-registers.md). |
 | `%RND n` | `n RND` | `NEEDS RND`. Chapter 10. |
 | `BIN 1010` | `%1010` | |
-| `USR`, `USR$` | -- | Chapter 25. |
+| `USR`, `USR$` | -- | [Chapter 25](25-using-machine-code.md). |
 | `LEFT$`, `RIGHT$`, `MID$`, `TL$` | arithmetic on `a u` | Below. |
 
 ## Side by side

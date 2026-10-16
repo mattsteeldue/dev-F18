@@ -322,8 +322,9 @@ already holds the `OPEN #` and the `CLOSE #` in two comments.
   (`F_GETCWD`, `IDE_RTC`).
 - **Installing drivers and `DRIVER`.** Drivers are installed from BASIC
   before vForth starts; no word calls `M_DRVAPI`, which can be done from
-  machine code (Chapter 25). The serial port is reached directly, with
-  `NEEDS UART-SYS` (tutorial `047`), not through the `d>` channel.
+  machine code ([Chapter 25](25-using-machine-code.md)). The serial port
+  is reached directly, with `NEEDS UART-SYS` (tutorial `047`), not
+  through the `d>` channel.
 - **User windows**: position and size of their own, justification,
   saving and restoring the contents, `INPUT #` in a window, a character
   set per window. Only the system window and its control codes are
