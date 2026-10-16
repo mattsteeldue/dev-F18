@@ -317,4 +317,4 @@ Write register 13 again to pluck again.
 
 Previous: [Chapter 17 - Time and Motion](17-time-and-motion.md) |
 [Contents](README.md) |
-Next: Chapter 19 - NextZXOS and alternatives (not written yet)
+Next: [Chapter 19 - NextZXOS and alternatives](19-nextzxos-and-alternatives.md)

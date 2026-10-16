@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 4, cap. 19; la fase 3 è scritta). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 4, cap. 20; la fase 3 è scritta). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -16,9 +16,10 @@
 > (`15-colours.md`, 13 righe, il resto `no-test`) e il 2026-10-15 il cap. 16
 > (`16-graphics.md`, 24 righe, il resto `no-test` ma provato a parte) e il cap. 17
 > (`17-time-and-motion.md`, 68 righe, il resto `no-test` ma compilato) e il cap. 18
-> (`18-sound-and-music.md`, 37 righe), tutti
+> (`18-sound-and-music.md`, 37 righe) e il 2026-10-16 il cap. 19
+> (`19-nextzxos-and-alternatives.md`, 4 righe, il resto `no-test`), tutti
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
-> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18) sono da provare
+> (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18, 3 nel cap. 19) sono da provare
 > dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
 > dall'autore il 2026-10-13, si fa in blocco più avanti. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
@@ -39,15 +40,14 @@ Raccolta dei punti aperti sparsi nelle sezioni 6.1, 7 e 10, per riprendere
 senza rileggere tutto. Il dettaglio resta nelle voci "Emerso scrivendo il
 cap. N" della sez. 10. Va aggiornato a fine sessione insieme alla riga di stato.
 
-**Scrittura (Claude).** Fase 4: cap. 19-25, si riparte dal cap. 19
-(NextZXOS and alternatives: `LOAD`/`SAVE` contro `INCLUDE`, Screen e
-`SAVE-BYTES`; trappola già nota: `CD` rompe `NEEDS`).
+**Scrittura (Claude).** Fase 4: cap. 20-25, si riparte dal cap. 20
+(Channels, Streams, Drivers and Windows); il cap. 19 è scritto (2026-10-16).
 Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
 9), fase 7 (righe "Coming from BASIC" nei tutorial 001-029).
 
 **Prove dell'autore.**
 
-- Listati BASIC dei cap. 1-2 e 4-18 (80 in tutto) da provare su MAME o
+- Listati BASIC dei cap. 1-2 e 4-19 (83 in tutto) da provare su MAME o
   CSpect. Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
   `bas2f/txt/` e `.bas` in `bas2f/` (validatore di txt2bas: 0 errori;
   `END IF` del cap. 2 corretto in `ENDIF`), ma **restano fuori da git**
@@ -63,7 +63,8 @@ Poi fase 5 (appendici, `keyword-index.md`), fase 6 (tutorial mancanti, sez.
   (cap. 15); `1 $1C REG!` in LAYER22/LAYER24 (cap. 16); `FLY`, `PATTERN!`,
   `SKY`, `ROLL-L2`, `CLIP-SPRITES` (cap. 17); `CHORD`, `PLUCK`, le forme
   dell'inviluppo per `W0`-`W7`, `BEEP-HZ8`, i limiti di `BEEP` (cap. 18;
-  voce in `TODO.md`).
+  voce in `TODO.md`); la cartella con `MAKEDIR`/`CD`/`DIR` e l'intestazione
+  +3DOS fra `SAVE ... CODE` e `LOAD-BYTES` (cap. 19).
 
 **Correzioni e aggiunte nel repo.**
 
@@ -319,7 +320,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 1 | Matrice: voci di Appendice B, concetti dei cap. 1-25 e prova in emulatore -- FATTA 2026-10-12; restano le prove su CSpect elencate in fondo alla matrice (autore) | `situation/BASIC-vs-vForth-matrix.md` | Claude, in emulatore |
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
-| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14), il cap. 16 e il cap. 17 (2026-10-15), e il cap. 18 (2026-10-15), si riparte dal cap. 19 | guida, seconda parte | emulatore + CSpect |
+| 4 | Parte macchina: cap. 15-25 -- IN CORSO: fatti il cap. 15 (2026-10-14), il cap. 16 e il cap. 17 (2026-10-15), e il cap. 18 (2026-10-15), il cap. 19 (2026-10-16), si riparte dal cap. 20 | guida, seconda parte | emulatore + CSpect |
 | 5 | Appendici e indice inverso | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
@@ -882,6 +883,40 @@ cap. 13 (`CHAR c`, `[CHAR] c`), cap. 19 (`INCLUDE file`, `NEEDS nome`).
   suono).
 - Listati BASIC nuovi: 4, scritti da noi (scala, *Twinkle*, accordo,
   nota pizzicata).
+
+**Emerso scrivendo il cap. 19 (2026-10-16).**
+
+- In emulatore girano `F_OPEN`/`F_READ`/`F_WRITE` (sul disco del PC,
+  cartella corrente), non `F_UNLINK`, `F_RENAME`, `IDE_PATH` (quindi
+  `CD`, `PWD`, `MAKEDIR`, `REMOVEDIR`) né `DIR`. Gli spezzoni che
+  scrivono file sono `no-test` per non lasciare file nel repo a ogni
+  giro del test, ma provati a parte e cancellati: la tabella `SQUARES`
+  salvata e ricaricata (25), la schermata con `$4000 6912`, `LOAD-PAGE`
+  (pagina 40 caricata, poi `MMU7@` torna 32), e `SAVE-BYTES` su un file
+  che c'è (`SAVE-BYTES? NextZXOS Open error.`). Spezzoni provati dal test:
+  `FORGET` al posto di `ERASE m,n` e `8 BLOCK 13 TYPE` (il messaggio 0
+  sta nello Screen 4).
+- **Da provare su CSpect**: l'esempio della cartella (`MAKEDIR`, `CD`,
+  `SAVE-BYTES`, `CD ..`, `DIR games`); e l'intestazione +3DOS. Il
+  capitolo afferma che `SAVE ... CODE` di BASIC mette 128 byte di
+  intestazione davanti ai dati e che `LOAD-BYTES`/`SAVE-BYTES` non la
+  conoscono (dal codice: `F_OPEN` senza il bit `$40`, che chiederebbe
+  l'intestazione); va visto in tutti e due i versi, e se BASIC carica con
+  `LOAD f CODE a,n` un file senza intestazione.
+- `LOAD f BANK n` reso come due pagine da 8K, `2n` e `2n+1`; definita
+  `LOAD-PAGE ( page -- )` che rimette la pagina di MMU7. La seconda metà
+  di un banco richiede `F_OPEN`/`F_READ` (rimando al tutorial 042), perché
+  `LOAD-BYTES` riapre il file dall'inizio.
+- Gli omonimi in una tabella dentro "What changes": `LOAD`, `SAVE`,
+  `LIST`, `ERASE`, `MOVE`, `RENAME`.
+- Visto per strada: l'intestazione del tutorial 041 diceva "256 banks of
+  8K (pages numbered 0-255)". Corretta il 2026-10-16 (solo commenti): i
+  primi 256K fisici sono ROM e firmware e non hanno numero di pagina; le
+  pagine vanno da 0 a 223 (0-95 su un Next da 1 MB), la pagina 0 è
+  l'indirizzo fisico `$40000`, 255 in MMU0/1 mostra la ROM (manuale Next,
+  NextREG `$50`-`$57`; dev guide r3, par. 3.2.3).
+- Listati BASIC nuovi: 3, scritti da noi (tabella in un file, programma
+  che parte da solo, cartella per un gioco).
 
 Conseguenza per la matrice: la classe D si divide in **D-inc** (manca, poche
 righe) e **D-lib** (manca, serve una libreria). Le D-inc sono candidate a nuovi

@@ -87,33 +87,31 @@ form of it (`BEGIN ... WHILE ... REPEAT`). The three forms are:
 
 `BEGIN ... flag UNTIL` -- the body always runs once, then the flag decides:
 
-```mermaid
-flowchart TD
-    B([BEGIN]) --> body[loop body]
-    body --> U{"UNTIL: flag?"}
-    U -- false --> body
-    U -- true --> E([after UNTIL])
+```text
+BEGIN  <-------------+
+   body              |
+   flag UNTIL  ------+   false: back to BEGIN
+   ...                   true:  on, past UNTIL
 ```
 
 `BEGIN ... flag WHILE ... REPEAT` -- the flag is tested before the second
 part, so that part may never run:
 
-```mermaid
-flowchart TD
-    B([BEGIN]) --> first["first part (may be empty)"]
-    first --> W{"WHILE: flag?"}
-    W -- true --> second[second part]
-    second -- REPEAT --> first
-    W -- false --> E([after REPEAT])
+```text
+BEGIN  <-----------------+
+   first part            |
+   flag WHILE  ---+      |   true:  on to the second part
+   second part    |      |
+REPEAT  ----------|------+   always back to BEGIN
+   ...  <---------+          false: out, past REPEAT
 ```
 
 `BEGIN ... AGAIN` -- no test, so no way out except `EXIT`:
 
-```mermaid
-flowchart TD
-    B([BEGIN]) --> body[loop body]
-    body -- AGAIN --> body
-    body -. EXIT, if the body has one .-> E([end of the definition])
+```text
+BEGIN  <-------------+
+   body              |   no test: the only way out is
+AGAIN  --------------+   EXIT, which leaves the whole word
 ```
 
 **BREAK is not automatic.** BASIC checks the BREAK key between statements.

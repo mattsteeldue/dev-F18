@@ -65,7 +65,7 @@ A chapter without a link is not written yet.
 16. [Graphics](16-graphics.md)
 17. [Time and Motion](17-time-and-motion.md)
 18. [Sound and Music](18-sound-and-music.md)
-19. NextZXOS and alternatives
+19. [NextZXOS and alternatives](19-nextzxos-and-alternatives.md)
 20. Channels, Streams, Drivers and Windows
 21. Optional Features
 22. IN, OUT and the Next Registers
