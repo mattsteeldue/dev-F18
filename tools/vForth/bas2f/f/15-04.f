@@ -13,7 +13,7 @@
 
 \ --- the translation
 
-\ 15-colours.md:235
+\ 15-colours.md:237
 \ no-test in the guide: it waits for keys, never ends or
 \ needs hardware the emulator lacks
 : ORANGE  ( -- )

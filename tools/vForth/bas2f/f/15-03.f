@@ -15,7 +15,7 @@
 
 \ --- the translation
 
-\ 15-colours.md:218
+\ 15-colours.md:220
 \ no-test in the guide: it waits for keys, never ends or
 \ needs hardware the emulator lacks
 NEEDS .AT

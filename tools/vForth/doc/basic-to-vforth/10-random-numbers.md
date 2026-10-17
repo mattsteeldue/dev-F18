@@ -71,6 +71,13 @@ formula and keeps its state in BASIC's system variable SEED, at address
 values and then repeats. Since vForth runs on top of NextBASIC, a seed
 set before leaving BASIC is the one Forth starts from.
 
+The cycle can be seen. Within it each of the 65536 values of SEED comes
+exactly once, so one value per pixel, its low 9 bits as the column and
+its high 7 as the row, lights every pixel of a band 512 by 128 once and
+only once, with no gap and no repeat: "A screen filled at random" in
+[Chapter 16](16-graphics.md) does it, in BASIC and in Forth, and shows
+the generator back at its starting value after 65536 steps.
+
 **There is a second generator.** `RANDOM` (`NEEDS RANDOM`) leaves a
 random 16-bit number and `n CHOOSE` (`NEEDS CHOOSE`) a number from 0 to
 `n-1`. They are the classic Forth pair, with a formula of their own, and
@@ -108,20 +115,25 @@ In the Forth listings each example begins with `1 RANDOMIZE`, so that the
 numbers shown are the ones you will get. Leave it out, or seed from
 FRAMES, in a real program.
 
-**Two dice.**
+**A die with twenty faces.** The icosahedron of role-playing games,
+thrown twice.
 
 ```
 10 FOR n=1 TO 2
-20   PRINT 1+RND (6);" ";
+20   PRINT 1+RND (20);" ";
 30 NEXT n
 ```
 
 ```forth
-: THROW  ( -- )  DICE .  DICE . ;
+: D20  ( -- n )  20 RND 1+ ;
+: THROW  ( -- )  D20 .  D20 . ;
 1 RANDOMIZE
-THROW                           \ => 1 2
-THROW                           \ => 6 4
+THROW                           \ => 1 4
+THROW                           \ => 18 12
 ```
+
+`D20` is `DICE` with 20 in place of 6: the number of faces is the
+argument of `RND`, and `1+` moves the range from 0-19 to 1-20.
 
 **A number in a range.** From 10 to 20, both included.
 
@@ -202,6 +214,8 @@ zero, which `DIM` does by itself.
   passing; no tutorial is devoted to random numbers yet.
 - Tutorial `008` -- `@` and `!` on system variables.
 - [Chapter 11](11-arrays.md) -- arrays, used here for the tally.
+- [Chapter 16](16-graphics.md) -- "A screen filled at random": the
+  cycle of 65536 values of `RND`, drawn one pixel per value.
 
 <!-- nav -->
 ---

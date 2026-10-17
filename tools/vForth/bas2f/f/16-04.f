@@ -3,9 +3,13 @@
 \ guide: doc/basic-to-vforth/16-graphics.md
 \ written by util/guide-forth.py: edit the guide, not this file
 \
-\   10 PLOT 0,0: DRAW OVER 1;255,175
+\   10 GO SUB 100
 \   20 PAUSE 0
-\   30 PLOT 0,0: DRAW OVER 1;255,175
+\   30 GO SUB 100
+\   40 STOP
+\   100 PLOT OVER 1;0,0: DRAW OVER 1;255,0: DRAW OVER 1;0,175
+\   110 DRAW OVER 1;-255,0: DRAW OVER 1;0,-174
+\   120 RETURN
 
 \ --- words defined earlier in the guide
 
@@ -17,8 +21,12 @@
 
 \ --- the translation
 
-\ 16-graphics.md:330
+\ 16-graphics.md:375
 \ no-test in the guide: it waits for keys, never ends or
 \ needs hardware the emulator lacks
-: TRACE  ( -- )
-    0 255 175 0 XLINE  KEY DROP  0 255 175 0 XLINE ;
+: RIM  ( -- )
+    175   0  175 254 XLINE          \ bottom
+    175 255    1 255 XLINE          \ right
+      0 255    0   1 XLINE          \ top
+      0   0  174   0 XLINE ;        \ left
+: TRACE  ( -- )  RIM  KEY DROP  RIM ;

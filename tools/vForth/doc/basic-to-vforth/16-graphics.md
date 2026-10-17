@@ -214,126 +214,181 @@ direction, so the circle comes out round.
 
 ## Side by side
 
-**A parabola.** The manual's graph of `SQR`, on Layer 0.
+**A hyperbola.** The graph of `y=1/x`, on Layer 0, with the origin in
+the middle of the screen: 50 pixels for each unit of x, 30 for each
+unit of y.
 
 ```
 10 FOR n=0 TO 255
-20   PLOT n,80*SQR (n/64)
-30 NEXT n
+20   LET x=(n-128)/50
+30   IF x<>0 THEN LET y=88+30/x: IF y>=0 AND y<=175 THEN PLOT n,y
+40 NEXT n
 ```
 
+`30/x` is `30*50/(n-128)`, that is `1500/(n-128)`: whole numbers only,
+and a single division.
+
 ```forth
-NEEDS SQRT
-64 100 * SQRT .                 \ => 80
+1500 50 / .  1500 -50 / .       \ => 30 -30
 ```
 
 <!-- no-test -->
 ```forth
-: CURVE  ( -- )
-    256 0 DO  175 I 100 * SQRT -  I PLOT  LOOP ;
+: HYPERBOLA  ( -- )
+    256 0 DO
+        I 128 - ?DUP IF  87 1500 ROT / -  I PLOT  THEN
+    LOOP ;
 ```
 
-`SQRT` works on whole numbers, and `n/64` is a fraction. The way out
-is a line of algebra: `80*SQR(n/64)` is `10*SQR(n)`, which is
-`SQR(100*n)`, and `100*n` is whole. That is the integer habit of
-[Chapter 9](09-mathematical-functions.md): rearrange the formula
-until the fraction disappears. `175 ... -` turns the BASIC height into
-a row. The same `CURVE` on `LAYER12` draws the same curve, the right
-way up, in the left half of the screen.
+Two points need care, in BASIC as in Forth. At `x=0` the function is not
+defined: BASIC would stop with `Number too big`, and `/` gives -1
+without a word. `IF x<>0` skips it, and in Forth `?DUP IF` does, since it
+leaves nothing to divide when the difference is 0. Near zero, `1/x`
+leaves the screen: BASIC's `PLOT` stops with `Integer out of range`, so
+the listing checks `y` first, while the library's `PLOT` ignores a point
+outside the screen without an error. `87 ... -` turns the height into
+a row, as for every curve of this chapter.
 
-**A sine wave.** The manual's other graph:
+**The logarithm, out of the hyperbola.** `y=x*LN (ABS x)`, the same
+screen and the same scale. The function is not defined at 0 either,
+but it goes to 0 there, and it is odd: the left half is the right half
+turned upside down.
 
 ```
 10 FOR n=0 TO 255
-20   PLOT n,88+80*SIN (n/128*PI)
-30 NEXT n
+20   LET x=(n-128)/50
+30   IF x<>0 THEN PLOT n,88+30*x*LN (ABS x)
+40 NEXT n
 ```
 
-Chapter 9 took sines from a table. A wave can do without one: a point
-that turns round a circle by a small step at a time has the sine as
-its height, and each step needs only two multiplications. Here a step
-is 1/256 of a turn, and 201/8192 is that angle in radians:
+Forth has no logarithm without the floating-point library
+([Chapter 9](09-mathematical-functions.md), `FLN`). But the logarithm
+is the area under the hyperbola: `LN a` is the area under `1/t` from 1
+to `a`. Walking along the x axis one pixel at a time, from `u` to
+`u+1`, the area grows by a thin slice, very nearly `2/(2u+1)`. So the
+logarithm can be added up slice by slice: no table and no floating
+point. `LN50` holds `LN (u/50)`, 5000 times larger:
 
 ```forth
 NEEDS VALUE
 NEEDS TO
 NEEDS +TO
-0 VALUE SINE  0 VALUE COSINE
-: START-WAVE  ( amplitude -- )  100 * TO COSINE  0 TO SINE ;
-: TURN  ( -- )
-    COSINE 201 8192 */ +TO SINE
-    SINE 201 8192 */ NEGATE +TO COSINE ;
-: TURNS  ( n -- )  0 ?DO  TURN  LOOP ;
-80 START-WAVE  64 TURNS  SINE 100 / .   \ => 80
-64 TURNS  SINE 100 / .          \ => 0
+0 VALUE LN50
+: SLICE  ( u -- n )  2* 1+ 10000 SWAP / ;
+: XLNX  ( u -- y )  3 *  LN50 25000 */ ;
+: LN-UP  ( u -- )  0 TO LN50  50 ?DO  I SLICE +TO LN50  LOOP ;
+100 LN-UP  LN50 .  100 XLNX .   \ => 3442 41
 ```
+
+`LN-UP` adds the slices from 50 to `u`. From 50 to 100 pixels `x` goes
+from 1 to 2: `LN50` is then `LN 2`, 0.6884 instead of 0.6931, and
+`y=2*LN 2` is 41 pixels. `XLNX` is
+`30*x*LN x` with `x=u/50`: `30/50*u*LN50/5000`, which is
+`3*u*LN50/25000`. `*/` keeps the product in a double number, so
+`3*u*LN50` can pass 32767 without harm.
 
 <!-- no-test -->
 ```forth
-: WAVE  ( -- )
-    80 START-WAVE
-    256 0 DO  87 SINE 100 / -  I PLOT  TURN  LOOP ;
+: TWIN  ( u -- )                \ the point at u and its mirror at -u
+    DUP XLNX                    ( u y )
+    87 OVER -  2 PICK 128 +  PLOT
+    87 +  128 ROT -  PLOT ;
+: XLNX-GRAPH  ( -- )
+    0 TO LN50  128 50 DO  I TWIN  I SLICE +TO LN50  LOOP
+    0 TO LN50  1 49 DO  I SLICE NEGATE +TO LN50  I TWIN  -1 +LOOP ;
 ```
 
-A quarter of the way round (64 steps) the height is the full 80, and
-halfway it is back to 0. `SINE` and `COSINE` are kept 100 times larger
-than the pixels so that the small steps do not vanish in the
-integer division; `100 /` brings them back. The new `SINE` is used at
-once to update `COSINE`: that order is what keeps the circle closed,
-turn after turn. The heights are within two pixels of the real sine,
-and no floating point is loaded.
+The first loop walks right from `x=1`, where the logarithm is 0, adding
+a slice after each point; the second walks left from there towards 0,
+taking a slice off before each point. Each point is drawn twice by
+`TWIN`, at `u` and, upside down, at `-u`. The curve stays within a
+pixel and a half of the one BASIC draws, and the walk to the left stops
+at `x=0.02`, the last pixel before the point where the function is not
+defined.
 
-**Random lines, in colour.** A simplified version of the manual's
-program, on one layer: ten lines, each starting where the last one
-ended.
+**A screen filled at random.** One random number picks a whole pixel:
+its low 9 bits are the column, 0 to 511, and its high 7 bits the row,
+0 to 127, in the 512 by 192 of `LAYER 1,2`. 65536 numbers, one for
+each pixel of a band 512 wide and 128 high:
 
 ```
-10 LAYER 1,1: BORDER 0: PAPER 0: CLS
-20 x1=0: y1=0: c=1
-30 FOR r=0 TO 9
-40   x2=INT (RND*256): y2=INT (RND*192)
-50   DRAW INK c;x2-x1,y2-y1
-60   x1=x2: y1=y2
-70   c=c+1: IF c=8 THEN c=1
-80 NEXT r
-90 PAUSE 0: LAYER 1,2
+10 LAYER 1,2: CLS
+20 FOR n=1 TO 65536
+30   LET r=INT (RND*65536)
+40   PLOT r-512*INT (r/512),32+INT (r/512)
+50 NEXT n
+60 PAUSE 0
 ```
 
-<!-- no-test -->
+`RND` is the new value of the system variable SEED divided by 65536,
+so `INT (RND*65536)` is SEED itself. In Forth the step of the
+generator is a word of its own, `NEXT-SEED`, which `NEEDS RND` loads
+with `RND`:
+
 ```forth
 NEEDS RND
-: SCRIBBLE  ( -- )
-    LAYER11  0 .BORDER 0 .PAPER CLS
-    0 0 MOVE-TO
-    10 0 DO
-        I 7 MOD 1+ .INK
-        192 RND  256 RND  LINE-TO
-    LOOP
-    KEY DROP  LAYER12 ;
-```
-
-`MOVE-TO` and `LINE-TO` are the pen words above, and `LINE-TO` takes
-the end point itself: the BASIC `x2-x1` is there only because `DRAW`
-wants a step. `I 7 MOD 1+` counts 1 to 7 and again, without the `IF`.
-The lines grow thicker in colour as they cross the cells, as the
-manual shows: that is the attribute clash, the same on both sides.
-
-**A line that leaves no trace.** Draw it, and draw it again.
-
-```
-10 PLOT 0,0: DRAW OVER 1;255,175
-20 PAUSE 0
-30 PLOT 0,0: DRAW OVER 1;255,175
+23670 CONSTANT SEED
+: NEXT-RND  ( -- u )  SEED @ NEXT-SEED  DUP SEED ! ;
+: STEPS  ( n -- )  0 ?DO  NEXT-RND DROP  LOOP ;
+1 SEED !  65535 STEPS  SEED @ .  \ => 25340
+1 STEPS  SEED @ .               \ => 1
 ```
 
 <!-- no-test -->
 ```forth
-: TRACE  ( -- )
-    0 255 175 0 XLINE  KEY DROP  0 255 175 0 XLINE ;
+NEEDS GRAPHICS
+: RND-FILL  ( -- )
+    LAYER12 CLS
+    256 0 DO  256 0 DO
+        NEXT-RND  DUP 9 RSHIFT 32 +  SWAP 511 AND  PLOT
+    LOOP  LOOP ;
+```
+
+The two nested loops of 256 make the 65536 steps. `LAYER12` is vForth's
+own text screen, the same 512 by 192 as `LAYER 1,2`; `PLOT` takes the
+row first.
+
+The screen shows something about `RND` itself. The generator is a
+cycle: each value of SEED gives the next, and after 65536 steps it is
+back where it started, as the two lines above show from 1. Within one
+cycle no value comes twice, so no pixel is drawn twice and none is
+missed: the band fills up completely, with no gap left at the end. A
+better test of that is `2DUP POINT IF ... THEN` before `PLOT`, which
+would catch a pixel already lit. Run it a second time and the very
+same dots appear in the very same order: a random sequence that
+repeats is the price of a generator of 16 bits, in BASIC as in Forth.
+
+**A frame that leaves no trace.** Four lines along the edges of the
+screen; draw them, and draw them again.
+
+```
+10 GO SUB 100
+20 PAUSE 0
+30 GO SUB 100
+40 STOP
+100 PLOT OVER 1;0,0: DRAW OVER 1;255,0: DRAW OVER 1;0,175
+110 DRAW OVER 1;-255,0: DRAW OVER 1;0,-174
+120 RETURN
+```
+
+<!-- no-test -->
+```forth
+: RIM  ( -- )
+    175   0  175 254 XLINE          \ bottom
+    175 255    1 255 XLINE          \ right
+      0 255    0   1 XLINE          \ top
+      0   0  174   0 XLINE ;        \ left
+: TRACE  ( -- )  RIM  KEY DROP  RIM ;
 ```
 
 BASIC's bottom left corner is row 175, column 0; its top right corner
-is row 0, column 255.
+is row 0, column 255. Every pixel of the frame must be flipped once,
+or a corner flipped twice stays dark when it should be lit, and lit
+when it should be gone. `DRAW` does not plot the point it starts from,
+so the four `DRAW`s meet at the corners without overlapping, and only
+the last stops one pixel short, to leave the first corner to `PLOT`.
+`DRAW-LINE` plots both its ends: each side of `RIM` stops one pixel
+before the next corner.
 
 **Filling a rectangle.** `LAYER ERASE` fills on LoRes and Layer 2
 only. Horizontal lines do it on every layer, slower:

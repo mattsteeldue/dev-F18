@@ -348,21 +348,21 @@ and the `WHILE` may stand anywhere between the other two words.
 
 ```
 10 REPEAT
-20   PRINT "Hello ";
+20   PRINT "Good morning! ";
 30 REPEAT UNTIL 0
 ```
 
 <!-- no-test -->
 ```forth
-: HELLO  ( -- )
+: MORNING  ( -- )
     BEGIN
-        ." Hello "
+        ." Good morning! "
         ?TERMINAL
     UNTIL ;
 ```
 
 `BEGIN ... AGAIN` is the literal translation of `REPEAT UNTIL 0`, but with it
-nothing would ever stop `HELLO`. Using `?TERMINAL` as the `UNTIL` flag gives
+nothing would ever stop `MORNING`. Using `?TERMINAL` as the `UNTIL` flag gives
 back the BREAK key.
 
 ## No equivalent

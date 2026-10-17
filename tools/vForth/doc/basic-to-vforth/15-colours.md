@@ -176,23 +176,25 @@ its own rules ([Chapter 23](23-the-memory.md)). The `LAYER12` and
 
 ## Side by side
 
-**The eight papers.** A bar of colours across the screen.
+**The eight papers.** A column of colours down the left of the
+screen, one paper on each line.
 
 ```
 10 FOR c=0 TO 7
-20   PAPER c: PRINT "    ";
+20   PAPER c: PRINT "    "
 30 NEXT c
-40 PAPER 7: PRINT
+40 PAPER 7
 ```
 
 <!-- no-test -->
 ```forth
-: BARS  ( -- )
-    8 0 DO  I .PAPER  ."     "  LOOP
-    7 .PAPER CR ;
+: COLUMN  ( -- )
+    8 0 DO  I .PAPER  ."     "  7 .PAPER CR  LOOP ;
 ```
 
-`I` is the loop index, used directly as the colour.
+`I` is the loop index, used directly as the colour. The `PRINT` without
+a `;` goes to the next line; in Forth that is `CR`, which comes after
+`7 .PAPER`, so that only the four spaces take the colour.
 
 **An accent.** An `e` with an apostrophe printed over it.
 

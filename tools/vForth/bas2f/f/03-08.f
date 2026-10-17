@@ -4,7 +4,7 @@
 \ written by util/guide-forth.py: edit the guide, not this file
 \
 \   10 REPEAT
-\   20   PRINT "Hello ";
+\   20   PRINT "Good morning! ";
 \   30 REPEAT UNTIL 0
 
 \ --- the translation
@@ -12,8 +12,8 @@
 \ 03-looping.md:356
 \ no-test in the guide: it waits for keys, never ends or
 \ needs hardware the emulator lacks
-: HELLO  ( -- )
+: MORNING  ( -- )
     BEGIN
-        ." Hello "
+        ." Good morning! "
         ?TERMINAL
     UNTIL ;

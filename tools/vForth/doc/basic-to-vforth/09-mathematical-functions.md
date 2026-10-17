@@ -317,6 +317,44 @@ cosine comes from the same table, read from the other end. A finer table
 is only a longer one; the other three quarters of the circle come from
 this one by symmetry. Tutorial 065 draws a whole picture this way.
 
+**Sines without a table.** When the angles come one after the other, as
+along a curve, even the table can go. A point that turns round a circle
+by a small step at a time has the sine as its height and the cosine as
+its distance from the centre, and each step needs only two
+multiplications. Here a step is 1/256 of a turn, and 201/8192 is that
+angle in radians:
+
+```forth
+NEEDS VALUE
+NEEDS TO
+NEEDS +TO
+0 VALUE SINE  0 VALUE COSINE
+: START-WAVE  ( amplitude -- )  100 * TO COSINE  0 TO SINE ;
+: TURN  ( -- )
+    COSINE 201 8192 */ +TO SINE
+    SINE 201 8192 */ NEGATE +TO COSINE ;
+: TURNS  ( n -- )  0 ?DO  TURN  LOOP ;
+80 START-WAVE  64 TURNS  SINE 100 / .   \ => 80
+64 TURNS  SINE 100 / .          \ => 0
+```
+
+A quarter of the way round (64 steps) the height is the full 80, and
+halfway it is back to 0. `SINE` and `COSINE` are kept 100 times larger
+than the result so that the small steps do not vanish in the integer
+division; `100 /` brings them back. The new `SINE` is used at once to
+update `COSINE`: that order is what keeps the circle closed, turn after
+turn. It is an old trick, known as Minsky's circle algorithm (HAKMEM,
+item 149, 1972). The heights stay within two units of the real sine.
+With the `PLOT` of [Chapter 16](16-graphics.md), a whole wave across
+the screen is one loop:
+
+<!-- no-test -->
+```forth
+: WAVE  ( -- )
+    80 START-WAVE
+    256 0 DO  87 SINE 100 / -  I PLOT  TURN  LOOP ;
+```
+
 ## No equivalent
 
 - **Floating point as the ordinary kind of number.** It is a library, a
