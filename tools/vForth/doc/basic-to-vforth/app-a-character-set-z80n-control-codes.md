@@ -262,4 +262,5 @@ free.
 ---
 
 Previous: [Chapter 25 - Using Machine Code](25-using-machine-code.md) |
-[Contents](README.md)
+[Contents](README.md) |
+Next: [Appendix B - Reference](app-b-reference.md)
