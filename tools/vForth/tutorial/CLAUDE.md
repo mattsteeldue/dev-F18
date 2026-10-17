@@ -533,6 +533,13 @@ Status as of 2026-07-05:
   `DEMO` word now opens with an explicit `LAYER12 CLS` and restores it
   afterwards, the same "switch in, restore out" discipline as `BROT`.
   **Awaiting CSpect verification** -- never run outside this session.
+- **067-play-music-strings.f (new, 2026-10-17)**: `lib/PLAY.f`, NextBASIC's
+  music strings. Every example and demo word was run on the headless
+  emulator through the silent stand-ins of `test/PLAY-TESTS.f` (all strings
+  valid, durations and note counts as computed by hand), but nothing has
+  been HEARD yet: the emulator has no AY. **Awaiting CSpect verification**,
+  in particular the real length of a note (`MS` plus the parsing between
+  notes), stereo (`.STEREO`) and the noise of `.DRUM`.
 
 Flag: 045 confirmed on CSpect (2026-07-10); 046 (including its new slide
 show) confirmed on CSpect (2026-07-10); 050 until its fix is confirmed on

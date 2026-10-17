@@ -121,8 +121,9 @@ CREATE TUT-TABLE
     H" tutorial/064-scaled-integer-math.f" ,
     H" tutorial/065-fedora-silhouette.f" ,
     H" tutorial/066-kempston-joystick.f" ,
+    H" tutorial/067-play-music-strings.f" ,
 
-66 CONSTANT TUT-MAX
+67 CONSTANT TUT-MAX
 
 
 \ ---------------------------------------------------------------------------
