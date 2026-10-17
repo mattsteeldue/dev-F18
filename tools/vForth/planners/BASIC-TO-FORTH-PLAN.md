@@ -27,7 +27,7 @@
 > con `emu/test_basic_guide.py --chapter N`, 0 errori; i loro listati BASIC
 > (5 nel cap. 1, 4 nel cap. 2, 7 nel cap. 4, 6 nel cap. 5, 5 nel cap. 6, 5 nel cap. 7, 5 nel cap. 8, 5 nel cap. 9, 4 nel cap. 10, 3 nel cap. 11, 6 nel cap. 12, 4 nel cap. 13, 4 nel cap. 14, 4 nel cap. 15, 4 nel cap. 16, 5 nel cap. 17, 4 nel cap. 18, 3 nel cap. 19, 3 nel cap. 20, 1 nel cap. 21, 3 nel cap. 22, 3 nel cap. 23, 3 nel cap. 24, 3 nel cap. 25) sono provati dall'autore fino al 15-03
 > (2026-10-16 e 17); gli altri sono da provare
-> dall'autore su MAME o CSpect e da salvare in `bas2f/`: prova rinviata
+> dall'autore su MAME o CSpect e da salvare in `bas2f/bas/`: prova rinviata
 > dall'autore il 2026-10-13, ripresa in blocco il 2026-10-16. Fase 0 chiusa il 2026-10-11. Fase 2 (capitolo pilota, cap. 3)
 > chiusa: scritta, approvata, listati BASIC provati dall'autore su MAME il
 > 2026-10-12 e scaricati in `bas2f/`. **Fase 1 chiusa il 2026-10-12 per la
@@ -60,7 +60,7 @@ cap. 25 il 2026-10-17). Si riparte dalla fase 5 (appendici,
   2026-10-17; ritoccati sulla macchina e riallineati nella guida il
   13-03, font in grassetto, e il 14-04, `5 POKE 23692,-1` contro lo
   `scroll?`). Il 2026-10-15 sono stati generati con txt2bas, `.txt` in
-  `bas2f/txt/` e `.bas` in `bas2f/` (validatore di txt2bas: 0 errori;
+  `bas2f/txt/` e `.bas` in `bas2f/bas/` (validatore di txt2bas: 0 errori;
   `END IF` del cap. 2 corretto in `ENDIF`; il 2026-10-16 quelli dei cap. 20-24, il 2026-10-17 quelli del cap. 25).
   Il 04-03 (con `5 PRIVATE CLEAR`, aggiunta dell'autore il 2026-10-16)
   è provato su CSpect e riallineato dall'autore, `.txt` e `.bas`. Sono in git dal commit `b6614b0`; oltre il 15-03 provati sulla

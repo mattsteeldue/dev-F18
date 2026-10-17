@@ -19,7 +19,7 @@ $SyncImage  = Join-Path "$SyncDrive\" 'Zx\CSpect\cspect-next-2gb.img'
 # - doc:   ~15 MB di PDF/ODT/shortcut; il doc/ sulla SD e' statico
 # Tutto cio' che NON e' elencato qui viaggia sulla SD: inc, lib, help, test,
 # demo, tutorial, src, e bas2f (i listati NextBASIC della guida
-# basic-to-vforth, .bas tokenizzati: W:\tools\vForth\bas2f).
+# basic-to-vforth, .bas tokenizzati: W:\tools\vForth\bas2f\bas).
 $SyncExcludeTopDirs = @(
     'dev'
     'doc'
