@@ -4,7 +4,12 @@
 
 # A PLAY library: NextBASIC music strings on the AY chips
 **2026-10-17**
-Proposal, not started. Found while writing chapter 18 of the BASIC-to-vForth
+Step 1 written on 2026-10-17: `lib/PLAY.f` (blocking `PLAY` and `PLAY"`),
+`help/play.txt`, `help/play~.txt`, tried on the headless emulator with the
+AY writes logged. Still to do: hear it on CSpect or the machine, chapter 18
+of the guide, a tutorial, step 2 (background); see
+`planners/PLAY-PLAN.md`. The original proposal follows.
+Found while writing chapter 18 of the BASIC-to-vForth
 guide (`doc/basic-to-vforth/18-sound-and-music.md`): NextBASIC's `PLAY`
 reads music strings and drives the three AY chips by itself, and vForth
 has no counterpart. Today the guide can only show, register by register,
