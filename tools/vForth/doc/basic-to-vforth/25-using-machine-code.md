@@ -2,7 +2,7 @@
 
 [From NextBASIC to vForth](README.md)
 
-Manual: Chapter 25, pp. 275-282.
+Manual: Chapter 25, pp. 275-281.
 
 ## In short
 
@@ -238,4 +238,5 @@ arguments, written with mnemonics instead of numbers.
 ---
 
 Previous: [Chapter 24 - The System Variables](24-the-system-variables.md) |
-[Contents](README.md)
+[Contents](README.md) |
+Next: [Appendix A - Character Set, Z80N Mnemonics and Control Codes](app-a-character-set-z80n-control-codes.md)

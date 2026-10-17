@@ -37,9 +37,10 @@ as an address and a length, the first code is simply `C@` of the address.
 machine code ([Chapter 25](25-using-machine-code.md)). It has nothing to do
 with characters.
 
-**`EMIT` keeps seven bits, `EMITC` all eight.** `EMIT` is meant for text and
-may drop the top bit, so a code from 128 up comes out as another character.
-The graphics symbols, the UDGs and the tokens need `EMITC`:
+**`EMIT` keeps seven bits from 144 up, `EMITC` all eight.** `EMIT` is
+meant for text. It lets the block graphics through, codes 128 to 143, but
+from 144 up it drops the top bit, so the code comes out as another
+character. The UDGs and the tokens need `EMITC`:
 
 ```forth
 65 EMIT 193 EMIT                \ => AA
@@ -49,7 +50,8 @@ GRAPHICS
 ```
 
 `GRAPHICS` prints the sixteen block symbols, codes 128 to 143: the
-exercise of the "Battenburg cake" is solved by looking at them.
+exercise of the "Battenburg cake" is solved by looking at them. Here
+`I EMIT` would do as well.
 
 **There is no range check.** BASIC stops `CHR$ 300` with
 `B Integer out of range`. `EMIT` keeps the low eight bits and prints
@@ -195,7 +197,7 @@ order is in [Chapter 12](12-conditions.md).
 
 | NextBASIC | vForth | Note |
 |---|---|---|
-| `CHR$ n` | `n EMIT`, `n EMITC` | A code is printed, not converted. `EMITC` from 128 up. |
+| `CHR$ n` | `n EMIT`, `n EMITC` | A code is printed, not converted. `EMITC` from 144 up. |
 | `CODE "x"` | `CHAR x`, `[CHAR] x` | `[CHAR]` inside a definition. |
 | `CODE a$` | `a C@` | `a` is the address of the string. |
 | `CHR$` out of range | -- | No error: only the low eight bits count. |

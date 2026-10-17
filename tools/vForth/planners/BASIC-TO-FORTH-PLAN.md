@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 5, appendici e indice inverso; le fasi 3 e 4 sono scritte). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 5, appendici B, C, D e indice inverso; l'App. A è scritta il 2026-10-17; le fasi 3 e 4 sono scritte). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -41,15 +41,16 @@
 > partire. Dal 2026-10-12 la guida è una cartella, `doc/basic-to-vforth/`,
 > un file per capitolo (D2 rivista).
 
-## 0. Cosa resta (riepilogo al 2026-10-16)
+## 0. Cosa resta (riepilogo al 2026-10-17)
 
 Raccolta dei punti aperti sparsi nelle sezioni 6.1, 7 e 10, per riprendere
 senza rileggere tutto. Il dettaglio resta nelle voci "Emerso scrivendo il
 cap. N" della sez. 10. Va aggiornato a fine sessione insieme alla riga di stato.
 
 **Scrittura (Claude).** Fase 4 chiusa: i 25 capitoli sono scritti (il
-cap. 25 il 2026-10-17). Si riparte dalla fase 5 (appendici,
-`keyword-index.md`), poi fase 6 (tutorial mancanti, sez.
+cap. 25 il 2026-10-17). Fase 5 avviata: l'Appendice A
+(`app-a-character-set-z80n-control-codes.md`) è scritta il 2026-10-17;
+restano le App. B, C, D e `keyword-index.md`, poi fase 6 (tutorial mancanti, sez.
 9), fase 7 (righe "Coming from BASIC" nei tutorial 001-029).
 
 **Prove dell'autore.**
@@ -89,7 +90,12 @@ cap. 25 il 2026-10-17). Si riparte dalla fase 5 (appendici,
   `LET`; `BANK a ERASE 65` con il solo valore) (cap. 23); `COL`, `ROW`,
   `WHERE?` (attese `5 15`), la ripetizione dei tasti con `FAST-KEYS` in
   `ACCEPT`, CAPS LOCK con `CAPS` e il cursore `C`, `23730 @` = 25087
-  (cap. 24); i tre listati con `USR` (99, 42, 132) (cap. 25).
+  (cap. 24); i tre listati con `USR` (99, 42, 132) (cap. 25); `96 EMIT`
+  che sulla Next stampa la sterlina, `165 EMITC` che stampa `RND` (ROM
+  48K), i tasti SYMBOL+A/S/D/F/G/Y/U/I di `KEY`, e il codice 29: il
+  manuale lo dà solo per le finestre utente (UW), mentre i cap. 14 e 20
+  lo danno per buono anche nella finestra di sistema (App. A, che segue
+  il manuale; se la macchina dà ragione ai capitoli, va corretta l'App. A).
 
 **Correzioni e aggiunte nel repo.**
 
@@ -351,7 +357,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 -- FATTA: il cap. 15 (2026-10-14), i cap. 16-18 (2026-10-15), i cap. 19-24 (2026-10-16), il cap. 25 (2026-10-17); restano i listati BASIC da provare (autore) | guida, seconda parte | emulatore + CSpect |
-| 5 | Appendici e indice inverso | guida completa | Claude |
+| 5 | Appendici e indice inverso -- IN CORSO: App. A scritta il 2026-10-17 | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
 

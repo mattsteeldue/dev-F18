@@ -9,7 +9,7 @@
 
 \ --- the translation
 
-\ 13-the-character-set.md:227
+\ 13-the-character-set.md:229
 : CAPITALS  ( -- )  [CHAR] Z 1+ [CHAR] A DO  I EMIT  LOOP ;
 CAPITALS                        \ => ABCDEFGHIJKLMNOPQRSTUVWXYZ
 : CHARSET  ( -- )  127 32 DO  I EMIT  LOOP ;
