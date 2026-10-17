@@ -129,6 +129,15 @@ con la parola vForth e il capitolo); resta l'App. D, poi fase 6 (tutorial mancan
   `inc/DISPLAY.f` definisce un altro `DISPLAY ( n -- )`, non caricato
   dalla guida. Restano gli ultimi tre (sprite, `LAYER AT`, Copper).
 
+  **Fatti anche gli altri tre (2026-10-17)**, nuovi e non del manuale:
+  03 sprite che cammina (`WALK`, slot 0, pattern 0/1 alternati), 04
+  terremoto sullo schermo ULA (`QUAKE`, `$26`/`$27`, provato in
+  emulatore), 05 barre del Copper nel bordo (`BAND`/`BARS`, palette
+  indice 16). Sostituiti anche i pattern dell'astronave del manuale con
+  un omino disegnato con costanti di una lettera (`WALKER`/`WALKER2`,
+  `ROW2!`). Test del cap. 17: 82 righe, 0 errori. Da provare su CSpect o
+  sul Next: 03, 04 (`LAYER AT` su Layer 0 e `%RND 8`), 05.
+
   Il listato Copper va codificato a mano con cura (WAIT: bit 15 a 1, riga
   nei bit 8-0; MOVE: registro nei bit 14-8, valore nei bit 7-0) ed è il
   primo da provare su CSpect. Dopo la riscrittura: rilanciare

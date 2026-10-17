@@ -313,11 +313,13 @@ To print them as `TIME$` does, with two digits each:
 `NOW .HMS` prints the time of the clock. The emulator has no
 clock, so the line above gives the numbers itself.
 
-**A sprite pattern.** The manual's spaceship is 16 `DATA` lines of 16
-numbers, read with `READ` and put into a bank with `BANK POKE`. In
-Forth the numbers go straight into memory as the source is read. A
-row of 16 numbers is on the stack at the end of the line, and a word
-stores them, the last one first:
+**A sprite pattern.** A pattern is 16 rows of 16 pixels, one byte
+each: the colour, in the eight bits RRRGGGBB, with `$E3` for a pixel
+that is not drawn. In BASIC the 256 numbers go into `DATA` lines, read
+with `READ` and put into a bank with `BANK POKE`. In Forth the numbers
+go straight into memory as the source is read. A row of 16 numbers is
+on the stack at the end of the line, and a word stores them, the last
+one first:
 
 ```forth
 : ROW!  ( n1 ... n16 a -- )
@@ -327,40 +329,59 @@ CREATE PROBE  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 ROW,
 PROBE C@ .  PROBE 15 + C@ .     \ => 1 16
 ```
 
-With these the pattern reads as it does in BASIC, one row per line:
+The numbers need not be written as numbers. A constant with a name of
+one letter for each colour, and the pattern can be drawn in the source,
+one row per line: here a little man walking to the right.
 
 ```forth
-CREATE SHIP
- 68  68  68  68 227 227 227 227 227 227 227 227  68  68  68  68 ROW,
- 68 182 219  68 227 227 227  68  68 227 227 227  68 219 182  68 ROW,
- 68  68  68  68 227 227 227  55  55 227 227 227  68  68  68  68 ROW,
-182 182  68 227 227 227 227  55  55 227 227 227 227  68 182 182 ROW,
- 68  68  68 227 227 227  68  68  68  68 227 227 227  68  68  68 ROW,
-240  68  68 227 227 227  68 255 127  68 227 227 227  68  68 240 ROW,
-227  68  68   0 227 227  68 127 127  68 227 227   0  68  68 227 ROW,
-227 182 219  72   0 227 182   0  68  68 227   0  72 219 182 227 ROW,
-227 182 219  72 182   0   0   0  68 182 227 182  72 219 182 227 ROW,
-227 182 219  72 182  68  68   0  68  68  68 182  72 219 182 227 ROW,
-227 240  68  72 182  68  68   0  68  68  68 182  72  68 240 227 ROW,
-227 227 227  72 182  68 255 182 182 255  68 182  72 227 227 227 ROW,
-227 227 227 227  68  68 255  68  68 255  68  68 227 227 227 227 ROW,
-227 227 227 227 227  68 255 182 182 255  68 227 227 227 227 227 ROW,
-227 227 227 227 227 227 236 224 236 224 227 227 227 227 227 227 ROW,
-227 227 227 227 227 227 227 252 252 227 227 227 227 227 227 227 ROW,
-SHIP 255 + C@ .                 \ => 227
+$E3 CONSTANT _                  \ transparent
+$88 CONSTANT h                  \ hair, brown
+$F6 CONSTANT o                  \ skin
+$00 CONSTANT k                  \ eye and shoes, black
+$E0 CONSTANT s                  \ shirt, red
+$03 CONSTANT t                  \ trousers, blue
+CREATE WALKER
+_ _ _ _ _ _ h h h h _ _ _ _ _ _ ROW,
+_ _ _ _ _ h h h h h h _ _ _ _ _ ROW,
+_ _ _ _ _ h o o o o _ _ _ _ _ _ ROW,
+_ _ _ _ _ o o o o k _ _ _ _ _ _ ROW,
+_ _ _ _ _ o o o o o o o _ _ _ _ ROW,
+_ _ _ _ _ _ o o o o _ _ _ _ _ _ ROW,
+_ _ _ _ _ s s s s s s s _ _ _ _ ROW,
+_ _ _ _ s s s s s s s s s _ _ _ ROW,
+_ _ _ s s _ s s s s s _ s s _ _ ROW,
+_ _ o _ _ _ s s s s s _ _ _ o _ ROW,
+_ _ _ _ _ _ t t t t t _ _ _ _ _ ROW,
+_ _ _ _ _ t t t _ t t t _ _ _ _ ROW,
+_ _ _ _ _ t t t _ _ t t t _ _ _ ROW,
+_ _ _ t t t _ _ _ _ _ t t t _ _ ROW,
+_ k k k _ _ _ _ _ _ _ _ k k k _ ROW,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ROW,
+WALKER 255 + C@ .               \ => 227
 ```
 
-The manual's second pattern, for the animation, differs from the first
-in two rows only: the cannons and the flame. Copy the first and change
-those rows:
+BASIC comes close: an item of `DATA` is an expression, so with a
+variable for each colour, `DATA h,h,o,o` reads their values. But the
+commas break the picture, and the loop of `READ` and `BANK POKE` is
+still to be written. In Forth the constant is the value, and `ROW,`
+takes it as it would take a number.
+
+The second pattern, the other half of the step, differs from the first
+in seven rows: the arms, which hang down, and the legs, which close.
+Copy the first and change those rows:
 
 ```forth
-CREATE SHIP2  256 ALLOT
-SHIP SHIP2 256 CMOVE
- 68 219 182  68 227 227 227  68  68 227 227 227  68 182 219  68
-SHIP2 16 + ROW!
-227 227 227 227 227 227 227 224 224 227 227 227 227 227 227 227
-SHIP2 240 + ROW!
+CREATE WALKER2  256 ALLOT
+WALKER WALKER2 256 CMOVE
+: ROW2!  ( n1 ... n16 r -- )  16 * WALKER2 + ROW! ;
+_ _ _ _ _ s s s s s s s _ _ _ _  7 ROW2!
+_ _ _ _ _ s s s s s s s _ _ _ _  8 ROW2!
+_ _ _ _ _ _ s s s s s _ _ _ _ _  9 ROW2!
+_ _ _ _ _ _ _ t t t _ _ _ _ _ _ 11 ROW2!
+_ _ _ _ _ _ _ t t t _ _ _ _ _ _ 12 ROW2!
+_ _ _ _ _ _ _ t t t _ _ _ _ _ _ 13 ROW2!
+_ _ _ _ _ _ _ k k k k k _ _ _ _ 14 ROW2!
+WALKER2 14 16 * + 7 + C@ .      \ => 0
 ```
 
 Then both go to the sprite RAM, as patterns 0 and 1:
@@ -369,7 +390,7 @@ Then both go to the sprite RAM, as patterns 0 and 1:
 ```forth
 NEEDS SPRITE
 : PATTERN!  ( a p -- )  SWAP SPRITE-BUFFER 256 CMOVE  SPRITE-INIT ;
-SHIP 0 PATTERN!  SHIP2 1 PATTERN!
+WALKER 0 PATTERN!  WALKER2 1 PATTERN!
 ```
 
 There is no file to save first, and no bank to reserve. Running the
@@ -377,47 +398,46 @@ program again does not use up memory as `BANK NEW` does: the patterns
 are part of the program. To keep them in a file, `SAVE-BYTES` writes
 the 256 bytes as they are (Chapter 19).
 
-**A sprite on a sine wave.** The manual's last sprite program moves
-the ship from the bottom of the screen to the top along a sine, and
-changes pattern at every step:
+**A sprite that walks.** The two patterns take turns while the man
+crosses the screen from left to right, two pixels at a time, and then
+disappears. It is always the same sprite, slot 0; what changes at every
+step is the pattern it shows:
 
 ```
-106 PROC initXSineMov()
-120 FOR %a=0 TO 255
-130 %s=%1-s
-140 SPRITE 0,%159+a[a],%255-a,%s,1
-141 PAUSE 3
-145 NEXT %a
-150 GO TO 120
-570 DEFPROC initXSineMov()
-580 FOR f=0 TO 319:%a[INT {f}]=%INT {159*SIN (f/159*PI)}: NEXT f
-590 ENDPROC
+10 SPRITE PRINT 1
+20 FOR %x=32 TO 288 STEP 2
+30 SPRITE 0,%x,128,%x/8&1,1
+40 PAUSE 2
+50 NEXT %x
+60 SPRITE 0,0,0,0,0
 ```
 
-[Chapter 16](16-graphics.md) drew a sine wave with `START-WAVE` and `TURN`, and needed
-no table. Type those definitions first; then:
+Integer expressions are worked out strictly from left to right, so
+`%x/8&1` is `(x/8)&1`: the pattern changes every 8 pixels, 0, 1, 0, 1.
+The last flag 0 of line 60 makes the sprite invisible. Both programs
+expect the two patterns of the walker in the sprite RAM, as patterns 0
+and 1: in Forth, `WALKER 0 PATTERN!  WALKER2 1 PATTERN!` above.
 
 <!-- no-test -->
 ```forth
-: FLY  ( -- )
-    SPRITES-ON  159 START-WAVE
-    BEGIN
-        256 0 DO
-            159 SINE 100 / +  SPRITE _xcoord !
-            255 I -           SPRITE _ycoord !
-            I 1 AND           SPRITE _spriteid !
-            3 WAIT-FRAMES  SPRITE 0 SPRITE-UPDATE  TURN
-        LOOP
-    ?TERMINAL UNTIL
+NEEDS SPRITE
+: WALK  ( -- )
+    SPRITES-ON  128 SPRITE _ycoord !
+    290 32 DO
+        I              SPRITE _xcoord !
+        I 8 / 1 AND    SPRITE _spriteid !
+        2 WAIT-FRAMES  SPRITE 0 SPRITE-UPDATE
+    2 +LOOP
     0 SPRITE-HIDE ;
 ```
 
-`I 1 AND` is `%s=%1-s`: 0, 1, 0, 1 as the loop goes on. The update
-comes right after the wait, at the start of a frame, so the sprite does
-not change while it is being drawn. `?TERMINAL` stops it with BREAK,
-which in BASIC stops the program. The step of `TURN` is 1/256 of a
-turn, so the ship draws one whole wave on its way up; the manual's step
-is 1/318, a little less than a wave.
+`2 +LOOP` is `STEP 2`, and the loop stops before 290, after 288 as in
+BASIC. The update comes right after the wait, at the start of a frame,
+so the sprite does not change while it is being drawn. The slot, 0, is
+written once in `SPRITE 0 SPRITE-UPDATE` and never changes; the pattern
+is a field of the structure. Giving the pattern number as the slot, as
+in `SPRITE I 1 AND SPRITE-UPDATE`, would not animate the man: it would
+light a second sprite in slot 1 and leave it on the screen.
 
 **Batching.** `SPRITE STOP ... SPRITE MOVE INT` has the same shape:
 wait for the frame, then send every sprite at once.
@@ -465,67 +485,93 @@ sprite positions, and it has no effect while the sprites are over the
 border: `SPRITES-ON` puts them there. To use it, write 1 into `$15`
 after `SPRITES-ON`: sprites on, under the border.
 
-**Scrolling.** The manual rolls a Layer 2 picture to the left:
+**An earthquake.** For fifty frames the text screen shakes by a few
+pixels, in both directions at random, and then goes back in place:
 
 ```
-30 FOR %x=0 TO 255
-40 LAYER AT %x,%0
-50 NEXT %x
+10 CLS: PRINT AT 10,10;"EARTHQUAKE!"
+20 FOR %n=1 TO 50
+30 LAYER AT %RND 8,%RND 8
+40 PAUSE 1
+50 NEXT %n
 60 LAYER AT 0,0
 ```
 
+```forth
+NEEDS RND
+: QUAKE  ( -- )
+    50 0 DO  8 RND $26 REG!  8 RND $27 REG!  1FRAME  LOOP
+    0 $26 REG!  0 $27 REG! ;
+QUAKE  $26 REG@ .  $27 REG@ .   \ => 0 0
+```
+
+BASIC moves the current layer, Layer 0 here; vForth writes the offset
+registers of the ULA, `$26` and `$27` in the table above. The ULA is
+also the screen vForth types on: `LAYER12` is a Layer 1 mode, so
+`QUAKE` shakes the prompt itself, with no change of mode and nothing to
+load. `8 RND` is `%RND 8`, from 0 to 7 ([Chapter 10](10-random-numbers.md)).
+The offset wraps around: what leaves the screen on one side comes back
+on the other, so the shake shows a thin strip of the opposite edge.
+`1FRAME` is the `PAUSE 1`: without a wait the Forth loop would be over
+long before the screen could be seen to move, since fifty pairs of
+writes to a register take no time at all.
+
+**The Copper.** Bars of colour in the border, eight lines each, in
+eight shades of red from black to bright and again, from the top of the
+screen down. The list is built by a loop: for each band, a wait for its
+first line and two writes, palette index 16 into register 64 (`$40`)
+and the colour into register 65 (`$41`):
+
+```
+10 BORDER 0: PAPER 7: CLS
+20 REG 67,0: REG 98,0: REG 97,0
+30 FOR %b=0 TO 31
+40 REG 96,232: REG 96,%b*8
+50 REG 96,64: REG 96,16
+60 REG 96,65: REG 96,%b&7*32
+70 NEXT %b
+80 REG 96,255: REG 96,255
+90 REG 98,192
+100 PAUSE 0
+110 REG 98,0: REG 64,16: REG 65,0
+```
+
+Each instruction is two bytes, the high one first, written to register
+96. A wait has bit 15 set and the line in the low bits: 232 is 128 plus
+twice 52, the position near the end of the line, so the colour changes
+in the right border and not part-way along a line. Index 16 is paper 0,
+the colour of the border here; `PAPER 7` keeps it out of the screen.
+`%b&7*32` is `(b&7)*32`, the three red bits of the colour, and 255,255
+ends the list. 192 in register 98 starts the Copper again at every
+frame; any key stops it, and the last line puts black back.
+
 <!-- no-test -->
 ```forth
-: ROLL-L2  ( -- )
-    256 0 DO  I $16 REG!  1FRAME  LOOP
-    0 $16 REG! ;
+NEEDS COPPER  NEEDS LAYER0  NEEDS .PAPER  NEEDS .BORDER
+: BAND  ( b -- )                \ eight lines, a shade of red
+    DUP 8 * 52 COP-WAIT
+    16 $40 COP-MOVE  7 AND 32 * $41 COP-MOVE ;
+: BARS  ( -- )
+    LAYER0  7 .PAPER  0 .BORDER  CLS  0 $43 REG!
+    COP-STOP  32 0 DO  I BAND  LOOP  COP-HALT  COP-START
+    KEY DROP
+    COP-STOP  16 $40 REG!  0 $41 REG! ;
 ```
 
-The `1FRAME` is not in the BASIC loop. Without it the Forth loop is
-over long before the picture can be seen: 256 writes to a register take
-no time at all.
-
-**The Copper.** The manual paints the top 100 lines of the screen red
-with a list of numbers:
-
-```
-20 REG 98,0: REG 97,0
-50 FOR x=0 TO 6
-60 READ m,l
-70 REG 96,m: REG 96,l
-80 NEXT x
-90 REG 97,0
-100 REG 98,%@11000000
-1000 DATA 128+(45*2),0
-1010 DATA 64,16,65,BIN 11100000
-1020 DATA 128+(45*2),100
-1030 DATA 64,16,65,BIN 00000000
-1040 DATA 128+1,128
-```
-
-<!-- no-test -->
-```forth
-NEEDS COPPER
-: SKY  ( -- )
-    COP-STOP
-      0 45 COP-WAIT   16 $40 COP-MOVE  %11100000 $41 COP-MOVE
-    100 45 COP-WAIT   16 $40 COP-MOVE  %00000000 $41 COP-MOVE
-    COP-HALT  COP-START ;
-```
-
-The list is code, with the names of the operations: `128+(45*2)` is
-written by `COP-WAIT`, which also puts the line in the right bits.
-`COP-HALT` ends the list as the manual's wait for line 384 does. As in
-BASIC, the list writes palette index 16 (paper and border) through
-registers `$40` and `$41`. These write the palette that register `$43`
-selects, and `SPRITES-ON` points it at the sprites: after it,
-`0 $43 REG!` brings back the first ULA palette.
+The list is code, with the names of the operations: `COP-WAIT` puts
+line and position in the right bits, and `COP-HALT` is the 255,255.
+`$43` chooses the palette that `$40` and `$41` write; `SPRITES-ON`
+points it at the sprites, and `0 $43 REG!` brings back the first ULA
+palette. Tutorial `054` makes stripes in the border in another way, by
+sending bytes to port `$FE` with the DMA: those are not tied to the
+beam, and their edges move from one frame to the next, while the
+Copper's stand still.
 
 ## No equivalent
 
 - **Automatic sprite movement**: `SPRITE CONTINUE`, `SPRITE PAUSE`
   and the function `SPRITE CONTINUE s`. Limits, steps, bouncing and
-  animation are the program's own loop, as in `FLY` above.
+  animation are the program's own loop, as in `WALK` above.
 - **Relative, composite and unified sprites**, and **scaling** (`rf`,
   `mx`, `my`). They use a fifth attribute byte that the library does
   not send; the structure has an `_anchor` field, unused.
