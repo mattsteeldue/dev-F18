@@ -1,9 +1,9 @@
 # PLAY: le stringhe musicali di NextBASIC sui chip AY
 
 > Stato: IN CORSO. Passo 1 (PLAY bloccante, `lib/PLAY.f`, `help/play.txt`,
-> `help/play~.txt`) scritto e provato sull'emulatore headless il 2026-10-17;
-> resta: ascolto su CSpect o sulla macchina, aggiornamento del cap. 18 della
-> guida, tutorial (o estensione del `034`), passo 2 (in background).
+> `help/play~.txt`, `test/PLAY-TESTS.f`, cap. 18 della guida) scritto e
+> provato sull'emulatore headless il 2026-10-17; resta: ascolto su CSpect o
+> sulla macchina, tutorial (o estensione del `034`), passo 2 (in background).
 
 Origine: la voce "A PLAY library" di `TODO.md` (2026-10-17), nata scrivendo
 il cap. 18 della guida basic-to-vforth. Fonte del linguaggio: il manuale Next,
@@ -91,10 +91,14 @@ e scritture sulle porte `$FFFD`/`$BFFD` registrate da Python
 - Ascolto su CSpect o sulla macchina: altezze, durate, stereo, inviluppi,
   rumore, nove canali con Turbosound. In particolare la durata reale di `MS`
   con il parser in mezzo, a 3,5 e a 28 MHz.
-- Cap. 18 della guida: togliere `PLAY` da "No equivalent", aggiornare la
-  tabella di corrispondenza e "Side by side".
 - Tutorial nuovo o estensione del `034`.
-- Test in `test/` (il parser, con `MS` sostituito come sopra).
+- Fatti il 2026-10-17: il cap. 18 della guida (con App. B e indice), e
+  `test/PLAY-TESTS.f`, silenzioso: `AY!`, `AY!!`, `SHH`, `AYSELECT`,
+  `ENABLE-TURBOSOUND`, il `P!` della selezione del chip e `MS` sostituiti
+  prima di `INCLUDE lib/PLAY.f`, registri ombra controllati con `T{ }T`
+  (altezze, durate, terzine, legature, ripetizioni, canali, inviluppo,
+  rumore, stereo). Gli errori non si possono provare con `CATCH` (`ERROR`
+  finisce in `QUIT`): elencati in un commento.
 
 ## 5. Passo 2: in background (da decidere)
 

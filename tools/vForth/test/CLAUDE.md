@@ -91,6 +91,7 @@ These individual files are INCLUDEd by the main suite files (e.g. `CORE-TESTS.f`
 | `FLOATING-TESTS.f` | Floating-point word tests |
 | `FIXED88-TESTS.f` | Fixed-point 8.8 word tests |
 | `LOCALS-TESTS.f` | `lib/LOCALS.f` named local variables |
+| `PLAY-TESTS.f` | `lib/PLAY.f` music strings, silent: the AY words and `MS` are stand-ins |
 | `MISSING-TESTS.f` | Words not yet covered by CORE-TESTS |
 | `CUSTOM-TESTS.f` | Project-specific additional tests |
 | `basic-assumptions.f` | Fundamental assumptions (cell size, address units, ...) |
