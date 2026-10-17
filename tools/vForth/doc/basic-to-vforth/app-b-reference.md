@@ -204,7 +204,11 @@ NEEDS INVERT
 | `P FN without DEF` | `name? is undefined.` | |
 | `Q Parameter error` | `Stack is empty.` | Only when too few; extra values stay. |
 | `R Tape loading error` | -- | |
-| `d` to `o`, the `PLAY` reports | -- | No `PLAY`. |
+| `d Too many parentheses` | `Syntax error.` | `PLAY`: more than five `(` open. |
+| `k Invalid note` | `Syntax error.` | `PLAY`, `NEEDS PLAY`. |
+| `l Too big`, `n Out of range` | `Invalid numeric argument.` | `PLAY`. |
+| `m Note out of range` | -- | `PLAY` keeps the note within the chip's range. |
+| `o Too many tied notes` | -- | `PLAY` ties any number. |
 | `Loop error`, `No ENDIF` | `Syntax error.`, `Bad definition end.` | At compile time. |
 | `No DEFPROC`, `No label` | `name? is undefined.` | |
 | `Direct command error` | `Can't be executed.` | The opposite case: a compiling word typed outside a definition. |
@@ -236,7 +240,8 @@ NEEDS INVERT
   none; for a Screen or a file, `WHERE` shows the place.
 - **Most run-time checks.** Overflow, subscripts, `DATA`, ranges: see
   "Few checks at run time".
-- **The `PLAY` reports.** There is no `PLAY`.
+- **Two `PLAY` reports**, `m` and `o`: `PLAY` keeps a note within the
+  chip's range and ties any number of notes.
 - **Retry, Ignore or Cancel.** A file word that fails returns at once,
   with its flag and code.
 

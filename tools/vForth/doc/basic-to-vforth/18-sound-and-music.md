@@ -8,14 +8,15 @@ Manual: Chapter 18, pp. 144-156.
 
 `BEEP` carries over: `NEEDS BLEEP` gives a `BEEP` that takes a duration
 and a pitch in the same order as BASIC, with the duration in
-milliseconds. `PLAY` does not: vForth has no interpreter of music
-strings. What it has is direct access to the three sound chips (AY) of
-the Next, register by register, through `NEEDS AY`, and a player of
+milliseconds. `PLAY` carries over too: `NEEDS PLAY` loads a `PLAY` that
+reads the same music strings and drives the three sound chips (AY) of
+the Next, up to nine channels. Under it there is direct access to the
+chips, register by register, through `NEEDS AY`, and a player of
 ready-made effects and tunes that runs in the interrupt (AFX). Every
 command of a `PLAY` string has a register behind it, and this chapter
-says which; the timing, which `PLAY` does for you, becomes the loop of
-your program. Digital audio (WAV, MOD, PT3) is reached in BASIC through
-dot commands, and has no counterpart.
+says which, for the programs that write the chips themselves. Digital
+audio (WAV, MOD, PT3) is reached in BASIC through dot commands, and has
+no counterpart.
 
 ## What changes
 
@@ -100,10 +101,37 @@ NEEDS VALUE
 `Q` plays a crotchet and `H` a minim, both in the current key: `7 Q` is
 `BEEP crotchet,key+7`. They are used in "Side by side".
 
-**No `PLAY`, but the chips are there.** NextBASIC's `PLAY` reads a string
-and drives the three AY chips of the Next for you. vForth has no such
-interpreter. `NEEDS AY` loads `lib/AY.f`, which writes the chip's
-registers directly:
+**`PLAY` is a library, and takes the strings from the stack.**
+`NEEDS PLAY` loads `lib/PLAY.f`. Each string is an address and a length,
+as in [Chapter 7](07-strings.md), and the number of strings comes last:
+`PLAY a$,b$` is `a$ b$ 2 PLAY`, with up to nine strings for the nine
+channels, three per chip. `PLAY"` plays one literal string, at the
+prompt or inside a definition.
+
+<!-- no-test -->
+```forth
+NEEDS PLAY
+PLAY" T180O5cdefgabC"
+S" O4ceg" S" O4egC" S" O3c))" 3 PLAY
+```
+
+The language is the manual's, command for command: notes, `#`, `$`, `O`,
+durations and triplets, `_`, `&`, `N`, `V`, `U`, `W`, `X`, `T`, `( )`,
+`! !`, `H`, `M`, `L`, `R` and `S`. `O5 c` is middle C. Like BASIC's,
+`PLAY` waits until the music ends; `H` or BREAK stops it. A few
+differences:
+
+- an empty string, for a silent channel, is `PAD 0`: `S" "` does not
+  give an empty text;
+- the strings are read while they play, so they must stay where they
+  are: in the dictionary, or in the heap only in the same 8K page (two
+  `S"` typed at the prompt may not be);
+- a wrong character is reported when `PLAY` reaches it, after the notes
+  before it have been played;
+- `Y` and `Z`, the MIDI commands, are read and ignored.
+
+**Under `PLAY`, the chips.** `NEEDS AY` loads `lib/AY.f`, which writes
+the chip's registers directly:
 
 - `b reg AY!` writes one register (0 to 13);
 - `n reg AY!!` writes a 12-bit tone period into a pair: 0 for channel A,
@@ -112,9 +140,9 @@ registers directly:
 - `SHH` silences the current chip; `AYSETUP` silences all three.
 
 A register keeps its value until it is written again: the chip goes on
-playing a note until you change it. So where `PLAY` takes care of the
-time, your program does: it writes the note, waits (`n MS`, `NEEDS MS`),
-writes the next.
+playing a note until you change it. So a program that writes the chips
+itself takes care of the time that `PLAY` takes care of: it writes the
+note, waits (`n MS`, `NEEDS MS`), writes the next.
 
 **A note is a period, not a name.** The chip is told how long a wave
 lasts, in units of 16 clock cycles at 1.75 MHz. For a frequency in Hz:
@@ -126,9 +154,10 @@ NEEDS MS
 440 PERIOD .                    \ => 248
 ```
 
-`PLAY`'s note names, its `#`, `$` and `O`, become a table of periods that
-your program builds once, with `PERIOD` or with numbers taken from
-tutorial `034`.
+Written by hand, `PLAY`'s note names, its `#`, `$` and `O`, become a
+table of periods that your program builds once, with `PERIOD` or with
+numbers taken from tutorial `034`. `lib/PLAY.f` keeps one octave of
+them and shifts it for the others.
 
 **In register 7 a 0 switches on.** The mixer, register 7, says which
 channels play a tone and which play noise. It has the bits of `PLAY`'s
@@ -188,8 +217,9 @@ has no effect while Forth runs.
 | `key+p` | `KEY# +` | `KEY` reads the keyboard. |
 | `crotchet` | `CROTCHET` | A `VALUE`, in milliseconds. |
 | `POKE 23609,n` | -- | `KEY` does not click. |
-| `PLAY a$` | -- | No string interpreter. `NEEDS AY` for the chip. |
-| `PLAY a$,b$,c$` | three tone periods: `0`, `2`, `4 AY!!` | One chip, three channels. |
+| `PLAY a$` | `a n 1 PLAY`, `PLAY" ..."` | `NEEDS PLAY`. |
+| `PLAY a$,b$,c$` | `a1 n1 a2 n2 a3 n3 3 PLAY` | Up to nine strings. By hand: `0`, `2`, `4 AY!!`. |
+| `PLAY ""` for a silent channel | `PAD 0` | `S" "` is not empty. |
 | note names, `O` | `hz PERIOD reg AY!!` | Defined above. |
 | `V n` | `n 8 AY!` (A), `9` (B), `10` (C) | |
 | `U`, `W n`, `X n` | volume 16, `shape 13 AY!`, `n 11 AY!!` | |
@@ -199,7 +229,7 @@ has no effect while Forth runs.
 | `H` | `SHH` | |
 | nine channels | `ENABLE-TURBOSOUND`, `n AYSELECT` | |
 | `L`, `R`, `S` | port `$FFFD`, `ENABLE-MONO` | |
-| `Y`, `Z` (MIDI) | -- | |
+| `Y`, `Z` (MIDI) | -- | `PLAY` reads them and ignores them. |
 | `.wavplay32`, `.nxmod`, `.playpt3` | -- | No dot commands from vForth. |
 | `.pisend` | -- | `NEEDS RPi0` talks to the Pi, but sends no files. |
 | (not in BASIC) | `NEEDS AFXFRAME` | Effects played by the interrupt. |
@@ -253,6 +283,15 @@ it a tone higher and faster:
 10 PLAY "c","e","g"
 ```
 
+<!-- no-test -->
+```forth
+NEEDS PLAY
+S" c" S" e" S" g" 3 PLAY
+```
+
+That is the whole translation. Written out by hand, register by register,
+the chord is:
+
 ```forth
 : CHORD  ( -- )
     1 AYSELECT
@@ -264,9 +303,9 @@ CHORD
 ```
 
 Three periods, three volumes, the mixer, half a second of waiting, and
-silence: what `PLAY` did with one string is written out in full. The
+silence: what `PLAY` does with three strings is written out in full. The
 waiting is the duration of the chord, and nothing stops the program
-from doing something else instead of `MS`.
+from doing something else instead of `MS`, which `PLAY` cannot do.
 
 **A plucked note.** A note that starts loud and dies away: `PLAY`'s
 `W0`.
@@ -274,6 +313,14 @@ from doing something else instead of `MS`.
 ```
 10 PLAY "UX1000W0c"
 ```
+
+<!-- no-test -->
+```forth
+NEEDS PLAY
+PLAY" UX1000W0c"
+```
+
+By hand:
 
 ```forth
 : PLUCK  ( -- )
@@ -291,11 +338,12 @@ Write register 13 again to pluck again.
 
 ## No equivalent
 
-- **`PLAY` and its strings.** A library that reads them would be a
-  candidate for `lib/`; today the registers are written by hand.
 - **Durations and tempo inside the chip.** The chip holds a note until it
-  is told otherwise; the program measures the time.
-- **MIDI (`Y`, `Z`).**
+  is told otherwise; `PLAY`, or the program, measures the time.
+- **MIDI (`Y`, `Z`).** `PLAY` reads them and ignores them.
+- **Music while the program runs, from a string.** `PLAY` waits until
+  the music ends, as BASIC's does; playing in the background is done
+  today with AFX.
 - **Digital audio.** The players of WAV, MOD and PT3 are dot commands,
   which vForth cannot launch. The DACs of the Next are reachable through
   the Next registers `$2C` to `$2E`, but there is no player.
@@ -309,7 +357,10 @@ Write register 13 again to pluck again.
 - Tutorial `050` -- `AFXFRAME`: tunes played by the interrupt.
 - Tutorial `055` -- an AFX sound board.
 - Tutorial `032` -- timing: `MS` and frames.
-- `HELP BEEP`, `HELP MS`, `HELP AY!`, `HELP SHH`, `HELP AYSELECT`.
+- `HELP PLAY`, `HELP PLAY"`, `HELP BEEP`, `HELP MS`, `HELP AY!`,
+  `HELP SHH`, `HELP AYSELECT`.
+- `lib/PLAY.f` -- the string interpreter, and the choices it makes where
+  the manual says nothing.
 - [Chapter 17](17-time-and-motion.md) -- time, frames, interrupts.
 
 <!-- nav -->

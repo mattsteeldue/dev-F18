@@ -129,4 +129,5 @@ if you wrote into the block file: a new version brings a new one.
 ---
 
 Previous: [Appendix B - Reference](app-b-reference.md) |
-[Contents](README.md)
+[Contents](README.md) |
+Next: [Appendix D - The Calculator](app-d-the-calculator.md)

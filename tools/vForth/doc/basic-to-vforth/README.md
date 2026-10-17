@@ -3,8 +3,8 @@
 A migration guide for programmers who know NextBASIC and want to move to
 vForth, the Forth system for the ZX Spectrum Next.
 
-> **Draft.** Chapters 1 to 25 and Appendices A, B and C are written;
-> Appendix D is not. The keyword index is written.
+> **Draft.** Chapters 1 to 25, Appendices A to D and the keyword index
+> are written.
 > Chapter 3 (Looping) was the pilot: it fixes the form and the tone of
 > every other chapter; the plan is in `planners/BASIC-TO-FORTH-PLAN.md`.
 
@@ -79,7 +79,7 @@ Appendices:
 - A. [Character Set, Z80N Mnemonics and Control Codes](app-a-character-set-z80n-control-codes.md)
 - B. [Reference](app-b-reference.md) -- reports, number systems
 - C. [Machine Personalities](app-c-machine-personalities.md)
-- D. The Calculator
+- D. [The Calculator](app-d-the-calculator.md)
 
 [Keyword index](keyword-index.md): every keyword and function of NextBASIC,
 alphabetically, with its vForth word and the chapter that explains it.

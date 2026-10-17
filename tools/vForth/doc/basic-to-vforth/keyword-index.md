@@ -159,7 +159,7 @@ How to read the second column:
 | `PEEK a` | `a C@` | [23](23-the-memory.md), [24](24-the-system-variables.md) |
 | `PEEK$ (a,n)` | `a n`, already a string | [23](23-the-memory.md) |
 | `PI` | `PI`, `NEEDS FLOATING` | [9](09-mathematical-functions.md) |
-| `PLAY f1,...` | -- (`NEEDS AY` for the chip) | [18](18-sound-and-music.md) |
+| `PLAY f1,...` | `a1 n1 ... k PLAY`, `NEEDS PLAY`; `PLAY" ..."` for one | [18](18-sound-and-music.md) |
 | `PLOT x,y` | `175 y - x PLOT` on Layer 0, `y x PLOT` on the others | [16](16-graphics.md) |
 | `POINT (x,y)` | `row col POINT`, `NEEDS GRAPHICS` | [16](16-graphics.md) |
 | `POINT x,y TO v` | `row col POINT` | [16](16-graphics.md) |
