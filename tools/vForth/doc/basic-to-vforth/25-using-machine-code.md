@@ -79,8 +79,7 @@ C;
 
 `C;` ends the word, as `;` ends a colon definition. The files in `inc/`
 are written as bytes, with the instruction in a comment, so that they do
-not need the assembler: tutorial `027` shows both forms, and
-`util/asm2hex.py` turns one into the other.
+not need the assembler: tutorial `027` shows both forms.
 
 **On the BASIC side, `.asm`.** The manual does not mention it, but there
 is a third-party dot command, `.asm` by taylorza (the

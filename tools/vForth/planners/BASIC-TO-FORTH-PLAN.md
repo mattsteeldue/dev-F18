@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 5, App. D; le App. A, B, C e l'indice inverso `keyword-index.md` sono scritti il 2026-10-17; le fasi 3 e 4 sono scritte). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 6; la fase 5 è chiusa, App. A-D e indice inverso `keyword-index.md` scritti il 2026-10-17; il 2026-10-17 tolti dalla guida tutti i listati presi dal manuale, vedi sez. 0; listati BASIC provati dall'autore: 73 su 107). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -54,11 +54,22 @@ cap. 25 il 2026-10-17). Fase 5 avviata: l'Appendice A
 parole chiave vanno in `keyword-index.md`) sono scritte il 2026-10-17,
 come l'App. C (commit `d066947`) e `keyword-index.md` (una riga per ogni
 voce dell'elenco del manuale, più operatori e parti di altre istruzioni,
-con la parola vForth e il capitolo); resta l'App. D, poi fase 6 (tutorial mancanti, sez.
+con la parola vForth e il capitolo), e l'App. D (commit `8d0e0bf`):
+fase 5 chiusa. Resta la fase 6 (tutorial mancanti, sez.
 9), fase 7 (righe "Coming from BASIC" nei tutorial 001-029).
 
 **Prove dell'autore.**
 
+- **Copertura al 2026-10-17: 73 listati BASIC provati su 107** (68%):
+  quelli fino al 15-03 (74) meno i tre riscritti dopo la prova
+  (03-08 "Good morning!", 10-01 dado a venti facce, 15-01 colonna di
+  colori), più i 17-01/02 scritti dall'autore. **Da provare: 34**, cioè
+  quei tre e tutti quelli dal 15-04 al cap. 25 tranne i 17-01/02; fra
+  questi i listati nuovi che sostituiscono quelli del manuale (16-01
+  iperbole, 16-02 `x*LN (ABS x)`, 16-03 riempimento casuale, lento in
+  BASIC, 16-04 cornice con `OVER`, 17-03 omino che cammina, 17-04
+  terremoto con `LAYER AT` su Layer 0 e `%RND 8`, 17-05 barre del
+  Copper, 25-01/02/03 con `USR "A"` e `DATA` esadecimali).
 - Listati BASIC dal 15-04 al cap. 25 (31 in tutto, esclusi i 17-01/02
   già provati) da provare su MAME o CSpect; fino al 15-03 sono provati
   (cap. 1, 2 e 4 dall'autore il 2026-10-16, cap. 5-14 e 15-01/02/03 il
@@ -77,8 +88,10 @@ con la parola vForth e il capitolo); resta l'App. D, poi fase 6 (tutorial mancan
   9); `23675 @` sopra `$E000` e UDG con `SHAPES 23675 !`, altrimenti il
   capitolo va ammorbidito (cap. 13); `.TAB` corretta (cap. 14); `.INK` e
   `.PAPER` mascherati, quando la ROM rimette i temporanei ai permanenti
-  (cap. 15); `1 $1C REG!` in LAYER22/LAYER24 (cap. 16); `FLY`, `PATTERN!`,
-  `SKY`, `ROLL-L2`, `CLIP-SPRITES` (cap. 17); `CHORD`, `PLUCK`, le forme
+  (cap. 15); `1 $1C REG!` in LAYER22/LAYER24 (cap. 16); `PATTERN!`,
+  `CLIP-SPRITES`, e i nuovi `WALK` con `WALKER`/`WALKER2`, `QUAKE`,
+  `BARS` (cap. 17); `HYPERBOLA`, `XLNX-GRAPH`, `RND-FILL`, `TRACE` (cap. 16);
+  `WAVE` (cap. 9); `CHORD`, `PLUCK`, le forme
   dell'inviluppo per `W0`-`W7`, `BEEP-HZ8`, i limiti di `BEEP` (cap. 18;
   voce in `TODO.md`); la cartella con `MAKEDIR`/`CD`/`DIR` e l'intestazione
   +3DOS fra `SAVE ... CODE` e `LOAD-BYTES` (cap. 19); `3 SELECT` sulla
@@ -94,7 +107,7 @@ con la parola vForth e il capitolo); resta l'App. D, poi fase 6 (tutorial mancan
   `LET`; `BANK a ERASE 65` con il solo valore) (cap. 23); `COL`, `ROW`,
   `WHERE?` (attese `5 15`), la ripetizione dei tasti con `FAST-KEYS` in
   `ACCEPT`, CAPS LOCK con `CAPS` e il cursore `C`, `23730 @` = 25087
-  (cap. 24); i tre listati con `USR` (99, 42, 132) (cap. 25); `96 EMIT`
+  (cap. 24); i tre listati con `USR` (80, 42, 132) (cap. 25); `96 EMIT`
   che sulla Next stampa la sterlina, `165 EMITC` che stampa `RND` (ROM
   48K), i tasti SYMBOL+A/S/D/F/G/Y/U/I di `KEY`, e il codice 29: il
   manuale lo dà solo per le finestre utente (UW), mentre i cap. 14 e 20
@@ -137,6 +150,17 @@ con la parola vForth e il capitolo); resta l'App. D, poi fase 6 (tutorial mancan
   un omino disegnato con costanti di una lettera (`WALKER`/`WALKER2`,
   `ROW2!`). Test del cap. 17: 82 righe, 0 errori. Da provare su CSpect o
   sul Next: 03, 04 (`LAYER AT` su Layer 0 e `%RND 8`), 05.
+
+  **Verifica di tutti i listati (2026-10-17).** Confrontati riga per
+  riga i 107 `.txt` con il manuale: oltre ai cap. 17 e 25 (riscritti)
+  erano del manuale i 16-01/02 (grafici di `SQR` e `SIN`, sostituiti
+  dall'iperbole e da `x*LN (ABS x)`, quest'ultima dall'esame di Analisi
+  dell'autore, 1990) e il 16-03 ("versione semplificata" delle linee
+  casuali, sostituito dal riempimento dello Screen 35 dell'autore);
+  ritoccati per prudenza i 16-04, 10-01, 15-01 e 03-08. Le altre
+  coincidenze sono righe generiche (`NEXT n`, `INPUT a,b`). Nessun
+  listato del manuale resta nella guida. Anche l'astronave del cap. 17
+  (pattern) è sostituita da un omino nostro.
 
   Il listato Copper va codificato a mano con cura (WAIT: bit 15 a 1, riga
   nei bit 8-0; MOVE: registro nei bit 14-8, valore nei bit 7-0) ed è il
@@ -373,7 +397,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 -- FATTA: il cap. 15 (2026-10-14), i cap. 16-18 (2026-10-15), i cap. 19-24 (2026-10-16), il cap. 25 (2026-10-17); restano i listati BASIC da provare (autore) | guida, seconda parte | emulatore + CSpect |
-| 5 | Appendici e indice inverso -- IN CORSO: App. A, B, C e indice inverso scritti il 2026-10-17; resta l'App. D | guida completa | Claude |
+| 5 | Appendici e indice inverso -- FATTA: App. A, B, C, D e indice inverso scritti il 2026-10-17 | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
 

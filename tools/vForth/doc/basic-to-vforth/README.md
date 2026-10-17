@@ -4,9 +4,9 @@ A migration guide for programmers who know NextBASIC and want to move to
 vForth, the Forth system for the ZX Spectrum Next.
 
 > **Draft.** Chapters 1 to 25, Appendices A to D and the keyword index
-> are written.
-> Chapter 3 (Looping) was the pilot: it fixes the form and the tone of
-> every other chapter; the plan is in `planners/BASIC-TO-FORTH-PLAN.md`.
+> are written, and are being revised. Every Forth listing has been run;
+> the BASIC listings are still being tried on the machine, and a few may
+> need a touch. Corrections and suggestions are welcome.
 
 ## How to read this guide
 
@@ -32,9 +32,9 @@ Conventions used in the listings:
   output takes several lines it follows the listing in a block of its own.
 - `NEEDS name` loads a word that is not part of the core. Words used without
   a `NEEDS` are always available.
-- Every Forth listing is typed into vForth and checked by
-  `emu/test_basic_guide.py`, except those that wait for a key, never end,
-  or need a part of the machine the emulator does not have (floating
+- Every Forth listing is typed into vForth, in an emulator, and its
+  output compared with the guide, except those that wait for a key, never
+  end, or need a part of the machine the emulator does not have (floating
   point, graphics, sound).
 - A Forth line is carried out from left to right, but it is not always
   read that way by a human: a word takes values from its left (the stack)
@@ -43,6 +43,21 @@ Conventions used in the listings:
   [Chapter 1](01-basic-programming-concepts.md) explains it.
 - Type the Forth listings of a chapter in order: later ones may use earlier
   definitions.
+
+## Trying the listings
+
+The listings are on the SD card too, in the folder `bas2f` of vForth
+(`tools/vForth/bas2f`), one file per listing:
+
+- `bas2f/bas/NN-chapter-MM.bas` -- the BASIC listing, ready to `LOAD`
+  from NextBASIC; `bas2f/txt/` has the same listing as plain text.
+- `bas2f/f/NN-MM.f` -- its Forth side, to load from vForth with
+  `INCLUDE bas2f/f/NN-MM.f`. Each file is complete: it brings with it
+  the definitions from earlier in the chapter that it uses. When the
+  guide gives several Forth versions of one listing they are
+  `NN-MMb.f`, `NN-MMc.f` and so on.
+
+`NN` is the chapter and `MM` the number of the listing within it.
 
 ## Chapters
 

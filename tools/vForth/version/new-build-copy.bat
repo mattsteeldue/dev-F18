@@ -150,6 +150,15 @@ copy  help\*.md                             %DEST%\help
 
 : _____________________________________________________
 
+: guida basic-to-vforth (i .md) e i suoi listati (bas, txt, f);
+: xcopy /i crea la cartella se manca, /s copia le sottocartelle
+echo Copying basic-to-vforth guide and bas2f listings
+xcopy doc\basic-to-vforth\*.md              %DEST%\doc\basic-to-vforth\  /i /y /q
+xcopy bas2f                                 %DEST%\bas2f\                /s /i /y /q
+: pause
+
+: _____________________________________________________
+
 : pause
 goto END_PROG
 
