@@ -128,6 +128,22 @@ Block 8 begins Screen 4, whose first line is message 0, the one printed
 after a word that is not found. `SCREEN-TO-FILE` and `SCREEN-FROM-FILE`
 copy a Screen to a text file and back (tutorial `063`).
 
+**Two editors on the machine.** `EDIT` is the editor of the block file:
+`NEEDS EDIT`, then `n LIST EDIT` opens Screen n full screen. The cursor
+moves with SHIFT and 5 to 8; EDIT followed by a letter gives a command:
+`N` and `B` go to the next and the previous Screen, `H` keeps the current
+line in `PAD` and `R` puts it back elsewhere, `D` deletes a line, `U`
+reads the Screen again from the card, undoing the changes, and `Q`
+leaves. Every change marks its block with `UPDATE`, so `FLUSH`, or `BYE`,
+writes it back. `LED`, the Large file EDitor, does the same for a text
+file: `NEEDS LED`, then `LED name` loads the whole file into free 8K
+pages, lines of up to 85 characters, and EDIT followed by `W` writes it
+back. `LED` is derived for the most part from `EDIT`, and the commands
+are the same; but its features are still experimental, so keep a copy
+of a file that matters before editing it with `LED`, and leave with
+`FORGET-LED` rather than `FORGET LED`, which would not give the pages
+back.
+
 **Leaving vForth.** `BYE` writes back the changed blocks, closes the file
 and returns to BASIC; there, `RUN` starts vForth again. `n BASIC` returns
 at once, with n as the result of the `USR` that started vForth. Dot
@@ -172,6 +188,7 @@ be one: `.vforth`.
 | `autoexec.bas` | Screen 11, `lib/autoexec.f` | |
 | `.mem`, `.nextver` | `UNUSED`, `DOSVER` | Dictionary space, not RAM. |
 | (not in BASIC) | `n BLOCK`, `UPDATE`, `FLUSH` | The block file. |
+| the program editor, EDIT | `n LIST EDIT`, `LED file` | `NEEDS EDIT`, `NEEDS LED`; `LED` is experimental. |
 | leaving | `BYE`, `n BASIC` | `RUN` comes back. |
 
 ## Side by side
@@ -275,11 +292,13 @@ rest reads as the BASIC does, without quotes. Without `CD` at all,
   `SAVE-BYTES`, `F_OPEN`, `F_READ`.
 - Tutorial `043` -- folders: `CD`, `PWD`, `DIR`.
 - Tutorial `028` -- the block file: `BLOCK`, `LIST`, `LOAD`, `FLUSH`.
+- Tutorial `029` -- `EDIT`, the editor of the block file.
 - Tutorial `063` -- blocks as a store of data.
 - Tutorial `041` -- pages and `MMU7!`.
 - Tutorial `059` -- `ZAP`, a program that starts by itself.
 - `HELP INCLUDE`, `HELP NEEDS`, `HELP LOAD-BYTES`, `HELP SAVE-BYTES`,
-  `HELP DIR`, `HELP CD`, `HELP UNLINK`, `HELP BLOCK`, `HELP FORGET`.
+  `HELP DIR`, `HELP CD`, `HELP UNLINK`, `HELP BLOCK`, `HELP FORGET`,
+  `HELP EDIT`.
 - [Chapter 23](23-the-memory.md) -- the memory, banks and pages.
 
 <!-- nav -->

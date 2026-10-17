@@ -25,6 +25,17 @@ and with the Looking Glass 48K ROM, boot NextZXOS and are the same for
 vForth. The other personalities turn the Next into an older machine
 that has no NextZXOS, and vForth is not meant for them.
 
+**There is a vForth before the Next.** The repository
+`github.com/mattsteeldue/vforth`, alongside `vforth-next`, keeps a
+version of vForth back-ported to the 48K and 128K Spectrum, and the
+vForth manual mentions it briefly. It does not use NextZXOS, but its
+blocks need storage the plain Spectrum does not have: a Sinclair ZX
+Interface 1 with ZX Microdrives, or, in the other version, a DISCiPLE
+(MGT) interface with its disk drives. Without that hardware it needs an
+emulator able to emulate it, such as Fuse; CSpect and MAME, the
+emulators used for the Next, are not the ones for it. It is another
+machine and another set of files: this guide is about the Next version.
+
 **The configuration options are the machine's.** The upper part of the
 options screen (keyboard or mouse on the PS/2 port, sound on HDMI,
 stereo mode, scanlines) holds in every mode, so it holds under vForth
@@ -107,7 +118,10 @@ if you wrote into the block file: a new version brings a new one.
 
 - **The other personalities**: the 48K, 128K, +2, +2A/+3, +3e, ZX80,
   ZX81, Timex, Investronica and Pentagon modes. They have no NextZXOS,
-  and vForth does not run in them.
+  and vForth does not run in them; the pre-Next vForth
+  (`github.com/mattsteeldue/vforth`) targets the 48K and 128K Spectrum,
+  but needs Interface 1 and Microdrives, or a DISCiPLE, that the Next
+  does not provide.
 - **Updating the core, the AB core, the extra cores and the firmware.**
   Key presses at power-on; no program takes part.
 - **The NMI shortcuts and the troubleshooting.** A blank or red screen,

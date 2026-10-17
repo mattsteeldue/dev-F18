@@ -7,7 +7,7 @@
 
 \ --- the translation
 
-\ 19-nextzxos-and-alternatives.md:220
+\ 19-nextzxos-and-alternatives.md:237
 \ no-test in the guide: it waits for keys, never ends or
 \ needs hardware the emulator lacks
 : HELLO  ( -- )  ." Hello" CR ;
