@@ -2,6 +2,33 @@
 
 > Resolved entries are moved to TODO-DONE.md.
 
+# MESSAGE could print nothing when WARNING is -1, as ERROR does
+**2026-10-18**
+Idea, not started. `ERROR` reads `WARNING` and chooses among three
+behaviours: the full text (1), only the short form `msg#n` (0), nothing at
+all (-1, it goes straight to `(ABORT)`). `MESSAGE` knows only two: it tests
+`WARNING @` with a plain `IF`, so -1 counts as true and the full line is
+printed (`L2.asm`, `Colon_Def MESSAGE`; `src/F18e.f`, `: message`). Its own
+comment says "if WARNING is -1, see ERROR", which does not apply when
+`MESSAGE` is called directly.
+Two callers in the core call it directly, not through `ERROR`:
+- `CODE` (`L1.asm`): `>NAME ID. 4 MESSAGE SPACE`, the "not unique"
+  warning when a word is redefined;
+- `NEEDS` (`L3.asm`): `NEEDS_W COUNT TYPE SPACE 43 MESSAGE`, "File not
+  found".
+Idea: a third branch at the head of `MESSAGE`, `WARNING @ 0< IF DROP
+ELSE ... THEN`, so that with -1 nothing is printed. A few bytes.
+To decide:
+- whether the callers should keep silent too: today both print a name
+  before `MESSAGE` (`ID.` in `CODE`, `TYPE` in `NEEDS`), which with -1
+  would be left alone on the line, without its message. Either move the
+  test into the callers, or accept the bare name;
+- whether "nothing" is right for `NEEDS`, where a file not found is an
+  error the user wants to see, not a warning.
+Then: new build (`/bump-build`), the same change in DOT and in
+`src/F18e.f`, `/check-f18e` on CSpect; update `help/message.txt` and
+`help/warning.txt` if they describe the values.
+
 # A PLAY library: NextBASIC music strings on the AY chips
 **2026-10-17**
 Step 1 written on 2026-10-17: `lib/PLAY.f` (blocking `PLAY` and `PLAY"`),
