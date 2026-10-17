@@ -19,8 +19,7 @@ nextzxos/
 /tools/xxx_vForth/
 tools/vForth/version/20260101/inc/ASK.f
 tools/vForth/__pycache__/emulator.cpython-312.pyc
-.claude/worktrees/z80-canonical-fix/
-.claude/worktrees/claude-md-base-note/
+.claude/worktrees/
 tools/vForth/doc/Starting-FORTH.pdf
 tools/vForth/doc/zx-next-dev-guide-r3.pdf
 tools/vForth/util/putscr.vpd
