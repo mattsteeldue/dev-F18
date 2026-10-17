@@ -1,6 +1,6 @@
 # Da NextBASIC a vForth: guida di migrazione, capitolo per capitolo
 
-> Stato: IN CORSO (ripresa da: fase 5, appendici C, D e indice inverso; le App. A e B sono scritte il 2026-10-17; le fasi 3 e 4 sono scritte). Fase 3 avviata il
+> Stato: IN CORSO (ripresa da: fase 5, App. D; le App. A, B, C e l'indice inverso `keyword-index.md` sono scritti il 2026-10-17; le fasi 3 e 4 sono scritte). Fase 3 avviata il
 > 2026-10-12: scritti il cap. 1 (`01-basic-programming-concepts.md`, 66
 > righe Forth provate) e il cap. 2 (`02-decisions.md`, 62 righe), e il
 > 2026-10-13 il cap. 4 (`04-procedures-and-subroutines.md`, 92 righe), il
@@ -51,8 +51,10 @@ cap. N" della sez. 10. Va aggiornato a fine sessione insieme alla riga di stato.
 cap. 25 il 2026-10-17). Fase 5 avviata: l'Appendice A
 (`app-a-character-set-z80n-control-codes.md`) e l'Appendice B
 (`app-b-reference.md`: rapporti d'errore e sistemi di numerazione; le
-parole chiave vanno in `keyword-index.md`) sono scritte il 2026-10-17;
-restano le App. C, D e `keyword-index.md`, poi fase 6 (tutorial mancanti, sez.
+parole chiave vanno in `keyword-index.md`) sono scritte il 2026-10-17,
+come l'App. C (commit `d066947`) e `keyword-index.md` (una riga per ogni
+voce dell'elenco del manuale, più operatori e parti di altre istruzioni,
+con la parola vForth e il capitolo); resta l'App. D, poi fase 6 (tutorial mancanti, sez.
 9), fase 7 (righe "Coming from BASIC" nei tutorial 001-029).
 
 **Prove dell'autore.**
@@ -362,7 +364,7 @@ Per strada: la voce `help/^do.txt` (`?DO`) è stata ampliata il 2026-10-12
 | 2 | Capitolo pilota (cap. 3, Looping): fissa forma e tono -- FATTA: scritto 2026-10-11 e approvato; listati BASIC provati dall'autore su MAME il 2026-10-12 | un capitolo della guida | autore |
 | 3 | Parte linguaggio: cap. 1-14 -- SCRITTA: cap. 1, 2 e 3 (2026-10-12), cap. 4-10 (2026-10-13), cap. 11-14 (2026-10-14); restano i listati BASIC da provare (autore) | guida, prima parte | emulatore |
 | 4 | Parte macchina: cap. 15-25 -- FATTA: il cap. 15 (2026-10-14), i cap. 16-18 (2026-10-15), i cap. 19-24 (2026-10-16), il cap. 25 (2026-10-17); restano i listati BASIC da provare (autore) | guida, seconda parte | emulatore + CSpect |
-| 5 | Appendici e indice inverso -- IN CORSO: App. A e B scritte il 2026-10-17 | guida completa | Claude |
+| 5 | Appendici e indice inverso -- IN CORSO: App. A, B, C e indice inverso scritti il 2026-10-17; resta l'App. D | guida completa | Claude |
 | 6 | Vuoti: elenco ordinato dei tutorial da scrivere, uno per volta con `/new-tutorial` | `TODO.md`, tutorial nuovi | autore |
 | 7 | Rimandi: una riga "Coming from BASIC" nei tutorial 001-029 | tutorial ritoccati (solo commenti) | - |
 

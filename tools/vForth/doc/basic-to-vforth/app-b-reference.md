@@ -135,7 +135,7 @@ and [Chapter 4](04-procedures-and-subroutines.md).
 
 **Keywords and functions.** The alphabetical list of the manual, every
 command and function with its syntax, is the subject of the keyword
-index of this guide, `keyword-index.md` (not written yet): one line per
+index of this guide, [Keyword index](keyword-index.md): one line per
 keyword, with the Forth word and the chapter where it is explained.
 
 **Number systems.** NextBASIC's `$FF` and `@1010` (or `BIN 1010`) are
@@ -185,7 +185,7 @@ NEEDS INVERT
 | `5 Out of screen` | the same, from the ROM | Ends in BASIC; `RUN`. |
 | `6 Number too big` | -- | Integers wrap around. |
 | `7 RETURN without GO SUB` | -- | No `GO SUB`; a word returns by itself. |
-| `8 End of file` | `F_READ` reads 0 bytes | |
+| `8 End of file` | `F_READ` reads fewer bytes | No error. |
 | `9 STOP statement` | `QUIT`, `ABORT` | [Chapter 1](01-basic-programming-concepts.md). |
 | `A Invalid argument` | -- | Not checked. |
 | `B Integer out of range` | -- | Only the low bits count. |
