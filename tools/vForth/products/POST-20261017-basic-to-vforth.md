@@ -35,6 +35,14 @@ hyperbola, to plot y = x ln|x| with integers only - the same function I
 plotted on a Spectrum for my university exam in 1990; and a little man
 walking across the screen, drawn pixel by pixel right in the source.
 
+As with the rest of vForth since last May, I wrote this guide together
+with Claude Code, Anthropic's AI coding assistant. I set the plan, the
+structure and the tone, chose the examples and reviewed the text; Claude
+drafted the chapters, wrote the listings and ran every Forth listing in
+the vForth emulator to check its output. Some of the best ideas came out
+of that back and forth - the screen filled at random, for instance,
+started from one of my old block screens.
+
 This is a draft. I have read a good part of it myself, and I am still trying
 the BASIC listings on the machine, so a few of them may need a touch.
 Corrections, suggestions and questions are very welcome, here or as
