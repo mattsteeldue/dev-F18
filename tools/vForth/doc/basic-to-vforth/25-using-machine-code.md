@@ -7,7 +7,8 @@ Manual: Chapter 25, pp. 275-281.
 ## In short
 
 This is where vForth is furthest ahead of BASIC. NextBASIC has no
-assembler: the manual has you translate the code by hand, `POKE` the
+assembler of its own: the manual has you translate the code by hand,
+`POKE` the
 bytes above a `CLEAR`, and call them with `USR`. vForth has an assembler
 of its own, loaded with `NEEDS ASSEMBLER`, and a word for machine code,
 `CODE`. The code goes into the dictionary like any other word, gets a
@@ -21,15 +22,15 @@ that the manual sets up by hand are one word, `M_P3DOS`.
 **The code gets a name.** In BASIC the machine code is a range of
 addresses that you choose, protect with `CLEAR` and remember. In vForth
 `CODE name` starts a word whose body is machine code. Here is the
-manual's example, written as bytes:
+routine of the first listing in "Side by side", written as bytes:
 
 ```forth
-CODE NN99  ( -- n )
-    $21 C, 99 ,                 \ ld hl,99
+CODE NN80  ( -- n )
+    $21 C, 80 ,                 \ ld hl,80
     $E5 C,                      \ push hl
     $DD C, $E9 C,               \ jp (ix)
     SMUDGE
-NN99 .                          \ => 99
+NN80 .                          \ => 80
 ```
 
 `C,` compiles one byte, `,` two (low byte first, as the Z80 wants), and
@@ -38,7 +39,7 @@ dictionary finds the room, and the word stays where it is.
 
 **Results go on the stack, not in BC.** `USR` returns BC; a `CODE` word
 pushes its results on the data stack, which is the Z80 stack, and pops
-its arguments from there. So the 99 above is loaded into HL and pushed,
+its arguments from there. So the 80 above is loaded into HL and pushed,
 and there may be as many arguments and results as you like. A string,
 as in `USR$`, is two cells: push the address, then the length.
 
@@ -81,6 +82,16 @@ are written as bytes, with the instruction in a comment, so that they do
 not need the assembler: tutorial `027` shows both forms, and
 `util/asm2hex.py` turns one into the other.
 
+**On the BASIC side, `.asm`.** The manual does not mention it, but there
+is a third-party dot command, `.asm` by taylorza (the
+[NextBASIC Inline Assembler](https://taylorza.itch.io/nextbasic-inline-assembler)),
+that is very handy in BASIC: the assembly is written with the BASIC
+editor itself, in program lines that start with `;`, right after the
+line that runs `.asm`. The code is assembled at `$C000` unless told
+otherwise, above a `CLEAR`, and called with `USR` as usual. It is the
+nearest thing BASIC has to `CODE`; in vForth the assembler is a word
+away, and the code gets a name.
+
 **`USR` is `CALL#`.** For code that is already in memory, written by
 someone else or loaded from a file, `CALL# ( n1 a -- n2 )` does what
 `USR` does: it puts `n1` into BC (and its low byte into A), calls the
@@ -89,11 +100,12 @@ back BC. It saves and restores the registers of Forth itself.
 
 ```forth
 NEEDS CALL#
-CREATE MC  1 C, 99 C, 0 C, 201 C,     \ ld bc,99 : ret
-0 MC CALL# .                    \ => 99
+DECIMAL
+CREATE MC  1 C, 80 C, 0 C, $C9 C,     \ ld bc,80 : ret
+0 MC CALL# .                    \ => 80
 ```
 
-These are the manual's four bytes, unchanged; the 0 stands for the
+These are the four bytes of the listing, unchanged; the 0 stands for the
 parameter that `USR` does not have. `USR` with more parameters, which
 BASIC leaves on the calculator stack, has no counterpart: give a `CODE`
 word as many as it needs on the data stack.
@@ -136,7 +148,7 @@ INTERRUPTS` sets one up for you and lets you write it in Forth
 
 | NextBASIC | vForth | Note |
 |---|---|---|
-| an assembler (Zeus, Odin, SPED) | `NEEDS ASSEMBLER` | Inside vForth, compiles into the dictionary. |
+| an assembler (Zeus, Odin, SPED, the `.asm` dot command) | `NEEDS ASSEMBLER` | Inside vForth, compiles into the dictionary. |
 | `CLEAR n` to make room | -- | `CODE` takes the room in the dictionary. |
 | `DATA` and `POKE` of the bytes | `CODE name ... C, ... SMUDGE` | Or the bytes in a `CREATE` table for `CALL#`. |
 | `USR a` | `n a CALL#` | BC in, BC out; the code ends with `ret`. |
@@ -156,34 +168,52 @@ INTERRUPTS` sets one up for you and lets you write it in Forth
 
 ## Side by side
 
-**The manual's routine, the BASIC way and the Forth way.** Four bytes
-put above RAMTOP and called.
+**A routine, the BASIC way and the Forth way.** Four bytes put above
+RAMTOP, just below the user-defined graphics, and called.
 
 ```
-10 CLEAR 65267
-20 LET a=65268
-30 FOR n=0 TO 3: READ b: POKE a+n,b: NEXT n
-40 PRINT USR a
-50 DATA 1,99,0,201
+10 CLEAR USR "A"-81
+20 LET addr=USR "A"-80
+30 FOR N=0 TO 3: READ byte: POKE addr+N,byte: NEXT N
+40 PRINT USR addr
+50 DATA 1,80,0,$C9
 ```
+
+There is no address written in the listing: it is worked out from
+`USR "A"`, the address of the pattern of the first user-defined graphic
+([Chapter 13](13-the-character-set.md)). The 21 patterns, 168 bytes, sit
+at the very top of memory, and the routine gets 80 bytes of its own just
+under them; `CLEAR` puts RAMTOP one byte lower still, so BASIC leaves
+both alone. With the graphics where the machine puts them, at `$FF58`
+(65368), the first line is `CLEAR 65287` and `addr` is 65288; but point
+the system variable UDG elsewhere and the same lines follow it, no
+number to fix by hand.
 
 The same bytes called with `CALL#` are `MC` above; written as a `CODE`
-word they are `NN99`. The word is the usual form: it needs neither an
+word they are `NN80`. The word is the usual form: it needs neither an
 address nor `CALL#`.
 
 **A parameter.** Double a number: the parameter arrives in BC, the
 result goes back in BC.
 
 ```
-10 CLEAR 65267
-20 LET a=65268
-30 FOR n=0 TO 5: READ b: POKE a+n,b: NEXT n
-40 PRINT USR (a,21)
-50 DATA 96,105,41,68,77,201
+10 CLEAR USR "A"-81
+20 LET addr=USR "A"-80
+30 FOR N=0 TO 5: READ byte: POKE addr+N,byte: NEXT N
+40 PRINT USR (addr,21)
+50 DATA $60,$69,$29,$44,$4D,$C9
 ```
 
 ```forth
-CREATE TW  96 C, 105 C, 41 C, 68 C, 77 C, 201 C,
+NEEDS CALL#
+DECIMAL
+CREATE TW
+    $60 C,                      \ ld h,b
+    $69 C,                      \ ld l,c
+    $29 C,                      \ add hl,hl
+    $44 C,                      \ ld b,h
+    $4D C,                      \ ld c,l
+    $C9 C,                      \ ret
 21 TW CALL# .                   \ => 42
 CODE TWICE  ( n -- 2n )
     $E1 C,                      \ pop hl
@@ -194,23 +224,24 @@ CODE TWICE  ( n -- 2n )
 21 TWICE .                      \ => 42
 ```
 
-The bytes of `TW` move the number from BC to HL and back (`ld h,b`,
-`ld l,c`, `add hl,hl`, `ld b,h`, `ld c,l`, `ret`). `TWICE` has nothing to
-move: the number is already on the stack, and so is the result.
+The same six bytes, in the same order, as in the `DATA` line: they move
+the number from BC to HL and back. `TWICE` has nothing to move: the
+number is already on the stack, and so is the result.
 
 **A Z80N instruction.** `MUL` multiplies D by E; the two bytes arrive
 packed in one parameter.
 
 ```
-10 CLEAR 65267
-20 LET a=65268
-30 FOR n=0 TO 6: READ b: POKE a+n,b: NEXT n
-40 PRINT USR (a,12*256+11)
-50 DATA 80,89,237,48,66,75,201
+10 CLEAR USR "A"-81
+20 LET addr=USR "A"-80
+30 FOR N=0 TO 6: READ byte: POKE addr+N,byte: NEXT N
+40 PRINT USR (addr,$0C0B)
+50 DATA $50,$59,$ED,$30,$42,$4B,$C9
 ```
 
-The bytes are `ld d,b`, `ld e,c`, `mul d,e`, `ld b,d`, `ld c,e`, `ret`.
-In Forth it is `TIMES` above, which takes the two numbers as two
+In hex the packing shows: `$0C0B` is 12 in B and 11 in C. The bytes are
+`ld d,b` (`$50`), `ld e,c` (`$59`), `mul d,e` (`$ED $30`), `ld b,d`
+(`$42`), `ld c,e` (`$4B`), `ret` (`$C9`). In Forth it is `TIMES` above, which takes the two numbers as two
 arguments, written with mnemonics instead of numbers.
 
 ## No equivalent
@@ -221,9 +252,9 @@ arguments, written with mnemonics instead of numbers.
 - **The type flags of `USR`.** The zero and carry flags that tell a
   routine whether it got and must return a number or a string: in vForth
   the stack comment of the word says it.
-- **The external assemblers.** Zeus, Odin and SPED are not needed; code
-  they produce can still be loaded with `LOAD-BYTES` and called with
-  `CALL#`.
+- **The external assemblers.** Zeus, Odin, SPED and the `.asm` dot
+  command are not needed; code they produce can still be loaded with
+  `LOAD-BYTES` and called with `CALL#`.
 
 ## Further reading
 
@@ -233,6 +264,8 @@ arguments, written with mnemonics instead of numbers.
 - Tutorial `049` -- interrupts.
 - `HELP CODE`, `HELP CALL#`, `HELP M_P3DOS`.
 - The vForth manual, section 3.9 -- the assembler.
+- [NextBASIC Inline Assembler](https://taylorza.itch.io/nextbasic-inline-assembler)
+  -- the `.asm` dot command, for assembly inside a NextBASIC program.
 
 <!-- nav -->
 ---

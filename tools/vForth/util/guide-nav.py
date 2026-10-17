@@ -38,14 +38,14 @@ INDEX = re.compile(r"^(\d+)\. (?:\[([^\]]+)\]\([^)]*\)|(.+?))\s*$", re.M)
 
 
 def title(path):
-    with open(path, encoding="ascii") as f:
+    with open(path, encoding="utf-8") as f:
         m = HEADING.search(f.read())
     return m.group(1) if m else os.path.basename(path)
 
 
 def index_titles():
     """Chapter number -> title, from the numbered list of README.md."""
-    with open(os.path.join(GUIDE_DIR, "README.md"), encoding="ascii") as f:
+    with open(os.path.join(GUIDE_DIR, "README.md"), encoding="utf-8") as f:
         text = f.read()
     return {int(n): (a or b) for n, a, b in INDEX.findall(text)}
 
@@ -76,7 +76,7 @@ def main():
         if not nxt and m and int(m.group(1)) + 1 in names:
             n = int(m.group(1)) + 1
             coming = f"Chapter {n} - {names[n]}"
-        with open(path, encoding="ascii", newline="") as f:
+        with open(path, encoding="utf-8", newline="") as f:
             old = f.read()
         body = old.split(MARK)[0].rstrip("\n") + "\n\n"
         new = body + footer(prev, nxt, coming)
@@ -85,7 +85,7 @@ def main():
             print(("stale: " if check else "updated: ")
                   + os.path.basename(path))
             if not check:
-                with open(path, "w", encoding="ascii", newline="") as f:
+                with open(path, "w", encoding="utf-8", newline="") as f:
                     f.write(new)
     if not stale:
         print("all footers up to date")

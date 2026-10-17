@@ -310,6 +310,7 @@ def write(name, txt, md, listing, blocks, deps, own, check):
     """Write one .f; return (1 if it was out of date, problems found)."""
     stale = problems = 0
     text = render(name, txt, md, listing, blocks, deps, own)
+    text = text.replace("\u00a3", "`")    # the Next's pound sign, code 96
     for n, ln in enumerate(text.split("\n"), 1):
         if len(ln) > 80:
             print("%s.f:%d: longer than 80 bytes" % (name, n))

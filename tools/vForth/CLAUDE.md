@@ -489,8 +489,9 @@ synchronised**; git is the only shared state. Hence:
 All source files (`.f`, `.txt`, `.asm`) and all generated help files must use **7-bit
 ASCII only** -- no UTF-8, no BOM, no extended characters.
 
-The only exception is `0x7F`, which on the ZX Spectrum represents the **copyright
+The only exception in sources is `0x7F`, which on the ZX Spectrum represents the **copyright
 symbol** and may appear in Forth source that targets the machine's display directly.
+(The one exception outside sources, a pound sign in the guide, is described below.)
 
 **Practical rules:**
 - Always write files with **no BOM**. Use `[System.IO.File]::WriteAllBytes()` or
@@ -506,6 +507,33 @@ symbol** and may appear in Forth source that targets the machine's display direc
   or names (`b` for beta), `->` for an arrow, `^2` for a square. Decided
   2026-10-14, when the last such bytes were removed from `inc/`, `lib/` and
   the two current `L0.asm`.
+
+**The one exception outside sources: the pound sign in the basic-to-vforth guide.** The
+`.md` chapters of `doc/basic-to-vforth/` are read only in a web browser or
+VS Code, never on a Spectrum (real or emulated), so Appendix A
+(`app-a-character-set-z80n-control-codes.md`) writes the claim of its
+`96 EMIT` example with a real pound sign (U+00A3, UTF-8, no BOM) before
+the 5, `\ => Price: <pound>5`, showing what the Next prints for code 96.
+Allowed 2026-10-17, and only there: the tools
+turn it back into the backquote, code 96, wherever the text reaches vForth
+-- `util/guide-forth.py` when it writes a `bas2f/f/*.f` (which stays 7-bit
+ASCII) and `emu/test_basic_guide.py` when it compares the claim (any other
+non-ASCII byte in a ```forth block is still a format complaint).
+`util/guide-nav.py` reads and writes the chapters as UTF-8 for the same
+reason. Everything else in the repository, the rest of the guide included,
+stays 7-bit ASCII.
+
+The pound sign is one of three codes in 32-127 that the Spectrum draws
+differently from ASCII (Appendix A of the guide lists them): 94 `^` is an
+arrow pointing up, 96 `` ` `` the pound sign, 127 the copyright sign
+(U+00A9 in a browser). The copyright sign is the same trap as the pound:
+in a source it is byte `0x7F` (the exception at the top of this section),
+in a `.md` meant for the reader it would be U+00A9. Avoid it: describe
+the character in words, as Appendix A does, rather than claim it as
+output. If one day a claim really needs it, give it the treatment of the
+pound sign -- U+00A9 turned back into `0x7F` by `util/guide-forth.py` and
+by `emu/test_basic_guide.py`, which today know only the pound sign -- and
+record it here.
 
 **EMIT vs EMITC:**
 - `EMIT ( c -- )` may mask to 7-bit ASCII range (0-127).

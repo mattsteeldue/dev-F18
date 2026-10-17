@@ -94,15 +94,17 @@ the size of the characters.
 
 **Codes 32 to 127.** ASCII, with three shapes of the Spectrum's own:
 94 `^` is drawn as an arrow pointing up, 96 `` ` `` as the pound sign,
-127 as the copyright sign. vForth source is plain 7-bit ASCII, so a
-pound sign is written as a backquote, or sent by number:
+127 as the copyright sign. vForth source is plain 7-bit ASCII, so in
+the source a pound sign is a backquote, or its number; what reaches the
+screen is code 96, and the Next prints it as the pound sign:
 
 ```forth
-." Price: " 96 EMIT ." 5"       \ => Price: `5
+5 ." Price: " 96 EMIT .         \ => Price: £5
 ```
 
-The PC shows a backquote where the Next shows the pound sign. The keyboard of
-vForth gives these characters directly: the SYMBOL SHIFT keys that
+On the Next the price comes out with a real pound sign before the 5; the
+backquote is only how the PC shows code 96. The keyboard of vForth gives
+these characters directly: the SYMBOL SHIFT keys that
 BASIC turns into tokens type ASCII instead, `~` on SYMBOL+A, `|` on S,
 `\` on D, `{` and `}` on F and G, `[` and `]` on Y and U, and the
 copyright sign, 127, on I.

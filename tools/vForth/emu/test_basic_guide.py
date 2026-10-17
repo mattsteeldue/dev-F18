@@ -18,7 +18,10 @@ Conventions the guide follows (see "How to read this guide" in README.md):
   * a line without a claim must not raise an error;
   * a block preceded by the line  <!-- no-test -->  is skipped (keyboard
     input, endless loops, hardware the emulator does not model);
-  * lines are 80 bytes or fewer, 7-bit ASCII, no TAB;
+  * lines are 80 bytes or fewer, 7-bit ASCII, no TAB; the one exception
+    is the pound sign in a claim (Appendix A), kept in UTF-8 for whoever
+    reads the .md: it is compared as code 96, the backquote, which is the
+    character the Next shows as a pound sign;
   * links between the files keep the .md form, [text](NN-title.md), and
     must point to a file that exists.
   * every chapter ends with the navigation footer (previous chapter,
@@ -50,6 +53,7 @@ NAV = "<!-- nav -->"
 CLAIM = re.compile(r"\\ => (.*)$")
 CHAPTER = re.compile(r"^# (?:Chapter|Appendix) (\w+)")
 LINK = re.compile(r"\]\(([^)#\s]+\.md)(?:#[^)]*)?\)")
+POUND = "\u00a3"                        # shown by the Next for code 96
 ERROR = re.compile(r"\S\? \S")          # "WORD? message." as ERROR prints it
 MAX_WAITS = 10                          # run-to-prompt retries per line
 
@@ -69,7 +73,7 @@ def parse(path):
         raw = f.read()
     name = os.path.basename(path)
     complaints = []
-    text = raw.decode("ascii", errors="replace").replace("\r\n", "\n")
+    text = raw.decode("utf-8", errors="replace").replace("\r\n", "\n")
     lines = text.split("\n")
     blocks, chapter, last_text, i = [], "-", "", 0
     while i < len(lines):
@@ -90,8 +94,11 @@ def parse(path):
                 blk.lines.append((i + 1, lines[i]))
                 i += 1
             for n, t in blk.lines:
-                if len(t) > 80:
+                if len(t.encode("utf-8")) > 80:
                     complaints.append(f"{name}:{n}: longer than 80 bytes")
+                m = CLAIM.search(t)
+                if m:                   # a pound sign may stand in a claim
+                    t = t[:m.start()] + m.group(0).replace(POUND, "`")
                 if "\t" in t or any(ord(c) > 126 for c in t):
                     complaints.append(f"{name}:{n}: TAB or non-ASCII byte")
             j = i + 1                   # a ```text block right after?
@@ -158,7 +165,7 @@ def run(blocks):
                     if t.strip() and not t.lstrip().startswith("\\")]
         for k, (n, t) in enumerate(runnable):
             m = CLAIM.search(t)
-            claim = m.group(1) if m else None
+            claim = m.group(1).replace(POUND, "`") if m else None
             code = CLAIM.sub("", t).rstrip()
             if claim is None and blk.output and k == len(runnable) - 1:
                 claim = blk.output

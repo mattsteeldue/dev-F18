@@ -94,8 +94,8 @@ the text. Many words take from both sides at once: in `15 VALUE B`,
 `20 TO B` and `25 CONSTANT ROWS` the value is on the left and the name on
 the right.
 
-So a Forth phrase is not always read in one direction. `20 TO B` reads as
-in English, "20 to B". But `25 CONSTANT ROWS` makes sense read from the
+So a Forth phrase is not always read in one direction by a human. `20 TO B`
+reads as in English, "20 to B". But `25 CONSTANT ROWS` makes sense read from the
 right, "ROWS is the constant 25", and so does `15 VALUE B`:
 
 ```forth

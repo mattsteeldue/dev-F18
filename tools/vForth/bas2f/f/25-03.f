@@ -3,15 +3,15 @@
 \ guide: doc/basic-to-vforth/25-using-machine-code.md
 \ written by util/guide-forth.py: edit the guide, not this file
 \
-\   10 CLEAR 65267
-\   20 LET a=65268
-\   30 FOR n=0 TO 6: READ b: POKE a+n,b: NEXT n
-\   40 PRINT USR (a,12*256+11)
-\   50 DATA 80,89,237,48,66,75,201
+\   10 CLEAR USR "A"-81
+\   20 LET addr=USR "A"-80
+\   30 FOR N=0 TO 6: READ byte: POKE addr+N,byte: NEXT N
+\   40 PRINT USR (addr,$0C0B)
+\   50 DATA $50,$59,$ED,$30,$42,$4B,$C9
 
 \ --- the translation
 
-\ 25-using-machine-code.md:65
+\ 25-using-machine-code.md:66
 NEEDS ASSEMBLER
 CODE TIMES  ( u1 u2 -- u )
     exx

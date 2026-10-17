@@ -37,9 +37,9 @@ Conventions used in the listings:
   or need a part of the machine the emulator does not have (floating
   point, graphics, sound).
 - A Forth line is carried out from left to right, but it is not always
-  read that way: a word takes values from its left (the stack) and may
-  take a name from its right (the text that follows). `20 TO B` reads
-  forwards, `' NEW IS OLD` backwards ("OLD is NEW").
+  read that way by a human: a word takes values from its left (the stack)
+  and may take a name from its right (the text that follows). `20 TO B`
+  reads forwards, `' NEW IS OLD` backwards ("OLD is NEW").
   [Chapter 1](01-basic-programming-concepts.md) explains it.
 - Type the Forth listings of a chapter in order: later ones may use earlier
   definitions.
